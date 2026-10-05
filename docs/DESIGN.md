@@ -93,6 +93,7 @@ Kural: ton tek başına anlam taşımaz — seçili çipte ✓ işareti ve eriş
 | `heading` | Bricolage 600 | 20 / 26 | Kart başlığı, sınıf adı, sayfa üstü başlık |
 | `bodyStrong` | Atkinson 700 | 17 / 24 | Öğrenci adı |
 | `body` | Atkinson 400 | 17 / 24 | Paragraf, alan değeri |
+| `bodySmall` | Atkinson 400 | 15 / 21 | Banner metni, yoğun açıklama |
 | `label` | Atkinson 600 | 15 / 20 | Buton, çip, alan etiketi |
 | `caption` | Atkinson 400 | 13 / 18 | Yardım metni, sınıf "5/B", sayaçlar |
 | `number` | Bricolage 600 | 15 / 20 | Okul numarası (tabular görünüm) |
