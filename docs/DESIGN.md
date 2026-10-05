@@ -208,4 +208,4 @@ Erişilebilirlik: her dokunulabilir öğede `accessibilityRole` + `accessibility
 - Durumu yalnızca renkle anlatmak (✓ ve erişilebilirlik durumu şart).
 - 44 pt'den küçük dokunma alanı.
 - "Bir hata oluştu" gibi belirsiz hata; özür dileyen hata; "Gönder/Tamam" butonu.
-- Expo Go'ya güvenmek: ML Kit için geliştirme derlemesi gerekir.
+- Expo Go'ya güvenmek: yerel metin tanıma (Vision/ML Kit) için geliştirme derlemesi gerekir.

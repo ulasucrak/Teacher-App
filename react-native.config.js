@@ -1,17 +1,14 @@
 /**
- * Yalnızca geliştirme amaçlı: `NO_MLKIT=1` ile iOS'ta ML Kit metin tanıma
- * modülü otomatik bağlanmaz. GoogleMLKit pod'larında Apple Silicon simülatörü
- * (arm64) dilimi olmadığından simülatör derlemesi başka türlü alınamıyor.
- * Varsayılan (cihaz/üretim) derlemeler ve Android etkilenmez.
+ * Autolinking ayarları (Expo autolinking bu dosyayı okur).
+ *
+ * ML Kit (@react-native-ml-kit/text-recognition) yalnızca Android'de bağlanır. iOS'ta
+ * fotoğraftan okuma Apple Vision ile yapılır (modules/vision-text-recognition): GoogleMLKit
+ * pod'ları Apple Silicon simülatörü için arm64 dilimi içermediğinden iOS simülatör hedefini
+ * engelliyordu. Bu ayarı değiştirdikten sonra `ios/` yeniden üretilmeli
+ * (`npx expo prebuild --clean -p ios`) ya da `cd ios && pod install` çalıştırılmalıdır.
  */
-const noMlKit = process.env.NO_MLKIT === '1';
-
-module.exports = noMlKit
-  ? {
-      dependencies: {
-        '@react-native-ml-kit/text-recognition': {
-          platforms: { ios: null },
-        },
-      },
-    }
-  : {};
+module.exports = {
+  dependencies: {
+    '@react-native-ml-kit/text-recognition': { platforms: { ios: null } },
+  },
+};

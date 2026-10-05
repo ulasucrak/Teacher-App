@@ -1,13 +1,27 @@
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import Constants from 'expo-constants';
 import { ImageManipulator } from 'expo-image-manipulator';
-import { NativeModules } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 
-import { isModuleUnavailableError, loadTextRecognition, preparePhoto, recognizeMessages, recognizePhoto } from './recognize';
+import { isVisionAvailable, recognizeText } from '../../../modules/vision-text-recognition';
+
+import {
+  isModuleUnavailableError,
+  loadTextReader,
+  loadTextRecognition,
+  loadVision,
+  preparePhoto,
+  recognizeMessages, recognizePhoto } from './recognize';
 
 jest.mock('@react-native-ml-kit/text-recognition', () => ({
   __esModule: true,
   default: { recognize: jest.fn() },
+}));
+
+jest.mock('../../../modules/vision-text-recognition', () => ({
+  __esModule: true,
+  recognizeText: jest.fn(),
+  isVisionAvailable: jest.fn(() => true),
 }));
 
 jest.mock('expo-constants', () => ({
@@ -30,14 +44,30 @@ jest.mock('expo-image-manipulator', () => ({
 }));
 
 const recognize = TextRecognition.recognize as jest.Mock;
+const visionRecognize = recognizeText as jest.Mock;
+const visionAvailable = isVisionAvailable as jest.Mock;
 const manipulate = ImageManipulator.manipulate as jest.Mock;
 const constants = Constants as { executionEnvironment: string };
 const nativeModules = NativeModules as Record<string, unknown>;
 
+let platformSpy: { restore: () => void } | undefined;
+
+function setPlatform(os: 'ios' | 'android') {
+  platformSpy?.restore();
+  platformSpy = jest.replaceProperty(Platform, 'OS', os);
+}
+
+afterEach(() => {
+  platformSpy?.restore();
+  platformSpy = undefined;
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
+  setPlatform('android');
   constants.executionEnvironment = 'bare';
   nativeModules.TextRecognition = {};
+  visionAvailable.mockReturnValue(true);
   mockRenderAsync.mockResolvedValue({
     saveAsync: jest.fn().mockResolvedValue({ uri: 'file:///small.jpg' }),
     release: mockImageRelease,
@@ -81,11 +111,80 @@ describe('preparePhoto', () => {
   });
 });
 
-describe('recognizePhoto', () => {
+const visionResult = {
+  // 1000x2000 piksel; kutular normalize ve sol-alt orijinli (Vision). İlk satır sayfanın üstünde.
+  width: 1000,
+  height: 2000,
+  observations: [
+    { text: '2 | 245 | MEHMET KARA | Erkek', confidence: 1, x: 0, y: 0.9, width: 0.3, height: 0.01 },
+    { text: '1 | 112 | SELİN BAYEZİT | Kız', confidence: 1, x: 0, y: 0.95, width: 0.3, height: 0.01 },
+  ],
+};
+
+describe('recognizePhoto (iOS: Apple Vision)', () => {
+  beforeEach(() => setPlatform('ios'));
+
+  it("Vision'ı tr-TR ayarıyla çağırır, sonucu ML Kit biçimine çevirip öğrenci satırlarına ayırır", async () => {
+    visionRecognize.mockResolvedValue(visionResult);
+    const outcome = await recognizePhoto('file:///a.jpg', 1000);
+    expect(visionRecognize).toHaveBeenCalledWith('file:///a.jpg', { languages: ['tr-TR'], usesLanguageCorrection: true });
+    expect(recognize).not.toHaveBeenCalled();
+    // Satırlar Vision sırasına değil görsel konuma göre dizilir (üstteki satır önce).
+    expect(outcome).toEqual({
+      ok: true,
+      uri: 'file:///a.jpg',
+      students: [
+        { number: '112', fullName: 'Selin Bayezit', warnings: [] },
+        { number: '245', fullName: 'Mehmet Kara', warnings: [] },
+      ],
+    });
+  });
+
+  it('Vision modülü yoksa anlaşılır mesaj döner', async () => {
+    visionRecognize.mockRejectedValue(new Error("Cannot find native module 'VisionTextRecognition'"));
+    await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toEqual({
+      ok: false,
+      reason: 'unavailable',
+      message: recognizeMessages.unavailable,
+    });
+  });
+
+  it('Vision yerel modülü bağlı değilse okumadan elle eklemeye yönlendirir', async () => {
+    visionAvailable.mockReturnValue(false);
+    await expect(recognizePhoto('file:///a.jpg', 5000)).resolves.toEqual({
+      ok: false,
+      reason: 'unavailable',
+      message: recognizeMessages.unavailable,
+    });
+    expect(visionRecognize).not.toHaveBeenCalled();
+    expect(manipulate).not.toHaveBeenCalled();
+  });
+
+  it("iOS'ta ML Kit bağlı olsa bile Vision kullanılır", async () => {
+    visionRecognize.mockResolvedValue({ width: 10, height: 10, observations: [] });
+    await recognizePhoto('file:///a.jpg', 1000);
+    expect(visionRecognize).toHaveBeenCalledTimes(1);
+    expect(recognize).not.toHaveBeenCalled();
+  });
+
+  it('okuma hatasında yeniden çekme önerir', async () => {
+    visionRecognize.mockRejectedValue(new Error('Text recognition failed: boom'));
+    await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toMatchObject({ ok: false, reason: 'failed' });
+  });
+
+  it("Expo Go'da Vision'ı hiç çağırmaz", async () => {
+    constants.executionEnvironment = 'storeClient';
+    await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toMatchObject({ ok: false, reason: 'unavailable' });
+    expect(visionRecognize).not.toHaveBeenCalled();
+  });
+});
+
+describe('recognizePhoto (Android: ML Kit)', () => {
   it('ML Kit sonucunu öğrenci satırlarına çevirir', async () => {
     recognize.mockResolvedValue(mlkitResult);
     const outcome = await recognizePhoto('file:///a.jpg', 1000);
     expect(recognize).toHaveBeenCalledWith('file:///a.jpg');
+    expect(visionRecognize).not.toHaveBeenCalled();
     expect(outcome).toEqual({
       ok: true,
       uri: 'file:///a.jpg',
@@ -114,7 +213,7 @@ describe('recognizePhoto', () => {
     expect(recognize).not.toHaveBeenCalled();
   });
 
-  it('ML Kit olmadan alınan derlemede (NO_MLKIT=1) elle eklemeye yönlendirir', async () => {
+  it('ML Kit yerel modülü bağlı değilse elle eklemeye yönlendirir', async () => {
     delete nativeModules.TextRecognition;
     await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toEqual({
       ok: false,
@@ -151,5 +250,30 @@ describe('loadTextRecognition', () => {
   it('yerel modül yoksa null döner', () => {
     delete nativeModules.TextRecognition;
     expect(loadTextRecognition()).toBeNull();
+  });
+});
+
+
+describe('loadVision', () => {
+  it('yerel modül bağlıysa Vision modülünü döner', () => {
+    expect(loadVision()).toMatchObject({ recognizeText });
+  });
+
+  it('yerel modül yoksa null döner', () => {
+    visionAvailable.mockReturnValue(false);
+    expect(loadVision()).toBeNull();
+  });
+});
+
+describe('loadTextReader', () => {
+  it("iOS'ta Vision yoksa ML Kit'e düşmez, null döner", () => {
+    setPlatform('ios');
+    visionAvailable.mockReturnValue(false);
+    expect(loadTextReader()).toBeNull();
+  });
+
+  it("Android'de ML Kit yoksa null döner", () => {
+    delete nativeModules.TextRecognition;
+    expect(loadTextReader()).toBeNull();
   });
 });

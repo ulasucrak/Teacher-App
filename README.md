@@ -17,7 +17,7 @@ yoklama, ödev kontrolü, sözlü, derse katılım gibi formları hızlıca dold
 - **Öğrenciler:** elle ekleme ve düzenleme (ad Türkçe kurallarla düzenlenir, okul numarası
   isteğe bağlı), Türkçe karakterleri yok sayan arama, toplu seçip silme.
 - **Fotoğraftan öğrenci ekleme:** e-Okul sınıf listesinin ya da el yazısı bir listenin
-  fotoğrafı cihaz üzerinde okunur (ML Kit, internet gerekmez). Numara ve ad ayrıştırılır,
+  fotoğrafı cihaz üzerinde okunur (iOS'ta Apple Vision, Android'de ML Kit; internet gerekmez). Numara ve ad ayrıştırılır,
   sınıfta zaten olan ya da şüpheli satırlar işaretlenir; öğretmen listeyi gözden geçirip
   onaylar. Büyük harfli listelerde noktası okunmayan "İ" için yaygın "ı"lı ad/soyad listesi
   kullanılır (`src/features/ocr/trNames.ts`).
@@ -77,14 +77,24 @@ yoklama, ödev kontrolü, sözlü, derse katılım gibi formları hızlıca dold
 
 ## Çalıştırma
 
-ML Kit metin tanıma yerel (native) kod içerdiği için uygulama **Expo Go'da çalışmaz**;
+Metin tanıma yerel (native) kod içerdiği için uygulama **Expo Go'da çalışmaz**;
 fotoğraftan öğrenci ekleme yalnızca geliştirme derlemesinde (development build) ya da
 mağaza/dağıtım derlemesinde çalışır. Bir geliştirme derlemesi kullanın:
 
 ```bash
-npx expo run:ios       # iOS cihaz / Intel Mac simülatörü (Xcode gerekir)
+npx expo run:ios       # iOS cihaz ya da simülatör (Xcode gerekir)
 npx expo run:android   # Android emülatör / cihaz (Android Studio gerekir)
 ```
+
+**OCR motoru:** iOS'ta Apple Vision (`modules/vision-text-recognition`, yerel Expo modülü,
+Swift; ek kütüphane yok), Android'de Google ML Kit (`@react-native-ml-kit/text-recognition`).
+ML Kit iOS'ta kalıcı olarak derlemeden çıkarılmıştır (`react-native.config.js`): iOS
+pod'larında Apple Silicon simülatörü için arm64 dilimi olmadığından simülatör hedefi
+derlenemiyordu; Vision sistem çerçevesi olduğu için simülatörde ve gerçek cihazda aynı
+şekilde çalışır. Yerel modülü ya da bu ayarı değiştirdikten sonra `ios/` klasörünü
+`npx expo prebuild --clean -p ios` ile yeniden üretin (ya da `cd ios && pod install`). Vision ayarları (`src/features/ocr/vision.ts`): `.accurate`
+seviye, `tr-TR`, dil düzeltmesi açık. Vision, büyük harfle başlayan "İ", "Ö", "Ü" gibi
+harflerin işaretini kaçırabildiği için okunan adlar gözden geçirme ekranında kontrol edilir.
 
 İlk derlemeden sonra yalnızca JS değişikliklerinde Metro'yu başlatmanız yeterlidir:
 
@@ -100,19 +110,10 @@ eklenmez. Yerel ayarlar `app.json` ve eklenti yapılandırmalarıyla yapılır.
 
 ### Simülatörde çalıştırma
 
-ML Kit'in iOS pod'larında (GoogleMLKit) Apple Silicon simülatörü için arm64 dilimi yok; bu
-yüzden `npx expo run:ios` Apple Silicon Mac'lerde simülatör için derlenemez (gerçek cihazda
-sorun yoktur). Simülatörde denemek için ML Kit'siz bir geliştirme derlemesi alın:
-
-```bash
-npm run ios:sim
-```
-
-Bu komut `NO_MLKIT=1` ile `ios/` klasörünü temizden yeniden üretir (`react-native.config.js`
-ML Kit'i iOS'ta bağlamaz) ve uygulamayı çalıştırır. Bu derlemede fotoğraftan okuma yerine
-"bu sürümde yok" mesajı görünür; öğrenciler elle eklenebilir. Yalnızca geliştirme içindir:
-cihaz/dağıtım derlemesinden önce `ios/` klasörünü `npx expo prebuild --clean -p ios` ile
-(`NO_MLKIT` olmadan) yeniden üretin. Android etkilenmez.
+iOS'ta ML Kit bağlanmadığı için Apple Silicon Mac'lerde simülatör derlemesi için ek ayar
+gerekmez: `npx expo run:ios` (ya da `npm run ios`) simülatörde de çalışır ve fotoğraftan okuma
+simülatörde de Vision ile yapılır. Daha önce ML Kit'li üretilmiş bir `ios/` klasörü varsa
+önce `npx expo prebuild --clean -p ios` ile yeniden üretin.
 
 ### iOS 27 SDK ve UIScene
 
@@ -131,7 +132,6 @@ prebuild'i hatayla durdurur; Expo şablonu UIScene'i kendisi desteklediğinde ek
 |---|---|
 | `npm start` | Metro'yu geliştirme derlemesi için başlatır |
 | `npm run ios` | iOS için derler ve çalıştırır (`expo run:ios`) |
-| `npm run ios:sim` | ML Kit'siz iOS simülatör derlemesi (`NO_MLKIT=1`, yalnızca geliştirme) |
 | `npm run android` | Android için derler ve çalıştırır (`expo run:android`) |
 | `npm run typecheck` | TypeScript kontrolü (`tsc --noEmit`) |
 | `npm run lint` | ESLint (`expo lint`) |
@@ -148,15 +148,16 @@ src/
   features/auth/         Oturum sağlayıcısı, useAuth, Türkçe hata metinleri
   features/classes/      Sınıf listesi, sınıf ekle/düzenle, sınıf ayrıntısı
   features/students/     Öğrenci API'si, ad düzenleme, öğrenci formu
-  features/ocr/          Fotoğraftan öğrenci ekleme (ML Kit, ayrıştırıcı, gözden geçirme)
+  features/ocr/          Fotoğraftan öğrenci ekleme (Vision/ML Kit, ayrıştırıcı, gözden geçirme)
   features/forms/        Form listesi, form oluşturucu, kopyalama
   features/sessions/     Kayıt listesi ve kayıt doldurma ekranı, tarih yardımcıları
   lib/supabase.ts        Tipli Supabase istemcisi (createClient<Database>)
   types/database.ts      Veritabanı tipleri
   theme/                 Renk, yazı, boşluk, ikon boyutu, radius, gölge ve hareket token'ları
+modules/                 Yerel Expo modülleri (vision-text-recognition: iOS Apple Vision OCR)
 docs/DESIGN.md           Tasarım sistemi ve yazı dili kuralları
 supabase/                Göçler ve yerel Supabase yapılandırması
-react-native.config.js   NO_MLKIT=1 iken ML Kit'i iOS'ta bağlamaz (simülatör derlemesi)
+react-native.config.js   ML Kit'i iOS'ta bağlamaz (iOS'ta OCR Apple Vision ile yapılır)
 ```
 
 `@/` yolu `src/` klasörünü gösterir (`import { Button } from '@/components/ui'`).
