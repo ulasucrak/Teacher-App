@@ -1,12 +1,18 @@
 /**
- * Cihaz üstü metin tanıma (ML Kit, ücretsiz, çevrimdışı). Yalnızca geliştirme
- * derlemesinde çalışır; Expo Go'da yerel modül yoktur.
+ * Cihaz üstü metin tanıma (ücretsiz, çevrimdışı). iOS'ta Apple Vision
+ * (modules/vision-text-recognition), Android'de ML Kit. Yalnızca geliştirme
+ * derlemesinde çalışır; Expo Go'da yerel modüller yoktur.
+ *
+ * Yerel modüller tembel yüklenir: iOS'ta ML Kit hiç bağlanmaz (react-native.config.js),
+ * Expo Go'da hiçbiri yoktur; eksiklik açılışta çökertmez, kullanıcıya gösterilen
+ * "kullanılamıyor" yoluna düşer.
  */
-import TextRecognition from '@react-native-ml-kit/text-recognition';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { Platform } from 'react-native';
 
 import { parseOcrResult, type OcrResult, type ParsedStudent } from './parser';
+import { VISION_OPTIONS, visionToOcrResult } from './vision';
 
 /** OCR için yeterli ve hızlı genişlik. */
 export const OCR_MAX_WIDTH = 2000;
@@ -52,7 +58,19 @@ export async function preparePhoto(uri: string, width?: number): Promise<string>
   }
 }
 
-/** Fotoğrafı küçültür, ML Kit ile okur ve öğrenci satırlarına çevirir. */
+/** Fotoğrafı platformun metin tanıyıcısıyla okur; iki yol da ML Kit uyumlu OcrResult döner. */
+async function readText(uri: string): Promise<OcrResult> {
+  /* eslint-disable @typescript-eslint/no-require-imports -- tembel yükleme (dosya başındaki nota bakın) */
+  if (Platform.OS === 'ios') {
+    const { recognizeText } = require('../../../modules/vision-text-recognition') as typeof import('../../../modules/vision-text-recognition');
+    return visionToOcrResult(await recognizeText(uri, VISION_OPTIONS));
+  }
+  const { default: TextRecognition } = require('@react-native-ml-kit/text-recognition') as typeof import('@react-native-ml-kit/text-recognition');
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  return TextRecognition.recognize(uri);
+}
+
+/** Fotoğrafı küçültür, platformun tanıyıcısıyla okur ve öğrenci satırlarına çevirir. */
 export async function recognizePhoto(uri: string, width?: number): Promise<RecognizeOutcome> {
   if (isExpoGo()) return fail('unavailable');
 
@@ -64,7 +82,7 @@ export async function recognizePhoto(uri: string, width?: number): Promise<Recog
   }
 
   try {
-    const result: OcrResult = await TextRecognition.recognize(prepared);
+    const result = await readText(prepared);
     return { ok: true, students: parseOcrResult(result), uri: prepared };
   } catch (error) {
     return fail(isModuleUnavailableError(error) ? 'unavailable' : 'failed');

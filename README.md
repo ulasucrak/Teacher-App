@@ -17,7 +17,7 @@ yoklama, ödev kontrolü, sözlü, derse katılım gibi formları hızlıca dold
 - **Öğrenciler:** elle ekleme ve düzenleme (ad Türkçe kurallarla düzenlenir, okul numarası
   isteğe bağlı), Türkçe karakterleri yok sayan arama, toplu seçip silme.
 - **Fotoğraftan öğrenci ekleme:** e-Okul sınıf listesinin ya da el yazısı bir listenin
-  fotoğrafı cihaz üzerinde okunur (ML Kit, internet gerekmez). Numara ve ad ayrıştırılır,
+  fotoğrafı cihaz üzerinde okunur (iOS'ta Apple Vision, Android'de ML Kit; internet gerekmez). Numara ve ad ayrıştırılır,
   sınıfta zaten olan ya da şüpheli satırlar işaretlenir; öğretmen listeyi gözden geçirip
   onaylar. Büyük harfli listelerde noktası okunmayan "İ" için yaygın "ı"lı ad/soyad listesi
   kullanılır (`src/features/ocr/trNames.ts`).
@@ -77,7 +77,7 @@ yoklama, ödev kontrolü, sözlü, derse katılım gibi formları hızlıca dold
 
 ## Çalıştırma
 
-ML Kit metin tanıma yerel (native) kod içerdiği için uygulama **Expo Go'da çalışmaz**;
+Metin tanıma yerel (native) kod içerdiği için uygulama **Expo Go'da çalışmaz**;
 fotoğraftan öğrenci ekleme yalnızca geliştirme derlemesinde (development build) ya da
 mağaza/dağıtım derlemesinde çalışır. Bir geliştirme derlemesi kullanın:
 
@@ -85,6 +85,16 @@ mağaza/dağıtım derlemesinde çalışır. Bir geliştirme derlemesi kullanın
 npx expo run:ios       # iOS simülatör / cihaz (Xcode gerekir)
 npx expo run:android   # Android emülatör / cihaz (Android Studio gerekir)
 ```
+
+**OCR motoru:** iOS'ta Apple Vision (`modules/vision-text-recognition`, yerel Expo modülü,
+Swift; ek kütüphane yok), Android'de Google ML Kit (`@react-native-ml-kit/text-recognition`).
+ML Kit iOS'ta kalıcı olarak derlemeden çıkarılmıştır (`react-native.config.js`): iOS
+pod'larında Apple Silicon simülatörü için arm64 dilimi olmadığından simülatör hedefi
+derlenemiyordu; Vision sistem çerçevesi olduğu için simülatörde ve gerçek cihazda aynı
+şekilde çalışır. Yerel modülü ya da bu ayarı değiştirdikten sonra `cd ios && pod install`
+yeniden çalıştırılmalıdır. Vision ayarları (`src/features/ocr/vision.ts`): `.accurate`
+seviye, `tr-TR`, dil düzeltmesi açık. Vision, büyük harfle başlayan "İ", "Ö", "Ü" gibi
+harflerin işaretini kaçırabildiği için okunan adlar gözden geçirme ekranında kontrol edilir.
 
 İlk derlemeden sonra yalnızca JS değişikliklerinde Metro'yu başlatmanız yeterlidir:
 
@@ -120,12 +130,13 @@ src/
   features/auth/         Oturum sağlayıcısı, useAuth, Türkçe hata metinleri
   features/classes/      Sınıf listesi, sınıf ekle/düzenle, sınıf ayrıntısı
   features/students/     Öğrenci API'si, ad düzenleme, öğrenci formu
-  features/ocr/          Fotoğraftan öğrenci ekleme (ML Kit, ayrıştırıcı, gözden geçirme)
+  features/ocr/          Fotoğraftan öğrenci ekleme (Vision/ML Kit, ayrıştırıcı, gözden geçirme)
   features/forms/        Form listesi, form oluşturucu, kopyalama
   features/sessions/     Kayıt listesi ve kayıt doldurma ekranı, tarih yardımcıları
   lib/supabase.ts        Tipli Supabase istemcisi (createClient<Database>)
   types/database.ts      Veritabanı tipleri
   theme/                 Renk, yazı, boşluk, ikon boyutu, radius, gölge ve hareket token'ları
+modules/                 Yerel Expo modülleri (vision-text-recognition: iOS Apple Vision OCR)
 docs/DESIGN.md           Tasarım sistemi ve yazı dili kuralları
 supabase/                Göçler ve yerel Supabase yapılandırması
 ```

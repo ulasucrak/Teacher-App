@@ -1,12 +1,20 @@
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import Constants from 'expo-constants';
 import { ImageManipulator } from 'expo-image-manipulator';
+import { Platform } from 'react-native';
+
+import { recognizeText } from '../../../modules/vision-text-recognition';
 
 import { isModuleUnavailableError, preparePhoto, recognizeMessages, recognizePhoto } from './recognize';
 
 jest.mock('@react-native-ml-kit/text-recognition', () => ({
   __esModule: true,
   default: { recognize: jest.fn() },
+}));
+
+jest.mock('../../../modules/vision-text-recognition', () => ({
+  __esModule: true,
+  recognizeText: jest.fn(),
 }));
 
 jest.mock('expo-constants', () => ({
@@ -29,11 +37,25 @@ jest.mock('expo-image-manipulator', () => ({
 }));
 
 const recognize = TextRecognition.recognize as jest.Mock;
+const visionRecognize = recognizeText as jest.Mock;
 const manipulate = ImageManipulator.manipulate as jest.Mock;
 const constants = Constants as { executionEnvironment: string };
 
+let platformSpy: { restore: () => void } | undefined;
+
+function setPlatform(os: 'ios' | 'android') {
+  platformSpy?.restore();
+  platformSpy = jest.replaceProperty(Platform, 'OS', os);
+}
+
+afterEach(() => {
+  platformSpy?.restore();
+  platformSpy = undefined;
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
+  setPlatform('android');
   constants.executionEnvironment = 'bare';
   mockRenderAsync.mockResolvedValue({
     saveAsync: jest.fn().mockResolvedValue({ uri: 'file:///small.jpg' }),
@@ -78,11 +100,62 @@ describe('preparePhoto', () => {
   });
 });
 
-describe('recognizePhoto', () => {
+const visionResult = {
+  // 1000x2000 piksel; kutular normalize ve sol-alt orijinli (Vision). İlk satır sayfanın üstünde.
+  width: 1000,
+  height: 2000,
+  observations: [
+    { text: '2 | 245 | MEHMET KARA | Erkek', confidence: 1, x: 0, y: 0.9, width: 0.3, height: 0.01 },
+    { text: '1 | 112 | SELİN BAYEZİT | Kız', confidence: 1, x: 0, y: 0.95, width: 0.3, height: 0.01 },
+  ],
+};
+
+describe('recognizePhoto (iOS: Apple Vision)', () => {
+  beforeEach(() => setPlatform('ios'));
+
+  it("Vision'ı tr-TR ayarıyla çağırır, sonucu ML Kit biçimine çevirip öğrenci satırlarına ayırır", async () => {
+    visionRecognize.mockResolvedValue(visionResult);
+    const outcome = await recognizePhoto('file:///a.jpg', 1000);
+    expect(visionRecognize).toHaveBeenCalledWith('file:///a.jpg', { languages: ['tr-TR'], usesLanguageCorrection: true });
+    expect(recognize).not.toHaveBeenCalled();
+    // Satırlar Vision sırasına değil görsel konuma göre dizilir (üstteki satır önce).
+    expect(outcome).toEqual({
+      ok: true,
+      uri: 'file:///a.jpg',
+      students: [
+        { number: '112', fullName: 'Selin Bayezit', warnings: [] },
+        { number: '245', fullName: 'Mehmet Kara', warnings: [] },
+      ],
+    });
+  });
+
+  it('Vision modülü yoksa anlaşılır mesaj döner', async () => {
+    visionRecognize.mockRejectedValue(new Error("Cannot find native module 'VisionTextRecognition'"));
+    await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toEqual({
+      ok: false,
+      reason: 'unavailable',
+      message: recognizeMessages.unavailable,
+    });
+  });
+
+  it('okuma hatasında yeniden çekme önerir', async () => {
+    visionRecognize.mockRejectedValue(new Error('Text recognition failed: boom'));
+    await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toMatchObject({ ok: false, reason: 'failed' });
+  });
+
+  it("Expo Go'da Vision'ı hiç çağırmaz", async () => {
+    constants.executionEnvironment = 'storeClient';
+    await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toMatchObject({ ok: false, reason: 'unavailable' });
+    expect(visionRecognize).not.toHaveBeenCalled();
+  });
+});
+
+describe('recognizePhoto (Android: ML Kit)', () => {
   it('ML Kit sonucunu öğrenci satırlarına çevirir', async () => {
     recognize.mockResolvedValue(mlkitResult);
     const outcome = await recognizePhoto('file:///a.jpg', 1000);
     expect(recognize).toHaveBeenCalledWith('file:///a.jpg');
+    expect(visionRecognize).not.toHaveBeenCalled();
     expect(outcome).toEqual({
       ok: true,
       uri: 'file:///a.jpg',
