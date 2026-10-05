@@ -1,4 +1,5 @@
 import { SymbolView } from 'expo-symbols';
+import androidMedium from 'expo-symbols/androidWeights/medium';
 import type { ComponentProps } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -37,6 +38,9 @@ const icons = {
 
 export type IconName = keyof typeof icons;
 
+/** Android `weight` dizesini yok sayar; Material Symbols ağırlığı ayrıca verilmeli. */
+const symbolWeight = { ios: 'medium', android: androidMedium } as const;
+
 export interface IconProps {
   name: IconName;
   size?: number;
@@ -51,7 +55,7 @@ export function Icon({ name, size = 22, color = colors.text, style }: IconProps)
       name={icons[name]}
       size={size}
       tintColor={color}
-      weight="medium"
+      weight={symbolWeight}
       style={[{ width: size, height: size }, style]}
       accessible={false}
       importantForAccessibility="no"

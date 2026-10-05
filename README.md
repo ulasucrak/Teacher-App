@@ -28,6 +28,17 @@ yoklama, ödev kontrolü, sözlü, derse katılım gibi formları hızlıca dold
 
 3. Veritabanı şeması ve yerel Supabase kurulumu için `supabase/README.md` dosyasına bakın.
 
+4. Şifre sıfırlama bağlantısının uygulamayı açabilmesi için Supabase panelinde
+   **Authentication → URL Configuration → Redirect URLs** listesine şu adresi ekleyin:
+
+   ```
+   teacherapp://reset-password
+   ```
+
+   Geliştirme derlemesi farklı bir adres üretirse (örneğin `exp+teacher-app://…`), onu da
+   ekleyin; uygulama adresi `Linking.createURL('/reset-password')` ile oluşturur. Liste
+   dışındaki adresler Supabase tarafından reddedilir ve bağlantı "Site URL"e gider.
+
 ## Çalıştırma
 
 ML Kit metin tanıma yerel (native) kod içerdiği için uygulama **Expo Go'da çalışmaz**.
@@ -64,7 +75,7 @@ eklenmez. Yerel ayarlar `app.json` ve eklenti yapılandırmalarıyla yapılır.
 
 ```
 app/                 Ekranlar (expo-router)
-  (auth)/            Giriş, kayıt, şifre sıfırlama
+  (auth)/            Giriş, kayıt, şifre sıfırlama (bağlantı: /reset-password)
   (app)/             Oturum gerektiren ekranlar
 src/
   components/ui/     Tasarım sistemi bileşenleri (Screen, Button, OptionChip, …)

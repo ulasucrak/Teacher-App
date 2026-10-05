@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Banner, Button, TextField } from '@/components/ui';
 import { AuthPage, useAuth, validateEmail } from '@/features/auth';
@@ -12,15 +12,20 @@ export default function ForgotPasswordScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const inFlight = useRef(false);
 
   const submit = async () => {
+    // Klavye 'gönder' + buton aynı anda tetiklenebilir; state güncellenmeden önce de engelle.
+    if (submitting || inFlight.current) return;
     const emailError = validateEmail(email);
     setError(emailError);
     setFormError(null);
     if (emailError) return;
 
+    inFlight.current = true;
     setSubmitting(true);
     const result = await resetPassword(email);
+    inFlight.current = false;
     setSubmitting(false);
     if (result.ok) setSent(true);
     else setFormError(result.message);

@@ -15,15 +15,20 @@ export default function LoginScreen() {
   const [errors, setErrors] = useState<{ email?: string | null; password?: string | null }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const inFlight = useRef(false);
 
   const submit = async () => {
+    // Klavye 'gönder' + buton aynı anda tetiklenebilir; state güncellenmeden önce de engelle.
+    if (submitting || inFlight.current) return;
     const next = { email: validateEmail(email), password: validatePassword(password, 'login') };
     setErrors(next);
     setFormError(null);
     if (next.email || next.password) return;
 
+    inFlight.current = true;
     setSubmitting(true);
     const result = await signIn(email, password);
+    inFlight.current = false;
     setSubmitting(false);
     // Başarılıysa (auth) layout'u oturumu görüp uygulamaya yönlendirir.
     if (!result.ok) setFormError(result.message);

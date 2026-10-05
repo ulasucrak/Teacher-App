@@ -13,6 +13,8 @@ export const authMessages = {
   rateLimit: 'Çok fazla deneme yapıldı. Birkaç dakika bekleyip tekrar deneyin.',
   invalidEmail: 'E-posta adresi geçersiz. "ad@okul.com" biçiminde yazın.',
   sessionExpired: 'Oturumunuzun süresi doldu. Tekrar giriş yapın.',
+  linkExpired: 'Bağlantının süresi dolmuş ya da daha önce kullanılmış. Giriş ekranından yeni bir sıfırlama bağlantısı isteyin.',
+  samePassword: 'Yeni şifre eskisiyle aynı. Farklı bir şifre seçin.',
   unknown: 'İşlem tamamlanamadı. Tekrar deneyin; sorun sürerse uygulamayı yeniden başlatın.',
 } as const;
 
@@ -35,7 +37,11 @@ const codeMap: Record<string, AuthErrorKind> = {
   over_request_rate_limit: 'rateLimit',
   over_email_send_rate_limit: 'rateLimit',
   email_address_invalid: 'invalidEmail',
-  validation_failed: 'invalidEmail',
+  otp_expired: 'linkExpired',
+  flow_state_expired: 'linkExpired',
+  flow_state_not_found: 'linkExpired',
+  bad_code_verifier: 'linkExpired',
+  same_password: 'samePassword',
   session_expired: 'sessionExpired',
   session_not_found: 'sessionExpired',
   refresh_token_not_found: 'sessionExpired',
@@ -48,7 +54,10 @@ const messagePatterns: [RegExp, AuthErrorKind][] = [
   [/already registered|already exists/i, 'userAlreadyExists'],
   [/network request failed|failed to fetch|fetch failed|network error|timed? ?out/i, 'network'],
   [/rate limit|too many requests/i, 'rateLimit'],
-  [/invalid.*email|email.*invalid/i, 'invalidEmail'],
+  // Sıra önemli: "Email link is invalid…" e-posta hatası değil, bağlantı hatasıdır.
+  [/link is invalid|has expired|otp.*expired|token has expired/i, 'linkExpired'],
+  [/invalid.*email|email.*invalid|unable to validate email/i, 'invalidEmail'],
+  [/should be different from the old password/i, 'samePassword'],
 ];
 
 export function classifyAuthError(error: unknown): AuthErrorKind {
@@ -60,12 +69,25 @@ export function classifyAuthError(error: unknown): AuthErrorKind {
   if (typeof e.code === 'string' && codeMap[e.code]) {
     return codeMap[e.code] as AuthErrorKind;
   }
-  if (e.name === 'AuthRetryableFetchError' || e.name === 'TypeError' && /fetch|network/i.test(String(e.message))) {
+  // `validation_failed` birçok farklı doğrulama hatasını kapsar: yalnızca mesaja bakılır,
+  // tanınmazsa "bilinmeyen" döner (örneğin her zaman "e-posta geçersiz" denmez).
+  if (e.code === 'validation_failed') {
+    return typeof e.message === 'string' ? classifyMessage(e.message) : 'unknown';
+  }
+  if (isNetworkError(error)) {
     return 'network';
   }
   if (e.status === 429) return 'rateLimit';
   if (typeof e.message === 'string') return classifyMessage(e.message);
   return 'unknown';
+}
+
+/** Ağ hatası mı (sunucuya hiç ulaşılamadı)? */
+export function isNetworkError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as ErrorLike;
+  if (e.name === 'AuthRetryableFetchError') return true;
+  return typeof e.message === 'string' && /network request failed|failed to fetch|fetch failed|network error/i.test(e.message);
 }
 
 function classifyMessage(message: string): AuthErrorKind {

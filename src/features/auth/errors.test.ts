@@ -1,4 +1,4 @@
-import { authMessages, classifyAuthError, getAuthErrorMessage } from './errors';
+import { authMessages, classifyAuthError, getAuthErrorMessage, isNetworkError } from './errors';
 
 describe('classifyAuthError', () => {
   it('maps Supabase error codes', () => {
@@ -35,6 +35,39 @@ describe('classifyAuthError', () => {
     expect(classifyAuthError(undefined)).toBe('unknown');
     expect(classifyAuthError({ message: 'Something odd' })).toBe('unknown');
     expect(classifyAuthError(42)).toBe('unknown');
+  });
+});
+
+describe('validation_failed', () => {
+  it('uses the message to pick the right copy', () => {
+    expect(classifyAuthError({ code: 'validation_failed', message: 'Unable to validate email address: invalid format' })).toBe(
+      'invalidEmail',
+    );
+    expect(classifyAuthError({ code: 'validation_failed', message: 'Password should be at least 6 characters.' })).toBe(
+      'weakPassword',
+    );
+  });
+
+  it('falls back to unknown instead of claiming the e-mail is invalid', () => {
+    expect(classifyAuthError({ code: 'validation_failed', message: 'Invalid redirect_to parameter' })).toBe('unknown');
+    expect(classifyAuthError({ code: 'validation_failed' })).toBe('unknown');
+  });
+});
+
+describe('password recovery errors', () => {
+  it('maps expired or reused links', () => {
+    expect(classifyAuthError({ code: 'otp_expired' })).toBe('linkExpired');
+    expect(classifyAuthError({ message: 'Email link is invalid or has expired' })).toBe('linkExpired');
+    expect(classifyAuthError({ code: 'same_password' })).toBe('samePassword');
+  });
+});
+
+describe('isNetworkError', () => {
+  it('only matches transport failures', () => {
+    expect(isNetworkError({ name: 'AuthRetryableFetchError', message: 'x' })).toBe(true);
+    expect(isNetworkError(new TypeError('Network request failed'))).toBe(true);
+    expect(isNetworkError({ code: 'invalid_credentials', message: 'Invalid login credentials' })).toBe(false);
+    expect(isNetworkError(null)).toBe(false);
   });
 });
 

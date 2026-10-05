@@ -26,12 +26,15 @@ export default function RegisterScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmationSentTo, setConfirmationSentTo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const inFlight = useRef(false);
 
   const clear = (key: keyof FieldErrors) => {
     if (errors[key]) setErrors((e) => ({ ...e, [key]: null }));
   };
 
   const submit = async () => {
+    // Klavye 'gönder' + buton aynı anda tetiklenebilir; state güncellenmeden önce de engelle.
+    if (submitting || inFlight.current) return;
     const next: FieldErrors = {
       fullName: validateFullName(fullName),
       email: validateEmail(email),
@@ -41,8 +44,10 @@ export default function RegisterScreen() {
     setFormError(null);
     if (next.fullName || next.email || next.password) return;
 
+    inFlight.current = true;
     setSubmitting(true);
     const result = await signUp(email, password, fullName);
+    inFlight.current = false;
     setSubmitting(false);
     if (!result.ok) {
       setFormError(result.message);
