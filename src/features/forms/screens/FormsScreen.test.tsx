@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert, type AlertButton } from 'react-native';
 
 import * as api from '../api';
 import { Providers, makeForm } from '../test-utils';
@@ -130,5 +131,79 @@ describe('FormsScreen', () => {
       expect(mocked.copyFormToClasses).toHaveBeenCalledWith('form-1', expect.arrayContaining(['class-2', 'class-3'])),
     );
     expect(await screen.findByText('Form 2 sınıfa eklendi')).toBeOnTheScreen();
+  });
+
+  it('reports an error instead of "0 sınıfa eklendi" when nothing was copied', async () => {
+    mocked.listForms.mockResolvedValue([makeForm()]);
+    mocked.listClasses.mockResolvedValue([{ id: 'class-2', name: '6/A', grade: null, section: null }]);
+    mocked.copyFormToClasses.mockResolvedValue(0);
+    await renderScreen();
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Yoklama için diğer eylemler' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Diğer sınıflara kopyala' }));
+    await fireEvent.press(await screen.findByRole('checkbox', { name: '6/A' }));
+    await fireEvent.press(screen.getByRole('button', { name: '1 sınıfa kopyala' }));
+
+    expect(await screen.findByText(/Form hiçbir sınıfa eklenmedi/)).toBeOnTheScreen();
+    expect(screen.queryByText('Form 0 sınıfa eklendi')).toBeNull();
+    // Sınıf listesi açılışta ve hatadan sonra yeniden yüklenir.
+    await waitFor(() => expect(mocked.listClasses).toHaveBeenCalledTimes(2));
+  });
+
+  it('archives a form after confirmation', async () => {
+    mocked.listForms.mockResolvedValue([makeForm()]);
+    mocked.archiveForm.mockResolvedValue();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderScreen();
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Yoklama için diğer eylemler' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Arşivle' }));
+    await waitFor(() => expect(alert).toHaveBeenCalledWith('"Yoklama" arşivlensin mi?', expect.any(String), expect.any(Array)));
+    const buttons = alert.mock.calls[0]![2] as AlertButton[];
+    await act(async () => {
+      await buttons.find((b) => b.text === 'Arşivle')!.onPress!();
+    });
+
+    expect(mocked.archiveForm).toHaveBeenCalledWith('form-1', true);
+    expect(await screen.findByText('Form arşivlendi')).toBeOnTheScreen();
+    alert.mockRestore();
+  });
+
+  it('unarchives without confirmation and adapts the empty copy when all forms are archived', async () => {
+    mocked.listForms.mockResolvedValue([makeForm({ archived: true })]);
+    mocked.archiveForm.mockResolvedValue();
+    await renderScreen();
+
+    expect(await screen.findByText('Kullanımda form yok')).toBeOnTheScreen();
+    expect(screen.queryByText('Bu sınıfta henüz form yok')).toBeNull();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Arşivdeki formlar, 1' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Yoklama için diğer eylemler' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Arşivden çıkar' }));
+
+    await waitFor(() => expect(mocked.archiveForm).toHaveBeenCalledWith('form-1', false));
+    expect(await screen.findByText('Form arşivden çıkarıldı')).toBeOnTheScreen();
+  });
+
+  it('deletes a form only after the destructive confirmation', async () => {
+    mocked.listForms.mockResolvedValue([makeForm()]);
+    mocked.deleteForm.mockResolvedValue();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await renderScreen();
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Yoklama için diğer eylemler' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Formu sil' }));
+    await waitFor(() => expect(alert).toHaveBeenCalled());
+    expect(alert.mock.calls[0]![0]).toBe('"Yoklama" formu silinsin mi?');
+    expect(mocked.deleteForm).not.toHaveBeenCalled();
+
+    const buttons = alert.mock.calls[0]![2] as AlertButton[];
+    expect(buttons.find((b) => b.text === 'Formu sil')?.style).toBe('destructive');
+    await act(async () => {
+      await buttons.find((b) => b.text === 'Formu sil')!.onPress!();
+    });
+    expect(mocked.deleteForm).toHaveBeenCalledWith('form-1');
+    expect(await screen.findByText('Form silindi')).toBeOnTheScreen();
+    alert.mockRestore();
   });
 });

@@ -8,7 +8,7 @@ import type { FormRow } from '@/types/database';
 
 import { getForm, updateForm, type FormInput } from '../api';
 import { FormBuilder } from '../components/FormBuilder';
-import { errorMessage } from '../errors';
+import { errorMessage, getFormsErrorMessage } from '../errors';
 import { toDraftOptions } from '../options';
 import { firstParam, formsRoutes } from '../params';
 
@@ -29,7 +29,13 @@ export default function EditFormScreen() {
     let alive = true;
     getForm(formId).then(
       (form) => {
-        if (alive) setState({ kind: 'ready', form });
+        if (!alive) return;
+        // Adres başka bir sınıfı gösteriyorsa form bu sınıfta yok sayılır.
+        if (classId && form.class_id !== classId) {
+          setState({ kind: 'error', message: getFormsErrorMessage({ code: 'PGRST116' }, 'load') });
+        } else {
+          setState({ kind: 'ready', form });
+        }
       },
       (error: unknown) => {
         if (alive) setState({ kind: 'error', message: errorMessage(error, 'load') });
@@ -38,7 +44,7 @@ export default function EditFormScreen() {
     return () => {
       alive = false;
     };
-  }, [formId, attempt]);
+  }, [formId, classId, attempt]);
 
   const retry = () => {
     setState({ kind: 'loading' });

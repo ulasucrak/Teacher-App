@@ -103,9 +103,14 @@ export function moveOption<T>(list: readonly T[], index: number, direction: -1 |
 /**
  * Taslakları kaydedilecek seçeneklere çevirir. Var olan anahtarlar korunur
  * (etiket değişse bile); yeni seçeneklere etiketten bir kez anahtar üretilir.
+ * `reservedKeys`: formun kayıtlı (kaldırılmış olabilecek) anahtarları — eski
+ * işaretlemeler yanlış seçeneğe bağlanmasın diye asla yeniden kullanılmaz.
  */
-export function finalizeOptions(drafts: readonly DraftOption[]): FormOption[] {
-  const taken = new Set<string>();
+export function finalizeOptions(
+  drafts: readonly DraftOption[],
+  reservedKeys: Iterable<string> = [],
+): FormOption[] {
+  const taken = new Set<string>(reservedKeys);
   for (const d of drafts) if (d.key) taken.add(d.key);
   return drafts.map((d) => {
     const label = d.label.trim().replace(/\s+/g, ' ');

@@ -76,4 +76,12 @@ describe('EditFormScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Tekrar dene' }));
     expect(await screen.findByLabelText('Form adı')).toHaveDisplayValue('Yoklama');
   });
+
+  it('treats a form from another class as not found', async () => {
+    mocked.getForm.mockResolvedValue(makeForm({ class_id: 'class-other' }));
+    await renderScreen();
+
+    expect(await screen.findByText(/Form bulunamadı/)).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Form adı')).toBeNull();
+  });
 });

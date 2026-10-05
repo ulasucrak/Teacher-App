@@ -61,6 +61,14 @@ describe('finalizeOptions', () => {
   });
 });
 
+describe('finalizeOptions with saved keys', () => {
+  it('never reuses the key of a removed saved option', () => {
+    // "Gelmedi" (gelmedi) kaldırıldı, aynı adla yeni seçenek eklendi.
+    const result = finalizeOptions([draft('Geldi', 'geldi'), draft('Gelmedi')], ['geldi', 'gelmedi']);
+    expect(result.map((o) => o.key)).toEqual(['geldi', 'gelmedi_2']);
+  });
+});
+
 describe('moveOption', () => {
   it('moves up and down within bounds', () => {
     expect(moveOption(['a', 'b', 'c'], 1, -1)).toEqual(['b', 'a', 'c']);

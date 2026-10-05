@@ -1,5 +1,5 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, Button, EmptyState, Icon, ListRow, LoadingState, Screen, Sheet, Text, useToast } from '@/components/ui';
@@ -32,8 +32,14 @@ type ListState =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; forms: FormListItem[]; className: string | null };
 
-/** Sheet kapanış animasyonu bitmeden ikinci bir Modal/Alert açılmasın (iOS). */
-const AFTER_SHEET_MS = motion.duration.slow + 60;
+/**
+ * Sheet kapanış animasyonu (slow) bitip Modal ayrılmadan ikinci bir Modal/Alert
+ * açılmasın (iOS). Ortak Sheet kapanış bitişini bildirmediği için süreye geniş pay bırakılır.
+ */
+const AFTER_SHEET_MS = motion.duration.slow * 2;
+
+const COPY_NONE =
+  'Form hiçbir sınıfa eklenmedi. Seçtiğiniz sınıflar silinmiş olabilir; listeyi yenileyip tekrar deneyin.';
 
 /** /class/[classId]/forms — sınıfın formları, kopyalama ve başka sınıftan ekleme. */
 export default function FormsScreen() {
@@ -45,6 +51,14 @@ export default function FormsScreen() {
   const [state, setState] = useState<ListState>({ kind: 'loading' });
   const [showArchived, setShowArchived] = useState(false);
   const loadedOnce = useRef(false);
+  const sheetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (sheetTimer.current) clearTimeout(sheetTimer.current);
+    },
+    [],
+  );
 
   // Eylem menüsü
   const [actionForm, setActionForm] = useState<FormListItem | null>(null);
@@ -94,7 +108,11 @@ export default function FormsScreen() {
 
   const afterSheet = (fn: () => void) => {
     setActionForm(null);
-    setTimeout(fn, AFTER_SHEET_MS);
+    if (sheetTimer.current) clearTimeout(sheetTimer.current);
+    sheetTimer.current = setTimeout(() => {
+      sheetTimer.current = null;
+      fn();
+    }, AFTER_SHEET_MS);
   };
 
   const loadClasses = useCallback(async () => {
@@ -110,7 +128,9 @@ export default function FormsScreen() {
   const openCopy = (form: FormRow) => {
     setCopyError(null);
     setCopyForm(form);
-    if (classes === null) void loadClasses();
+    // Sınıf listesi her açılışta tazelenir (başka ekranda sınıf eklenmiş/silinmiş olabilir).
+    setClasses(null);
+    void loadClasses();
   };
 
   const confirmCopy = async (classIds: string[]) => {
@@ -119,6 +139,11 @@ export default function FormsScreen() {
     setCopyError(null);
     try {
       const n = await copyFormToClasses(copyForm.id, classIds);
+      if (n === 0) {
+        setCopyError(COPY_NONE);
+        void loadClasses();
+        return;
+      }
       setCopyForm(null);
       toast.show(`Form ${n} sınıfa eklendi`);
     } catch (error) {
@@ -148,7 +173,11 @@ export default function FormsScreen() {
     setAddingId(form.id);
     setAddError(null);
     try {
-      await copyFormToClasses(form.id, [classId]);
+      const n = await copyFormToClasses(form.id, [classId]);
+      if (n === 0) {
+        setAddError('Form bu sınıfa eklenmedi. Sınıf silinmiş olabilir; sınıf listesine dönüp tekrar deneyin.');
+        return;
+      }
       setSourceOpen(false);
       toast.show(`"${form.title}" bu sınıfa eklendi`);
       void load();
@@ -263,8 +292,17 @@ export default function FormsScreen() {
           <View>
             <EmptyState
               icon="book"
-              title="Bu sınıfta henüz form yok"
-              description="Formlar yoklama, ödev kontrolü ya da sözlü gibi listeleri hızlıca işaretlemenizi sağlar. Bir şablonla başlayın ya da kendi formunuzu oluşturun."
+              {...(archived.length > 0
+                ? {
+                    title: 'Kullanımda form yok',
+                    description:
+                      'Bu sınıfın tüm formları arşivde. Aşağıdaki arşivden bir formu geri alın ya da yeni bir form oluşturun.',
+                  }
+                : {
+                    title: 'Bu sınıfta henüz form yok',
+                    description:
+                      'Formlar yoklama, ödev kontrolü ya da sözlü gibi listeleri hızlıca işaretlemenizi sağlar. Bir şablonla başlayın ya da kendi formunuzu oluşturun.',
+                  })}
             />
             <Text variant="label" style={styles.templatesTitle}>
               Şablonla başlayın

@@ -127,7 +127,7 @@ export function FormBuilder({
         title: values.title.trim().replace(/\s+/g, ' '),
         subject: values.subject.trim() || null,
         description: values.description.trim() || null,
-        options: finalizeOptions(values.options),
+        options: finalizeOptions(values.options, originalOptions?.map((o) => o.key)),
       });
     } catch (error) {
       setSaveError(errorMessage(error, 'save'));
