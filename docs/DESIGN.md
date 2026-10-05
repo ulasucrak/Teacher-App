@@ -175,7 +175,7 @@ Avatar tam yuvarlak (`full`). Butonlar `sm` 10 — çiplerle aynı aile, kartlar
 | `Text` | Tüm metin | `variant`, `tone`; ham `<Text>` kullanma |
 | `Button` | Eylemler | `primary / secondary / ghost / destructive`, `loading`, `disabled`, `icon` |
 | `IconButton` | Üst çubuk, satır içi ikon eylemleri | 48 pt alan, zorunlu `accessibilityLabel` |
-| `Icon` | İkon | SF Symbols (iOS) / Material Symbols (Android), adlar `IconName` ile |
+| `Icon` | İkon | SF Symbols (iOS) / Material Symbols (Android), adlar `IconName` ile; boyut `iconSize` token'ı (`xs 14 · sm 16 · md 18 · lg 20 · xl 22 · xxl 24`), sabit sayı yok |
 | `TextField` | Form alanı | Etiket, yardım, hata metni; hata `kirmiziKalem` + ikon |
 | `OptionChip` | Form seçeneği | `tone`, `selected`, seçimde titreşim; ızgara için `OptionGrid` |
 | `Chip` | Filtre / etiket | Seçilebilir nötr çip |
@@ -187,7 +187,7 @@ Avatar tam yuvarlak (`full`). Butonlar `sm` 10 — çiplerle aynı aile, kartlar
 | `LoadingState` | Tam ekran yükleme | Gösterge + isteğe bağlı açıklama |
 | `StickyFooter` | Alttaki birincil eylem | Güvenli alan altı, üst ayraç |
 | `SegmentedTabs` | 2–4 görünüm arası geçiş | `tablist` rolü |
-| `Sheet` / `SelectField` | Seçici ("Sınıf seçin") | RN `Modal`, perdeye dokununca kapanır |
+| `Sheet` / `SelectField` | Seçici ("Sınıf seçin") | RN `Modal`, perdeye dokununca kapanır; ardından Alert/başka Sheet açmak için `onDismissed` (kapanış animasyonu bitince), zamanlayıcı yok |
 | `Banner` | Satır içi bilgi/hata | `info / success / warning / error` |
 | `ToastProvider` / `useToast` | Kısa onay ("Kaydedildi") | 2.4 sn, `polite` duyuru |
 | `RuledPaper` | Giriş ekranı zemini | Defter satırları + kenar çizgisi (yalnızca auth) |
