@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native (prebuild output — Continuous Native Generation)
+ios/
+android/
+.kotlin/
+*.orig.*
+
+# Signing credentials
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Env files (only .env.example is committed)
+.env*
+!.env.example
+
+# Tests
+coverage/
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
+
+
+# Reference screenshot (local only)
+/5A4CA7E9-5C0B-46E4-B556-18353D42120F.jpeg

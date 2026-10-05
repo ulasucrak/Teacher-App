@@ -1,0 +1,65 @@
+import { Pressable, StyleSheet, View } from 'react-native';
+
+import { colors, layout, radii, spacing } from '@/theme';
+
+import { Text } from './Text';
+
+export interface SegmentedTab<K extends string = string> {
+  key: K;
+  label: string;
+}
+
+export interface SegmentedTabsProps<K extends string> {
+  tabs: readonly SegmentedTab<K>[];
+  value: K;
+  onChange: (key: K) => void;
+  accessibilityLabel?: string;
+}
+
+/** 2–4 görünüm arasında geçiş. */
+export function SegmentedTabs<K extends string>({ tabs, value, onChange, accessibilityLabel }: SegmentedTabsProps<K>) {
+  return (
+    <View style={styles.track} accessibilityRole="tablist" accessibilityLabel={accessibilityLabel}>
+      {tabs.map((tab) => {
+        const selected = tab.key === value;
+        return (
+          <Pressable
+            key={tab.key}
+            onPress={() => onChange(tab.key)}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected }}
+            style={[styles.tab, selected && styles.selected]}
+          >
+            <Text variant="label" tone={selected ? 'default' : 'muted'} numberOfLines={1}>
+              {tab.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  track: {
+    flexDirection: 'row',
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.sm,
+    padding: spacing.xs,
+    gap: spacing.xs,
+  },
+  tab: {
+    flex: 1,
+    minHeight: layout.chipHeight - spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm - spacing.xxs,
+    paddingHorizontal: spacing.sm,
+  },
+  selected: {
+    backgroundColor: colors.surface,
+    borderWidth: layout.hairline,
+    borderColor: colors.rule,
+  },
+});
