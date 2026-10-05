@@ -17,13 +17,17 @@ export interface OptionChipProps {
   accessibilityLabel?: string;
   /** `radio`: tek seçim (varsayılan), `checkbox`: çoklu seçim. */
   selectionMode?: 'radio' | 'checkbox';
+  /** Kompakt (40 pt + hitSlop) — doldurma ekranında satır içi çipler. */
+  compact?: boolean;
+  /** Satırdaki boşluğu eşit paylaş (ızgara, varsayılan true) ya da içerik genişliğinde kal (false). */
+  fill?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
 /**
  * Form seçeneği. Seçiliyken kendi tonunun dolgusunu ve ✓ işaretini alır;
- * seçili değilken satır grisi zemin + ton noktası. Basınca seçim titreşimi.
+ * seçili değilken sıra grisi zemin + ton noktası. Basınca seçim titreşimi.
  */
 export function OptionChip({
   label,
@@ -33,6 +37,8 @@ export function OptionChip({
   disabled = false,
   accessibilityLabel,
   selectionMode = 'radio',
+  compact = false,
+  fill = true,
   style,
   testID,
 }: OptionChipProps) {
@@ -56,18 +62,20 @@ export function OptionChip({
   };
 
   return (
-    <Animated.View style={[styles.wrap, { transform: [{ scale }] }, style]}>
+    <Animated.View style={[fill && styles.fill, { transform: [{ scale }] }, style]}>
       <Pressable
         testID={testID}
         onPress={handlePress}
         onPressIn={() => animateTo(motion.pressScale)}
         onPressOut={() => animateTo(1)}
         disabled={disabled}
+        hitSlop={compact ? spacing.xs : 0}
         accessibilityRole={selectionMode}
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityState={{ checked: selected, selected, disabled }}
         style={({ pressed }) => [
           styles.chip,
+          compact ? styles.compact : styles.regular,
           {
             backgroundColor: selected
               ? pressed
@@ -89,7 +97,7 @@ export function OptionChip({
           variant="label"
           color={selected ? t.onSolid : colors.text}
           numberOfLines={1}
-          adjustsFontSizeToFit
+          adjustsFontSizeToFit={fill}
           minimumFontScale={0.8}
           maxFontSizeMultiplier={fontScale.dense}
           style={styles.label}
@@ -101,18 +109,20 @@ export function OptionChip({
   );
 }
 
+const DOT = spacing.sm - 1;
+
 const styles = StyleSheet.create({
-  wrap: { flex: 1 },
+  fill: { flex: 1 },
   chip: {
-    minHeight: layout.chipHeight,
     borderRadius: radii.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs + spacing.xxs,
-    paddingHorizontal: spacing.sm,
   },
-  dot: { width: 7, height: 7, borderRadius: radii.full },
+  regular: { minHeight: layout.chipHeight, paddingHorizontal: spacing.sm },
+  compact: { minHeight: layout.chipHeightCompact, paddingHorizontal: spacing.md },
+  dot: { width: DOT, height: DOT, borderRadius: radii.full },
   label: { flexShrink: 1 },
   disabled: { opacity: 0.5 },
 });

@@ -14,10 +14,18 @@ export interface SegmentedTabsProps<K extends string> {
   value: K;
   onChange: (key: K) => void;
   accessibilityLabel?: string;
+  /** Her sekmeye `${testIDPrefix}-${key}` verilir. */
+  testIDPrefix?: string;
 }
 
-/** 2–4 görünüm arasında geçiş. */
-export function SegmentedTabs<K extends string>({ tabs, value, onChange, accessibilityLabel }: SegmentedTabsProps<K>) {
+/** 2–4 görünüm arasında geçiş (değer seçimi için `SegmentedChoice`). */
+export function SegmentedTabs<K extends string>({
+  tabs,
+  value,
+  onChange,
+  accessibilityLabel,
+  testIDPrefix,
+}: SegmentedTabsProps<K>) {
   return (
     <View style={styles.track} accessibilityRole="tablist" accessibilityLabel={accessibilityLabel}>
       {tabs.map((tab) => {
@@ -25,11 +33,12 @@ export function SegmentedTabs<K extends string>({ tabs, value, onChange, accessi
         return (
           <Pressable
             key={tab.key}
+            testID={testIDPrefix ? `${testIDPrefix}-${tab.key}` : undefined}
             onPress={() => onChange(tab.key)}
             accessibilityRole="tab"
             accessibilityLabel={tab.label}
             accessibilityState={{ selected }}
-            style={[styles.tab, selected && styles.selected]}
+            style={({ pressed }) => [styles.tab, selected ? styles.selected : pressed && styles.pressed]}
           >
             <Text variant="label" tone={selected ? 'default' : 'muted'} numberOfLines={1}>
               {tab.label}
@@ -54,7 +63,7 @@ const styles = StyleSheet.create({
     minHeight: layout.chipHeight - spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.sm - spacing.xxs,
+    borderRadius: radii.sm - spacing.xs,
     paddingHorizontal: spacing.sm,
   },
   selected: {
@@ -62,4 +71,5 @@ const styles = StyleSheet.create({
     borderWidth: layout.hairline,
     borderColor: colors.rule,
   },
+  pressed: { backgroundColor: colors.rule },
 });

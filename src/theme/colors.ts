@@ -1,42 +1,65 @@
 /**
- * Renk token'ları — bkz. docs/DESIGN.md §3.
+ * Renk token'ları — bkz. docs/DESIGN_V2.md §3 ("Kalem kutusu").
  * Uygulamanın geri kalanında hex renk yazılmaz; buradan içe aktarılır.
  */
 
-/** Ana palet: çizgili defter + tükenmez kalem. */
+/** Ana palet: öğretmenin kalem kutusu. */
 export const palette = {
+  /** Kâğıt: sayfa ve yüzey zemini. */
   kagit: '#FFFFFF',
-  satir: '#EEF1F6',
-  murekkep: '#1A2033',
-  tukenmez: '#2343B5',
-  kirmiziKalem: '#B8292F',
-  kenarCizgisi: '#E5A3A3',
+  /** Sıra: okul sırasının soluk grisi — pasif yüzey, çip zemini, arama alanı. */
+  sira: '#F2F3F5',
+  /** Kurşun: kurşun kalem grafiti — ana metin. */
+  kursun: '#1D2129',
+  /** Sarı kalem: ekrandaki TEK birincil eylemin dolgusu (üstünde kurşun metin). */
+  sariKalem: '#FFC62E',
+  /** Mavi tükenmez: etkileşim rengi — bağlantı, seçim, odak, ikincil buton. */
+  tukenmez: '#2446B0',
+  /** Kırmızı kalem: hata ve yıkıcı eylem. */
+  kirmiziKalem: '#B3261E',
+
+  // Eski (v1) adlar — yeni kodda kullanmayın.
+  /** @deprecated v1 adı; `sira` kullanın. */
+  satir: '#F2F3F5',
+  /** @deprecated v1 adı; `kursun` kullanın. */
+  murekkep: '#1D2129',
+  /** @deprecated v1 kenar çizgisi; v2'de dekoratif çizgi yok. */
+  kenarCizgisi: '#E3E5EA',
 } as const;
 
 export const colors = {
   // Yüzeyler
   background: palette.kagit,
   surface: palette.kagit,
-  surfaceMuted: palette.satir,
+  surfaceMuted: palette.sira,
   // Metin
-  text: palette.murekkep,
-  textMuted: '#5A6478',
+  text: palette.kursun,
+  textMuted: '#5A6170',
   textInverse: palette.kagit,
   // Çizgiler
-  rule: '#DCE4F2',
-  border: '#7C869A',
-  marginRule: palette.kenarCizgisi,
-  // Eylem
+  /** Ayraç / ince çizgi (yalnızca yapı; metin için değil). */
+  rule: '#E3E5EA',
+  /** Giriş alanı kenarı (beyaz üstünde ≥3:1). */
+  border: '#868C98',
+  /** @deprecated v1 kırmızı kenar çizgisi; v2'de sessiz ayraç rengine eşlenir. */
+  marginRule: '#E3E5EA',
+  // Birincil eylem (sarı kalem) — ekranda yalnızca bir kez
+  accent: palette.sariKalem,
+  accentPressed: '#EDB300',
+  onAccent: palette.kursun,
+  // Etkileşim (mavi tükenmez)
   primary: palette.tukenmez,
-  primaryPressed: '#1B3591',
-  primaryMuted: '#DCE3F7',
-  primaryMutedText: '#4A5A9A',
+  primaryPressed: '#1B3690',
+  primaryMuted: '#E7ECFA',
+  primaryMutedText: '#4A5C9C',
+  // Yıkıcı
   danger: palette.kirmiziKalem,
-  dangerPressed: '#962127',
+  dangerPressed: '#911E17',
+  dangerMuted: '#FCE8E6',
   // Diğer
-  scrim: 'rgba(26, 32, 51, 0.4)',
-  shadow: palette.murekkep,
-  pressedOverlay: 'rgba(26, 32, 51, 0.06)',
+  scrim: 'rgba(29, 33, 41, 0.42)',
+  shadow: palette.kursun,
+  pressedOverlay: 'rgba(29, 33, 41, 0.06)',
 } as const;
 
 export type ToneName = 'positive' | 'neutral' | 'warning' | 'negative';
@@ -46,51 +69,52 @@ export interface ToneColors {
   solid: string;
   solidPressed: string;
   onSolid: string;
-  /** Açık zemin + ton metni (rozet, nokta, banner). */
+  /** Açık zemin + ton metni (rozet, nokta, banner) (≥4.5:1). */
   soft: string;
   onSoft: string;
 }
 
+/** Seçenek tonları: boya kalemleri. Kontrastlar docs/DESIGN_V2.md §3'te. */
 export const tones: Record<ToneName, ToneColors> = {
   positive: {
-    solid: '#1A7046',
-    solidPressed: '#135636',
+    solid: '#17744A',
+    solidPressed: '#115A39',
     onSolid: palette.kagit,
-    soft: '#E3F2EA',
-    onSoft: '#1A7046',
+    soft: '#E1F2E8',
+    onSoft: '#17744A',
   },
   neutral: {
     solid: palette.tukenmez,
-    solidPressed: '#1B3591',
+    solidPressed: '#1B3690',
     onSolid: palette.kagit,
-    soft: '#E8EDFB',
+    soft: '#E7ECFA',
     onSoft: palette.tukenmez,
   },
   warning: {
-    solid: '#9A5B00',
-    solidPressed: '#7A4800',
+    solid: '#9C5700',
+    solidPressed: '#7A4400',
     onSolid: palette.kagit,
-    soft: '#FBF0DA',
-    onSoft: '#9A5B00',
+    soft: '#FCEFD5',
+    onSoft: '#9C5700',
   },
   negative: {
     solid: palette.kirmiziKalem,
-    solidPressed: '#962127',
+    solidPressed: '#911E17',
     onSolid: palette.kagit,
-    soft: '#FBE7E7',
+    soft: '#FCE8E6',
     onSoft: palette.kirmiziKalem,
   },
 };
 
 /**
- * Avatar arka planları: soluk, mürekkep metinle ≥ 9:1.
+ * Avatar arka planları: soluk, kurşun metinle ≥ 9:1.
  * Sıra değişirse öğrenci renkleri değişir — sona ekleyin.
  */
 export const avatarColors = [
-  '#DDE7F7', // satır mavisi
+  '#DDE7F7', // mavi tükenmez soluk
   '#F6E3C4', // kraft kâğıt
-  '#DDEFE4', // tahta yeşili soluk
+  '#DDEFE4', // yeşil boya kalemi soluk
   '#F4DCDC', // pembe silgi
-  '#E6E0F3', // mor mürekkep soluk
+  '#E6E0F3', // mor boya kalemi soluk
   '#E2ECEE', // kurşun kalem grisi
 ] as const;

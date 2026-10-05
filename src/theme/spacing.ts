@@ -1,4 +1,4 @@
-/** 4 tabanlı boşluk ölçeği — bkz. docs/DESIGN.md §5. */
+/** 4 tabanlı boşluk ölçeği — bkz. docs/DESIGN_V2.md §5. */
 export const spacing = {
   xxs: 2,
   xs: 4,
@@ -12,26 +12,36 @@ export const spacing = {
 } as const;
 
 export const layout = {
-  /** Sayfa yatay iç boşluğu. */
-  pageX: spacing.lg,
+  /** Sayfa yatay iç boşluğu (v2: 20 — daha çok nefes). */
+  pageX: spacing.xl,
   /** En küçük dokunma alanı (iOS 44 pt / Android 48 dp → 48). */
   minTouch: 48,
-  /** Seçenek çipi yüksekliği. */
+  /** Seçenek çipi yüksekliği (ızgara). */
   chipHeight: 44,
-  /** Buton yüksekliği. */
-  buttonHeight: 52,
+  /** Kompakt seçenek çipi (ChipGroup); hitSlop ile 48'e tamamlanır. */
+  chipHeightCompact: 40,
+  /** Buton yüksekliği (tek elle, başparmak için büyük). */
+  buttonHeight: 56,
   /** Küçük buton (hitSlop ile 48'e tamamlanır). */
   buttonHeightSm: 40,
+  /** Yüzen birincil eylem (FAB) yüksekliği. */
+  fabHeight: 56,
+  /** FAB'lı listelerde son satırın FAB altında kalmaması için alt boşluk. */
+  fabClearance: 56 + 32,
   /** Üst çubuk yüksekliği. */
   headerHeight: 52,
-  /** Okul numarası sütunu genişliği (kenar çizgisinin solu). */
-  numberColumn: 36,
-  /** Kırmızı kenar çizgisi kalınlığı. */
-  marginRuleWidth: 1.5,
-  /** İkon kutusu (boş durum, başlık kartı). */
-  iconBox: 56,
+  /** Liste satırı en küçük yüksekliği. */
+  rowHeight: 64,
+  /** Okul numarası sütunu genişliği. */
+  numberColumn: 32,
+  /** @deprecated v1 kırmızı kenar çizgisi kalınlığı; v2'de çizgi ince ayraçtır. */
+  marginRuleWidth: 1,
+  /** İkon kutusu (boş durum, uygulama işareti). */
+  iconBox: 64,
   /** Okunabilir metin genişliği üst sınırı. */
   readableWidth: 420,
+  /** Sihirbaz adım çubuğu kalınlığı. */
+  stepBar: 4,
   hairline: 1,
   inputBorder: 1.5,
   inputBorderFocus: 2,

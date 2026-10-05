@@ -24,6 +24,8 @@ export interface SelectFieldProps<V extends string> {
   sheetTitle?: string;
   error?: string | null;
   disabled?: boolean;
+  /** Alana `testID`, seçeneklere `${testID}-${value}` verilir. */
+  testID?: string;
 }
 
 /** Açılır seçici: alan gibi görünür, dokununca alttan panel açar. */
@@ -36,6 +38,7 @@ export function SelectField<V extends string>({
   sheetTitle,
   error,
   disabled = false,
+  testID,
 }: SelectFieldProps<V>) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -44,6 +47,7 @@ export function SelectField<V extends string>({
     <View style={styles.container}>
       <Text variant="label">{label}</Text>
       <Pressable
+        testID={testID}
         onPress={() => setOpen(true)}
         disabled={disabled}
         accessibilityRole="button"
@@ -52,7 +56,7 @@ export function SelectField<V extends string>({
         accessibilityState={{ disabled, expanded: open }}
         style={({ pressed }) => [
           styles.trigger,
-          { borderColor: error ? colors.danger : colors.border },
+          error ? styles.error : null,
           pressed && styles.pressed,
           disabled && styles.disabled,
         ]}
@@ -75,6 +79,7 @@ export function SelectField<V extends string>({
             return (
               <Pressable
                 key={option.value}
+                testID={testID ? `${testID}-${option.value}` : undefined}
                 onPress={() => {
                   onChange(option.value);
                   setOpen(false);
@@ -111,17 +116,19 @@ const styles = StyleSheet.create({
     minHeight: layout.buttonHeight,
     borderRadius: radii.sm,
     borderWidth: layout.inputBorder,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md + spacing.xxs,
+    borderColor: 'transparent',
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: spacing.lg,
   },
+  error: { borderColor: colors.danger, borderWidth: layout.inputBorderFocus },
   value: { flex: 1 },
-  pressed: { backgroundColor: colors.surfaceMuted },
+  pressed: { backgroundColor: colors.rule },
   disabled: { opacity: 0.5 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: layout.minTouch + spacing.sm,
+    minHeight: layout.rowHeight - spacing.sm,
     borderBottomWidth: layout.hairline,
     borderBottomColor: colors.rule,
     paddingVertical: spacing.sm,
