@@ -12,6 +12,8 @@
 
 import { normalizeStudentName } from '@/features/students/name';
 
+import { isKnownDotlessName } from './trNames';
+
 // ---------------------------------------------------------------------------
 // Girdi tipleri (ML Kit `TextRecognitionResult` ile yapısal olarak uyumlu)
 // ---------------------------------------------------------------------------
@@ -243,6 +245,42 @@ interface NameToken {
 const TR_UPPER_DOTTED_I = 'İ';
 const VOWELS_RE = /[AEIİOÖUÜ]/g;
 
+/** Bir kelimede denenecek en fazla "I" sayısı (2^n yazım). */
+const MAX_AMBIGUOUS_I = 6;
+
+/**
+ * BÜYÜK HARF kelimedeki her "I" için "ı"/"i" seçeneklerini dener; bilinen bir ad/soyad
+ * yazımı (trNames) bulunursa onu BÜYÜK HARF olarak döndürür: "NAZLI" → "NAZLI" (ı),
+ * "SIDIKA" → "SIDIKA" (ı, ı). Bulunamazsa null.
+ */
+function knownDotlessSpelling(word: string): string | null {
+  const chars = Array.from(word);
+  const positions = chars.flatMap((c, i) => (c === 'I' ? [i] : []));
+  if (positions.length === 0 || positions.length > MAX_AMBIGUOUS_I) return null;
+  const lower = chars.map((c) => (c === 'I' ? c : c.toLocaleLowerCase(LOCALE)));
+  // En çok "ı" içeren yazımdan başlanır (liste yalnızca "ı"lı kelimeler içerir).
+  for (let mask = (1 << positions.length) - 1; mask >= 0; mask--) {
+    const candidate = [...lower];
+    positions.forEach((pos, bit) => {
+      candidate[pos] = mask & (1 << bit) ? 'ı' : 'i';
+    });
+    const spelled = candidate.join('');
+    if (isKnownDotlessName(spelled)) return spelled.toLocaleUpperCase(LOCALE);
+  }
+  return null;
+}
+
+/** Tek bir kelime parçası (tiresiz) için "I" → "İ" kararı; bkz. restoreDottedI. */
+function restoreDottedIPart(part: string): string {
+  if (!part.includes('I')) return part;
+  const known = knownDotlessSpelling(part);
+  if (known) return known;
+  const letters = part.replace(/[^\p{L}]/gu, '');
+  const vowels = letters.match(VOWELS_RE) ?? [];
+  if (vowels.length > 0 && vowels.every((v) => v === 'I')) return part;
+  return part.replace(/I/g, TR_UPPER_DOTTED_I);
+}
+
 /**
  * BÜYÜK HARF kelimede ASCII "I" → "İ" (ML Kit "İ"nin noktasını çoğu zaman kaçırır):
  * "SELIN" → "SELİN", "ILKER" → "İLKER".
@@ -250,17 +288,17 @@ const VOWELS_RE = /[AEIİOÖUÜ]/g;
  * Ödünleşim: gerçek "ı" içeren kelimeler de büyük harfte "I" olarak gelir ("IŞIK", "KILIÇ",
  * "YILMAZ"). Ayırt etmenin kesin yolu yok; "İ" tercih edilir, şu durumlar hariç:
  * - Fotoğrafın geri kalanında "İ" okunmuşsa (`dotAware`) OCR noktaları görüyordur; "I" gerçekten "ı"dır.
+ * - Kelimenin "ı"lı yazımı yaygın bir ad/soyadsa (trNames: "YILMAZ", "NAZLI", "AYDIN") o seçilir.
  * - Kelimenin tüm ünlüleri "I" ise ("KILIÇ", "IŞIK", "YILDIZ") büyük olasılıkla "ı"dır.
  * - Kelimenin tek harfi "I" ise dokunulmaz.
- * Yanlış kalan adları ("Yilmaz") öğretmen inceleme listesinde düzeltir.
+ * Tireli adlarda her parça ayrı değerlendirilir ("AYŞE-NAZLI"). Listede olmayan yanlış kalan
+ * adları öğretmen inceleme listesinde düzeltir.
  */
 function restoreDottedI(text: string, dotAware: boolean): string {
   if (dotAware || !text.includes('I')) return text;
   const letters = text.replace(/[^\p{L}]/gu, '');
   if (letters.length < 2 || letters !== letters.toLocaleUpperCase(LOCALE)) return text;
-  const vowels = letters.match(VOWELS_RE) ?? [];
-  if (vowels.length > 0 && vowels.every((v) => v === 'I')) return text;
-  return text.replace(/I/g, TR_UPPER_DOTTED_I);
+  return text.split('-').map(restoreDottedIPart).join('-');
 }
 
 /** Ad kelimesindeki OCR karışıklıklarını düzeltir: "Y1LMAZ" → "YILMAZ", "lŞIK" → "IŞIK". */
