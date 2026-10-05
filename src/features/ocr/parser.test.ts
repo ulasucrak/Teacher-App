@@ -371,6 +371,17 @@ describe('regresyon — numara ve başlık kuralları', () => {
     expect(result.map((s) => s.number)).toEqual(['112', '245', null, '389']);
   });
 
+  it('iki sayılı tabloda sıra numarası okunmamış satırın okul numarasını korur', () => {
+    const result = parseRows([
+      ['112', 'SELİN AK'],
+      ['2', '245', 'CAN ER'],
+      ['3', '318', 'DENİZ UÇAR'],
+      ['402', 'EMRE TAŞ'],
+      ['5', '517', 'ECE SU'],
+    ]);
+    expect(result.map((s) => s.number)).toEqual(['112', '245', '318', '402', '517']);
+  });
+
   it('"S.No | Adı Soyadı | Okul No" düzeninde okul numarasını sağdan alır', () => {
     const result = parseRows([
       ['S.No', 'Adı Soyadı', 'Okul No'],
