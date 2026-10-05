@@ -49,7 +49,7 @@ export function ClassesScreen() {
       </Text>
       {name ? (
         <Text variant="body" tone="muted">
-          {name}
+          {`Merhaba, ${name}`}
         </Text>
       ) : null}
       {classes.error && classes.status === 'ready' ? (

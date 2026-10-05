@@ -62,7 +62,7 @@ describe('ClassesScreen', () => {
     await renderScreen();
 
     expect(await screen.findByText('5/B')).toBeOnTheScreen();
-    expect(screen.getByText('Ayşe Yılmaz')).toBeOnTheScreen();
+    expect(screen.getByText('Merhaba, Ayşe Yılmaz')).toBeOnTheScreen();
     expect(screen.getByText('32 öğrenci')).toBeOnTheScreen();
     expect(screen.getByText('3 form')).toBeOnTheScreen();
     expect(screen.getByText('6. sınıf')).toBeOnTheScreen();
