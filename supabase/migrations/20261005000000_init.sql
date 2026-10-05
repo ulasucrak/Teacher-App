@@ -286,13 +286,18 @@ create policy form_entries_insert_own on public.form_entries
   for insert to authenticated
   with check (
     teacher_id = (select auth.uid())
+    -- session, form and student all owned by caller, and the student is in
+    -- the same class as the session's form
     and exists (
-      select 1 from public.form_sessions s
-      where s.id = session_id and s.teacher_id = (select auth.uid())
-    )
-    and exists (
-      select 1 from public.students st
-      where st.id = student_id and st.teacher_id = (select auth.uid())
+      select 1
+      from public.form_sessions s
+      join public.forms f on f.id = s.form_id
+      join public.students st on st.class_id = f.class_id
+      where s.id = session_id
+        and st.id = student_id
+        and s.teacher_id = (select auth.uid())
+        and f.teacher_id = (select auth.uid())
+        and st.teacher_id = (select auth.uid())
     )
   );
 
@@ -302,13 +307,18 @@ create policy form_entries_update_own on public.form_entries
   using (teacher_id = (select auth.uid()))
   with check (
     teacher_id = (select auth.uid())
+    -- session, form and student all owned by caller, and the student is in
+    -- the same class as the session's form
     and exists (
-      select 1 from public.form_sessions s
-      where s.id = session_id and s.teacher_id = (select auth.uid())
-    )
-    and exists (
-      select 1 from public.students st
-      where st.id = student_id and st.teacher_id = (select auth.uid())
+      select 1
+      from public.form_sessions s
+      join public.forms f on f.id = s.form_id
+      join public.students st on st.class_id = f.class_id
+      where s.id = session_id
+        and st.id = student_id
+        and s.teacher_id = (select auth.uid())
+        and f.teacher_id = (select auth.uid())
+        and st.teacher_id = (select auth.uid())
     )
   );
 
