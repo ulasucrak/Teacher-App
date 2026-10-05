@@ -2,17 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import {
-  colors,
-  fontScale,
-  layout,
-  motion,
-  radii,
-  spacing,
-  tones,
-  useReducedMotion,
-  type ToneName,
-} from '@/theme';
+import { colors, fontScale, iconSize, layout, motion, radii, spacing, tones, type ToneName, useReducedMotion } from '@/theme';
 
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -91,7 +81,7 @@ export function OptionChip({
         ]}
       >
         {selected ? (
-          <Icon name="check" size={14} color={t.onSolid} />
+          <Icon name="check" size={iconSize.xs} color={t.onSolid} />
         ) : (
           <View style={[styles.dot, { backgroundColor: t.solid }]} />
         )}

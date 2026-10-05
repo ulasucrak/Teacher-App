@@ -1,9 +1,9 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, Button, EmptyState, Icon, ListRow, LoadingState, Screen, Sheet, Text, useToast } from '@/components/ui';
-import { colors, layout, motion, spacing } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
 import type { FormRow } from '@/types/database';
 
 import {
@@ -32,12 +32,6 @@ type ListState =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; forms: FormListItem[]; className: string | null };
 
-/**
- * Sheet kapanış animasyonu (slow) bitip Modal ayrılmadan ikinci bir Modal/Alert
- * açılmasın (iOS). Ortak Sheet kapanış bitişini bildirmediği için süreye geniş pay bırakılır.
- */
-const AFTER_SHEET_MS = motion.duration.slow * 2;
-
 const COPY_NONE =
   'Form hiçbir sınıfa eklenmedi. Seçtiğiniz sınıflar silinmiş olabilir; listeyi yenileyip tekrar deneyin.';
 
@@ -51,14 +45,8 @@ export default function FormsScreen() {
   const [state, setState] = useState<ListState>({ kind: 'loading' });
   const [showArchived, setShowArchived] = useState(false);
   const loadedOnce = useRef(false);
-  const sheetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (sheetTimer.current) clearTimeout(sheetTimer.current);
-    },
-    [],
-  );
+  /** Eylem menüsü tamamen kapandıktan sonra açılacak ikinci Modal/Alert (iOS iki modalı üst üste açamaz). */
+  const afterSheetAction = useRef<(() => void) | null>(null);
 
   // Eylem menüsü
   const [actionForm, setActionForm] = useState<FormListItem | null>(null);
@@ -106,13 +94,21 @@ export default function FormsScreen() {
 
   // ----- Eylemler -----------------------------------------------------------
 
+  const openActions = (form: FormListItem) => {
+    // Önceki kapanıştan kalmış (henüz çalışmamış) bir eylem yeni menünün kapanışında tetiklenmesin.
+    afterSheetAction.current = null;
+    setActionForm(form);
+  };
+
   const afterSheet = (fn: () => void) => {
+    afterSheetAction.current = fn;
     setActionForm(null);
-    if (sheetTimer.current) clearTimeout(sheetTimer.current);
-    sheetTimer.current = setTimeout(() => {
-      sheetTimer.current = null;
-      fn();
-    }, AFTER_SHEET_MS);
+  };
+
+  const onActionSheetDismissed = () => {
+    const fn = afterSheetAction.current;
+    afterSheetAction.current = null;
+    fn?.();
   };
 
   const loadClasses = useCallback(async () => {
@@ -276,7 +272,7 @@ export default function FormsScreen() {
           accessibilityHint="Diğer sınıflarınızdaki bir formu bu sınıfa kopyalar"
           style={({ pressed }) => [styles.addOther, pressed && styles.addOtherPressed]}
         >
-          <FormIcon name="addFromOther" size={22} color={colors.primary} />
+          <FormIcon name="addFromOther" size={iconSize.xl} color={colors.primary} />
           <View style={styles.addOtherTexts}>
             <Text variant="label" tone="primary">
               Başka sınıftan form ekle
@@ -285,7 +281,7 @@ export default function FormsScreen() {
               Diğer sınıfınızdaki formu tek dokunuşla buraya ekleyin.
             </Text>
           </View>
-          <Icon name="chevronRight" size={16} color={colors.textMuted} />
+          <Icon name="chevronRight" size={iconSize.sm} color={colors.textMuted} />
         </Pressable>
 
         {active.length === 0 ? (
@@ -326,7 +322,7 @@ export default function FormsScreen() {
                 key={form.id}
                 form={form}
                 onOpen={() => router.push(formsRoutes.sessions(classId, form.id))}
-                onMore={() => setActionForm(form)}
+                onMore={() => openActions(form)}
               />
             ))}
           </View>
@@ -341,11 +337,11 @@ export default function FormsScreen() {
               accessibilityState={{ expanded: showArchived }}
               style={({ pressed }) => [styles.archiveToggle, pressed && styles.addOtherPressed]}
             >
-              <FormIcon name="archive" size={18} color={colors.textMuted} />
+              <FormIcon name="archive" size={iconSize.md} color={colors.textMuted} />
               <Text variant="label" tone="muted" style={styles.flex}>
                 Arşivdeki formlar ({archived.length})
               </Text>
-              <Icon name={showArchived ? 'chevronDown' : 'chevronRight'} size={16} color={colors.textMuted} />
+              <Icon name={showArchived ? 'chevronDown' : 'chevronRight'} size={iconSize.sm} color={colors.textMuted} />
             </Pressable>
             {showArchived
               ? archived.map((form) => (
@@ -354,7 +350,7 @@ export default function FormsScreen() {
                     form={form}
                     muted
                     onOpen={() => router.push(formsRoutes.sessions(classId, form.id))}
-                    onMore={() => setActionForm(form)}
+                    onMore={() => openActions(form)}
                   />
                 ))
               : null}
@@ -368,7 +364,12 @@ export default function FormsScreen() {
     <Screen title="Formlar" largeTitle scroll={state.kind !== 'loading'} footer={footer}>
       {content}
 
-      <Sheet visible={actionForm !== null} onClose={() => setActionForm(null)} title={actionForm?.title ?? ''}>
+      <Sheet
+        visible={actionForm !== null}
+        onClose={() => setActionForm(null)}
+        onDismissed={onActionSheetDismissed}
+        title={actionForm?.title ?? ''}
+      >
         {actionForm ? (
           <View>
             <ActionRow

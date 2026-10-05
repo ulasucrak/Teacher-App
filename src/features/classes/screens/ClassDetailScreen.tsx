@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
 import {
@@ -30,7 +30,7 @@ import {
   type ValidStudent,
 } from '@/features/students';
 import type { StudentRow } from '@/types/database';
-import { colors, layout, spacing } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
 
 import { deleteClass, getClass } from '../api';
 import { EntryCard } from '../components/EntryCard';
@@ -49,9 +49,24 @@ interface EditorState {
 
 /** `/class/[classId]`: sınıf başlığı, Formlar ve fotoğraftan ekleme girişleri, öğrenci listesi. */
 export function ClassDetailScreen() {
-  const { classId } = useLocalSearchParams<{ classId: string }>();
+  const { classId, imported } = useLocalSearchParams<{ classId: string; imported?: string }>();
   const router = useRouter();
   const toast = useToast();
+
+  // Fotoğraftan içe aktarma dönüşü: onayı bir kez göster, parametreyi temizle
+  // (geri gelindiğinde ya da yeniden çizimde tekrar gösterilmesin).
+  const shownImport = useRef<string | null>(null);
+  useEffect(() => {
+    if (!imported) {
+      shownImport.current = null;
+      return;
+    }
+    if (shownImport.current === imported) return;
+    shownImport.current = imported;
+    const count = Number(imported);
+    if (Number.isInteger(count) && count > 0) toast.show(`${count} öğrenci eklendi`);
+    router.setParams({ imported: undefined });
+  }, [imported, router, toast]);
 
   const loadClass = useCallback(() => getClass(classId), [classId]);
   const loadStudents = useCallback(() => listStudents(classId), [classId]);
@@ -412,7 +427,7 @@ export function ClassDetailScreen() {
                 selecting ? (
                   <SelectBox checked={isSelected} />
                 ) : (
-                  <Icon name="edit" size={18} color={colors.textMuted} />
+                  <Icon name="edit" size={iconSize.md} color={colors.textMuted} />
                 )
               }
               showChevron={false}

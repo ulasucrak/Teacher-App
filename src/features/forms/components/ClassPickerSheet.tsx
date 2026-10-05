@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, Button, Icon, LoadingState, Sheet, Text } from '@/components/ui';
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
 import { classLabel, type ClassSummary } from '../format';
 
@@ -124,7 +124,7 @@ function CheckRow({
       style={({ pressed }) => [styles.row, strong && styles.rowStrong, pressed && styles.pressed]}
     >
       <View style={[styles.box, checked && styles.boxChecked]}>
-        {checked ? <Icon name="check" size={16} color={colors.textInverse} /> : null}
+        {checked ? <Icon name="check" size={iconSize.sm} color={colors.textInverse} /> : null}
       </View>
       <Text variant={strong ? 'label' : 'bodyStrong'} style={styles.rowLabel}>
         {label}

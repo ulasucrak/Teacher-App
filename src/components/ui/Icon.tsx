@@ -3,7 +3,7 @@ import androidMedium from 'expo-symbols/androidWeights/medium';
 import type { ComponentProps } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { colors } from '@/theme';
+import { colors, iconSize } from '@/theme';
 
 type SymbolName = Exclude<ComponentProps<typeof SymbolView>['name'], string>;
 
@@ -49,7 +49,7 @@ export interface IconProps {
 }
 
 /** Dekoratif ikon; anlam taşıyorsa çevresindeki dokunulabilir öğeye etiket verin. */
-export function Icon({ name, size = 22, color = colors.text, style }: IconProps) {
+export function Icon({ name, size = iconSize.xl, color = colors.text, style }: IconProps) {
   return (
     <SymbolView
       name={icons[name]}

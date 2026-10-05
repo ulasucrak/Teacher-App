@@ -2,7 +2,7 @@ import { memo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon, IconButton, Text } from '@/components/ui';
-import { colors, fontScale, layout, radii, spacing, tones, typography } from '@/theme';
+import { colors, fontScale, iconSize, layout, radii, spacing, tones, typography } from '@/theme';
 
 import { issueLabels, type ReviewRow, type RowIssue } from '../review';
 
@@ -35,7 +35,7 @@ function ReviewRowItemBase({ row, issues, onChange, onRemove, autoFocus }: Revie
         style={styles.checkTouch}
       >
         <View testID={`checkbox-${row.id}`} style={[styles.checkbox, row.include ? styles.checkboxOn : styles.checkboxOff]}>
-          {row.include ? <Icon name="check" size={ICON_SMALL} color={colors.textInverse} /> : null}
+          {row.include ? <Icon name="check" size={iconSize.sm} color={colors.textInverse} /> : null}
         </View>
       </Pressable>
 
@@ -92,7 +92,7 @@ function ReviewRowItemBase({ row, issues, onChange, onRemove, autoFocus }: Revie
           <View style={styles.issues} accessibilityLiveRegion="polite">
             {issues.map((issue) => (
               <View key={issue} style={styles.issue}>
-                <Icon name="warning" size={ICON_SMALL} color={tones.warning.onSoft} />
+                <Icon name="warning" size={iconSize.sm} color={tones.warning.onSoft} />
                 <Text variant="caption" color={tones.warning.onSoft} style={styles.issueText}>
                   {issueLabels[issue]}
                 </Text>
@@ -110,7 +110,6 @@ export const ReviewRowItem = memo(ReviewRowItemBase);
 /** Onay kutusu: 24 pt kutu, 48 pt dokunma alanı içinde. */
 export const CHECKBOX_SIZE = spacing.xxl;
 /** Kutu içi ve uyarı satırı ikonu: metin satırı yüksekliğine oturur. */
-const ICON_SMALL = spacing.lg;
 
 const styles = StyleSheet.create({
   row: {

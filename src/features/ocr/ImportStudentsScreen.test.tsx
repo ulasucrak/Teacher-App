@@ -85,7 +85,8 @@ describe('ImportStudentsScreen', () => {
       { fullName: 'Selin Bayezit', number: '112' },
       { fullName: 'Efe', number: '401' },
     ]);
-    expect(mockToastShow).toHaveBeenCalledWith('2 öğrenci eklendi');
+    // Onay bildirimi sınıf ekranının işi (imported parametresi); burada çift gösterilmez.
+    expect(mockToastShow).not.toHaveBeenCalledWith('2 öğrenci eklendi');
     expect(mockDismissTo).toHaveBeenCalledWith({
       pathname: '/class/[classId]',
       params: { classId: 'c1', imported: '2' },

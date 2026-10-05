@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
 import { Button } from './Button';
 import { Icon, type IconName } from './Icon';
@@ -21,7 +21,7 @@ export function EmptyState({ icon = 'book', title, description, actionLabel, onA
   return (
     <View style={styles.container}>
       <View style={styles.iconBox}>
-        <Icon name={icon} size={26} color={colors.primary} />
+        <Icon name={icon} size={iconSize.xxl} color={colors.primary} />
       </View>
       <View style={styles.texts}>
         <Text variant="heading" accessibilityRole="header">

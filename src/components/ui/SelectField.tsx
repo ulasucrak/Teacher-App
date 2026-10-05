@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
 import { Icon } from './Icon';
 import { Sheet } from './Sheet';
@@ -60,7 +60,7 @@ export function SelectField<V extends string>({
         <Text variant="body" tone={selected ? 'default' : 'muted'} numberOfLines={1} style={styles.value}>
           {selected?.label ?? placeholder}
         </Text>
-        <Icon name="chevronDown" size={18} color={colors.textMuted} />
+        <Icon name="chevronDown" size={iconSize.md} color={colors.textMuted} />
       </Pressable>
       {error ? (
         <Text variant="caption" tone="danger" accessibilityLiveRegion="polite">
@@ -92,7 +92,7 @@ export function SelectField<V extends string>({
                     </Text>
                   ) : null}
                 </View>
-                {isSelected ? <Icon name="check" size={20} color={colors.primary} /> : null}
+                {isSelected ? <Icon name="check" size={iconSize.lg} color={colors.primary} /> : null}
               </Pressable>
             );
           })}

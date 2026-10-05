@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui';
-import { colors, layout, spacing } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
 
 import { FormIcon, type FormIconName } from './FormIcon';
 
@@ -24,7 +24,7 @@ export function ActionRow({ icon, label, hint, onPress, destructive = false }: A
       accessibilityHint={hint}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
     >
-      <FormIcon name={icon} size={20} color={destructive ? colors.danger : colors.primary} />
+      <FormIcon name={icon} size={iconSize.lg} color={destructive ? colors.danger : colors.primary} />
       <View style={styles.texts}>
         <Text variant="bodyStrong" color={color}>
           {label}

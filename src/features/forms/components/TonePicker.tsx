@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/ui';
-import { colors, layout, radii, spacing, tones } from '@/theme';
+import { colors, iconSize, layout, radii, spacing, tones } from '@/theme';
 import type { FormOptionTone } from '@/types/database';
 
 import { TONE_ORDER, toneLabels } from '../options';
@@ -39,7 +39,7 @@ export function TonePicker({ value, onChange, contextLabel }: TonePickerProps) {
               ]}
             >
               <View style={[styles.swatch, { backgroundColor: t.solid }]}>
-                {selected ? <Icon name="check" size={14} color={t.onSolid} /> : null}
+                {selected ? <Icon name="check" size={iconSize.xs} color={t.onSolid} /> : null}
               </View>
             </View>
           </Pressable>

@@ -1,39 +1,5 @@
 import type { ClassRow, FormRow } from '@/types/database';
 
-const MONTHS = [
-  'Ocak',
-  'Şubat',
-  'Mart',
-  'Nisan',
-  'Mayıs',
-  'Haziran',
-  'Temmuz',
-  'Ağustos',
-  'Eylül',
-  'Ekim',
-  'Kasım',
-  'Aralık',
-] as const;
-
-function parseIsoDate(value: string): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-  if (!m) return null;
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-}
-
-/** "2026-10-03" → "Bugün" / "Dün" / "3 Ekim" / "3 Ekim 2025". */
-export function formatSessionDate(value: string | null | undefined, today: Date = new Date()): string | null {
-  if (!value) return null;
-  const date = parseIsoDate(value);
-  if (!date) return null;
-  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const diffDays = Math.round((start.getTime() - date.getTime()) / 86_400_000);
-  if (diffDays === 0) return 'Bugün';
-  if (diffDays === 1) return 'Dün';
-  const base = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
-  return date.getFullYear() === today.getFullYear() ? base : `${base} ${date.getFullYear()}`;
-}
-
 export type ClassSummary = Pick<ClassRow, 'id' | 'name' | 'grade' | 'section'>;
 
 /** Sınıfın listede görünen adı. `name` zaten "5/B" gibi yazılmışsa aynen kullanılır. */

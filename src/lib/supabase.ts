@@ -4,6 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
+import type { Database } from '@/types/database';
+
 // EXPO_PUBLIC_* değişkenleri derleme anında gömülür; bu yüzden doğrudan okunur.
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -17,9 +19,7 @@ export const supabaseConfigError: string | null =
     ? null
     : 'Supabase bağlantı bilgileri eksik. Proje kökündeki .env dosyasına EXPO_PUBLIC_SUPABASE_URL ve EXPO_PUBLIC_SUPABASE_ANON_KEY değerlerini ekleyin (örnek: .env.example), sonra uygulamayı yeniden başlatın.';
 
-// TODO(wiring): T02 birleşince `createClient<Database>` ile tiplendirin
-// (`import type { Database } from '@/types/database'`).
-export const supabase = createClient(
+export const supabase = createClient<Database>(
   // Eksik yapılandırmada istemci yine oluşturulur ama kök layout ağ çağrısı yapılmadan durur.
   supabaseUrl ?? 'http://localhost:54321',
   supabaseAnonKey ?? 'missing-anon-key',

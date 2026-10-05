@@ -18,6 +18,9 @@ jest.mock('expo-router', () => {
   };
 });
 
+// iOS: Sheet'in kapanış bildirimi yerel Modal onDismiss'ten gelir; taklit bunu da tetikler.
+jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
+
 jest.mock('../api', () => ({
   listForms: jest.fn(),
   getClass: jest.fn(),

@@ -1,10 +1,11 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/ui';
+import { formatCompactDate } from '@/features/sessions/date';
 import { colors, layout, spacing } from '@/theme';
 
 import type { FormListItem } from '../api';
-import { formatSessionDate, optionCountLabel } from '../format';
+import { optionCountLabel } from '../format';
 import { FormIconButton } from './FormIcon';
 import { ToneDots } from './ToneDots';
 
@@ -20,7 +21,7 @@ interface FormListRowProps {
  * Satıra dokunmak oturumları açar; "⋯" diğer eylemleri.
  */
 export function FormListRow({ form, onOpen, onMore, muted = false }: FormListRowProps) {
-  const last = formatSessionDate(form.lastSessionDate);
+  const last = form.lastSessionDate ? formatCompactDate(form.lastSessionDate) : null;
   const count = optionCountLabel(form.options.length);
   const lastText = last ? `Son oturum: ${last}` : 'Henüz oturum yok';
   const a11y = [form.title, form.subject, count, lastText].filter(Boolean).join(', ');

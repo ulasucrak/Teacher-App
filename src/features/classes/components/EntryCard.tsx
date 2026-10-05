@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Card, Icon, Text, type IconName } from '@/components/ui';
-import { colors, layout, radii, spacing, tones } from '@/theme';
+import { colors, iconSize, layout, radii, spacing, tones } from '@/theme';
 
 export interface EntryCardProps {
   icon: IconName;
@@ -24,7 +24,7 @@ export function EntryCard({ icon, title, description, onPress, accessibilityHint
       style={styles.card}
     >
       <View style={[styles.iconBox, variant === 'muted' ? styles.iconBoxMuted : styles.iconBoxPrimary]}>
-        <Icon name={icon} size={24} color={colors.primary} />
+        <Icon name={icon} size={iconSize.xxl} color={colors.primary} />
       </View>
       <View style={styles.texts}>
         <Text variant="bodyStrong">{title}</Text>
@@ -32,7 +32,7 @@ export function EntryCard({ icon, title, description, onPress, accessibilityHint
           {description}
         </Text>
       </View>
-      <Icon name="chevronRight" size={16} color={colors.textMuted} />
+      <Icon name="chevronRight" size={iconSize.sm} color={colors.textMuted} />
     </Card>
   );
 }

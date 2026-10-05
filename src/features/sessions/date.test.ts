@@ -1,4 +1,4 @@
-import { addDays, formatSessionDate, formatShortDate, relativeDayLabel, todayIso } from './date';
+import { addDays, formatCompactDate, formatSessionDate, formatShortDate, relativeDayLabel, todayIso } from './date';
 
 describe('formatSessionDate', () => {
   it('formats a date in Turkish with the weekday', () => {
@@ -45,5 +45,23 @@ describe('relativeDayLabel', () => {
     expect(relativeDayLabel('2026-10-05', '2026-10-06')).toBe('Dün');
     expect(relativeDayLabel('2026-10-07', '2026-10-06')).toBe('Yarın');
     expect(relativeDayLabel('2026-10-01', '2026-10-06')).toBeNull();
+  });
+});
+
+describe('formatCompactDate', () => {
+  const today = '2026-10-06';
+
+  it('uses relative words for today and yesterday', () => {
+    expect(formatCompactDate('2026-10-06', today)).toBe('Bugün');
+    expect(formatCompactDate('2026-10-05', today)).toBe('Dün');
+  });
+
+  it('uses Turkish month names, adding the year only when different', () => {
+    expect(formatCompactDate('2026-02-14', today)).toBe('14 Şubat');
+    expect(formatCompactDate('2025-12-01', today)).toBe('1 Aralık 2025');
+  });
+
+  it('returns null for malformed values', () => {
+    expect(formatCompactDate('dün', today)).toBeNull();
   });
 });

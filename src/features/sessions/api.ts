@@ -8,12 +8,14 @@ import { supabase } from '@/lib/supabase';
 import type {
   ClassRow,
   FormEntryRow,
-  FormOption,
   FormRow,
   FormSessionRow,
   FormSessionStatus,
   StudentRow,
+  Tables,
 } from '@/types/database';
+
+import { parseOptions } from '@/features/forms/options';
 
 import type { UpsertEntry } from './draft';
 
@@ -50,12 +52,12 @@ export function toUserMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function toForm(row: Omit<FormRow, 'options'> & { options: unknown }): FormRow {
-  const options = Array.isArray(row.options) ? (row.options as FormOption[]) : [];
-  return { ...row, options };
+function toForm(row: Tables<'forms'>): FormRow {
+  return { ...row, options: parseOptions(row.options) };
 }
 
-function toSession(row: FormSessionRow | (Omit<FormSessionRow, 'status'> & { status: string })): FormSessionRow {
+/** Sınır dönüşümü: veritabanındaki `status` metni birleşim türüne daraltılır. */
+function toSession(row: Tables<'form_sessions'>): FormSessionRow {
   return { ...row, status: row.status === 'published' ? 'published' : 'draft' };
 }
 
@@ -65,19 +67,19 @@ export async function getForm(formId: string): Promise<FormRow> {
   const { data, error } = await supabase.from('forms').select('*').eq('id', formId).maybeSingle();
   if (error) fail(error, 'Form yüklenemedi. Sayfayı yenileyip tekrar deneyin.');
   if (!data) throw new SessionsApiError('Form bulunamadı. Silinmiş olabilir; form listesine dönün.');
-  return toForm(data as Omit<FormRow, 'options'> & { options: unknown });
+  return toForm(data);
 }
 
 export async function getClass(classId: string): Promise<ClassRow | null> {
   const { data, error } = await supabase.from('classes').select('*').eq('id', classId).maybeSingle();
   if (error) fail(error, 'Sınıf bilgisi yüklenemedi. Tekrar deneyin.');
-  return (data as ClassRow | null) ?? null;
+  return data ?? null;
 }
 
 export async function listStudents(classId: string): Promise<StudentRow[]> {
   const { data, error } = await supabase.from('students').select('*').eq('class_id', classId);
   if (error) fail(error, 'Öğrenciler yüklenemedi. Tekrar deneyin.');
-  return (data as StudentRow[] | null) ?? [];
+  return data ?? [];
 }
 
 export async function countStudents(classId: string): Promise<number> {
@@ -99,11 +101,6 @@ export interface SessionSummary {
   counts: Record<string, number>;
 }
 
-type SessionWithEntries = Omit<FormSessionRow, 'status'> & {
-  status: string;
-  form_entries: Pick<FormEntryRow, 'option_key'>[] | null;
-};
-
 /** Bir formun kayıtları, yeniden eskiye; her biri için doluluk ve seçenek sayımı. */
 export async function listSessions(formId: string): Promise<SessionSummary[]> {
   const { data, error } = await supabase
@@ -113,7 +110,7 @@ export async function listSessions(formId: string): Promise<SessionSummary[]> {
     .order('session_date', { ascending: false })
     .order('created_at', { ascending: false });
   if (error) fail(error, 'Kayıtlar yüklenemedi. Tekrar deneyin.');
-  return ((data as SessionWithEntries[] | null) ?? []).map(({ form_entries, ...row }) => {
+  return (data ?? []).map(({ form_entries, ...row }) => {
     const counts: Record<string, number> = {};
     let filled = 0;
     for (const e of form_entries ?? []) {
@@ -136,14 +133,14 @@ export async function createSession(input: {
     .select('*')
     .single();
   if (error) fail(error, 'Kayıt oluşturulamadı. Tekrar deneyin.');
-  return toSession(data as FormSessionRow);
+  return toSession(data);
 }
 
 export async function getSession(sessionId: string): Promise<FormSessionRow> {
   const { data, error } = await supabase.from('form_sessions').select('*').eq('id', sessionId).maybeSingle();
   if (error) fail(error, 'Kayıt yüklenemedi. Tekrar deneyin.');
   if (!data) throw new SessionsApiError('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.');
-  return toSession(data as FormSessionRow);
+  return toSession(data);
 }
 
 export async function updateSessionStatus(sessionId: string, status: FormSessionStatus): Promise<FormSessionRow> {
@@ -156,7 +153,7 @@ export async function updateSessionStatus(sessionId: string, status: FormSession
   if (error) {
     fail(error, status === 'published' ? 'Kayıt yayınlanamadı. Tekrar deneyin.' : 'Kayıt taslağa alınamadı. Tekrar deneyin.');
   }
-  return toSession(data as FormSessionRow);
+  return toSession(data);
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
@@ -169,7 +166,7 @@ export async function deleteSession(sessionId: string): Promise<void> {
 export async function listEntries(sessionId: string): Promise<FormEntryRow[]> {
   const { data, error } = await supabase.from('form_entries').select('*').eq('session_id', sessionId);
   if (error) fail(error, 'Girişler yüklenemedi. Tekrar deneyin.');
-  return (data as FormEntryRow[] | null) ?? [];
+  return data ?? [];
 }
 
 /** Yalnızca değişen satırlar gönderilir; (session_id, student_id) çakışmasında güncellenir. */

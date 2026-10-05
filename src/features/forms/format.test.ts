@@ -1,25 +1,6 @@
 import type { FormRow } from '@/types/database';
 
-import { classLabel, formatSessionDate, groupFormsByClass, sameTitle } from './format';
-
-describe('formatSessionDate', () => {
-  const today = new Date(2026, 9, 6);
-
-  it('uses relative words for today and yesterday', () => {
-    expect(formatSessionDate('2026-10-06', today)).toBe('Bugün');
-    expect(formatSessionDate('2026-10-05', today)).toBe('Dün');
-  });
-
-  it('uses Turkish month names, adding the year only when different', () => {
-    expect(formatSessionDate('2026-02-14', today)).toBe('14 Şubat');
-    expect(formatSessionDate('2025-12-01', today)).toBe('1 Aralık 2025');
-  });
-
-  it('returns null for missing or malformed values', () => {
-    expect(formatSessionDate(null, today)).toBeNull();
-    expect(formatSessionDate('dün', today)).toBeNull();
-  });
-});
+import { classLabel, groupFormsByClass, sameTitle } from './format';
 
 describe('classLabel', () => {
   it('prefers the class name, falls back to grade/section', () => {

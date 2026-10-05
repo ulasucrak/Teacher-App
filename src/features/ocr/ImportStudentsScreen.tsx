@@ -196,13 +196,13 @@ export function ImportStudentsScreen({ classId }: ImportStudentsScreenProps) {
     try {
       const count = await insertStudents(classId, drafts);
       allowLeave.current = true;
-      toast.show(`${count} öğrenci eklendi`);
+      // Onay bildirimi sınıf ekranında `imported` parametresiyle bir kez gösterilir.
       router.dismissTo({ pathname: '/class/[classId]', params: { classId, imported: String(count) } });
     } catch (error) {
       setNotice({ kind: 'error', message: error instanceof Error ? error.message : String(error) });
       setSaving(false);
     }
-  }, [classId, drafts, router, saving, toast]);
+  }, [classId, drafts, router, saving]);
 
   // -------------------------------------------------------------------- görünüm
   if (load.status === 'loading') {

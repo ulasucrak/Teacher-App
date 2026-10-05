@@ -20,5 +20,5 @@ export function ToneDots({ options }: { options: readonly Pick<FormOption, 'tone
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  dot: { width: 8, height: 8, borderRadius: radii.full },
+  dot: { width: spacing.sm, height: spacing.sm, borderRadius: radii.full },
 });

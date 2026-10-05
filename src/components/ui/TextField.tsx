@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, fontScale, layout, radii, spacing, typography } from '@/theme';
+import { colors, fontScale, iconSize, layout, radii, spacing, typography } from '@/theme';
 
 import { Icon } from './Icon';
 import { IconButton } from './IconButton';
@@ -86,13 +86,13 @@ export function TextField({
             accessibilityLabel={revealed ? 'Şifreyi gizle' : 'Şifreyi göster'}
             onPress={() => setRevealed((v) => !v)}
             color={colors.textMuted}
-            size={20}
+            size={iconSize.lg}
           />
         ) : null}
       </View>
       {hasError ? (
         <View style={styles.message} accessibilityLiveRegion="polite" accessibilityRole="alert">
-          <Icon name="error" size={16} color={colors.danger} />
+          <Icon name="error" size={iconSize.sm} color={colors.danger} />
           <Text variant="caption" tone="danger" style={styles.messageText}>
             {error}
           </Text>

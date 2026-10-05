@@ -34,8 +34,7 @@ export async function listForms(classId: string): Promise<FormListItem[]> {
     .order('session_date', { referencedTable: 'form_sessions', ascending: false })
     .limit(1, { referencedTable: 'form_sessions' });
   if (error) throw new FormsError(error, 'load');
-  const rows = (data ?? []) as (RawForm & { form_sessions: { session_date: string }[] | null })[];
-  return rows.map(({ form_sessions, ...raw }) => ({
+  return (data ?? []).map(({ form_sessions, ...raw }) => ({
     ...toFormRow(raw),
     lastSessionDate: form_sessions?.[0]?.session_date ?? null,
   }));
@@ -44,13 +43,13 @@ export async function listForms(classId: string): Promise<FormListItem[]> {
 export async function getForm(formId: string): Promise<FormRow> {
   const { data, error } = await supabase.from('forms').select('*').eq('id', formId).single();
   if (error) throw new FormsError(error, 'load');
-  return toFormRow(data as RawForm);
+  return toFormRow(data);
 }
 
 export async function getClass(classId: string): Promise<ClassRow> {
   const { data, error } = await supabase.from('classes').select('*').eq('id', classId).single();
   if (error) throw new FormsError(error, 'load');
-  return data as ClassRow;
+  return data;
 }
 
 /** Öğretmenin tüm sınıfları (RLS yalnızca kendi sınıflarını döndürür). */
@@ -60,7 +59,7 @@ export async function listClasses(): Promise<ClassSummary[]> {
     .select('id, name, grade, section')
     .order('name', { ascending: true });
   if (error) throw new FormsError(error, 'load');
-  return (data ?? []) as ClassSummary[];
+  return data ?? [];
 }
 
 export async function createForm(classId: string, input: FormInput): Promise<FormRow> {
@@ -71,7 +70,7 @@ export async function createForm(classId: string, input: FormInput): Promise<For
     .order('sort_order', { ascending: false })
     .limit(1);
   if (orderError) throw new FormsError(orderError, 'save');
-  const lastOrder = (last as Pick<RawForm, 'sort_order'>[] | null)?.[0]?.sort_order;
+  const lastOrder = last?.[0]?.sort_order;
   const sortOrder = typeof lastOrder === 'number' ? lastOrder + 1 : 0;
 
   const { data, error } = await supabase
@@ -80,13 +79,13 @@ export async function createForm(classId: string, input: FormInput): Promise<For
     .select('*')
     .single();
   if (error) throw new FormsError(error, 'save');
-  return toFormRow(data as RawForm);
+  return toFormRow(data);
 }
 
 export async function updateForm(formId: string, input: FormInput): Promise<FormRow> {
   const { data, error } = await supabase.from('forms').update(input).eq('id', formId).select('*').single();
   if (error) throw new FormsError(error, 'save');
-  return toFormRow(data as RawForm);
+  return toFormRow(data);
 }
 
 export async function archiveForm(formId: string, archived = true): Promise<void> {
@@ -121,9 +120,8 @@ export async function listOtherClassesForms(classId: string): Promise<ClassForms
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (error) throw new FormsError(error, 'load');
-  const rows = (data ?? []) as (RawForm & { classes: ClassSummary | null })[];
   return groupFormsByClass(
-    rows
+    (data ?? [])
       .filter((r): r is RawForm & { classes: ClassSummary } => Boolean(r.classes))
       .map(({ classes, ...raw }) => ({ ...toFormRow(raw), classInfo: classes })),
   );

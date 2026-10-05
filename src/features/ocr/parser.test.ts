@@ -9,6 +9,7 @@ import {
   type OcrBlock,
   type OcrResult,
 } from './parser';
+import { isKnownDotlessName, KNOWN_DOTLESS_COUNT } from './trNames';
 
 // ---------------------------------------------------------------------------
 // Fixture yardımcıları: ML Kit'in tablo sütunlarını ayrı bloklar olarak okumasını taklit eder.
@@ -296,6 +297,54 @@ describe('regresyon — noktasız İ', () => {
     expect(names(parseRows([['1', '12', 'SELİN YILMAZ'], ['2', '13', 'ASLI KOÇ']]))).toEqual([
       'Selin Yılmaz',
       'Aslı Koç',
+    ]);
+  });
+  it('İ okunmamış fotoğrafta bilinen ı\'lı ad ve soyadları korur', () => {
+    expect(
+      names(
+        parseRows([
+          ['1', '12', 'NAZLI YILMAZ'],
+          ['2', '13', 'ASLI AYDIN'],
+          ['3', '14', 'SIDIKA KIRMIZI'],
+          ['4', '15', 'EMRE ÇALIŞKAN'],
+        ]),
+      ),
+    ).toEqual(['Nazlı Yılmaz', 'Aslı Aydın', 'Sıdıka Kırmızı', 'Emre Çalışkan']);
+  });
+
+  it('listede olmayan adlarda İ varsayımını sürdürür, aynı satırda ikisini ayırır', () => {
+    expect(names(parseRows([['1', '12', 'ARIF SARI'], ['2', '13', 'MELIS ALTINTAŞ']]))).toEqual([
+      'Arif Sarı',
+      'Melis Altıntaş',
+    ]);
+  });
+
+  it('tireli adlarda her parçayı ayrı değerlendirir', () => {
+    expect(names(parseRows([['1', '12', 'AYŞE-NAZLI BAYINDIR'], ['2', '13', 'ALI-RIZA KAYA']]))).toEqual([
+      'Ayşe-Nazlı Bayındır',
+      'Ali-Rıza Kaya',
+    ]);
+  });
+});
+
+describe('trNames', () => {
+  it('yalnızca ı içeren, küçük harfli ~150 kelime tutar', () => {
+    expect(KNOWN_DOTLESS_COUNT).toBeGreaterThanOrEqual(140);
+    expect(isKnownDotlessName('yılmaz')).toBe(true);
+    expect(isKnownDotlessName('Yılmaz')).toBe(false);
+    expect(isKnownDotlessName('yilmaz')).toBe(false);
+  });
+
+  it('noktalı yazımı yaygın olan adları içermez', () => {
+    for (const name of ['ılayda', 'ılgın', 'ılkım', 'ıraz', 'ırmak', 'ılkay', 'ılhan']) {
+      expect(isKnownDotlessName(name)).toBe(false);
+    }
+  });
+
+  it('listede olmayan BÜYÜK HARF adlarda İ varsayımına döner', () => {
+    expect(names(parseRows([['1', '12', 'ILAYDA KAYA'], ['2', '13', 'IRMAK EREN']]))).toEqual([
+      'İlayda Kaya',
+      'İrmak Eren',
     ]);
   });
 });

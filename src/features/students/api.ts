@@ -20,7 +20,7 @@ export interface StudentPatch {
 export async function listStudents(classId: string): Promise<StudentRow[]> {
   const { data, error } = await supabase.from('students').select(STUDENT_COLUMNS).eq('class_id', classId);
   if (error) throw error;
-  return sortStudents((data ?? []) as StudentRow[]);
+  return sortStudents(data ?? []);
 }
 
 /** Birden çok öğrenciyi tek istekte ekler (fotoğraftan içe aktarma da kullanabilir). */
@@ -29,7 +29,7 @@ export async function addStudents(classId: string, students: readonly NewStudent
   const rows = students.map((s) => ({ class_id: classId, full_name: s.full_name, number: s.number ?? null }));
   const { data, error } = await supabase.from('students').insert(rows).select(STUDENT_COLUMNS);
   if (error) throw error;
-  return (data ?? []) as StudentRow[];
+  return data ?? [];
 }
 
 export async function addStudent(classId: string, student: NewStudent): Promise<StudentRow> {
@@ -46,7 +46,7 @@ export async function updateStudent(studentId: string, patch: StudentPatch): Pro
     .select(STUDENT_COLUMNS)
     .single();
   if (error) throw error;
-  return data as StudentRow;
+  return data;
 }
 
 /** Öğrencileri ve (veritabanında cascade ile) form kayıtlarını siler. */
