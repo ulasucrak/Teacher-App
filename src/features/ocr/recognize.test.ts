@@ -16,9 +16,15 @@ jest.mock('expo-constants', () => ({
 }));
 
 const mockRenderAsync = jest.fn();
-const mockResize = jest.fn(() => ({ renderAsync: mockRenderAsync }));
+const mockContextRelease = jest.fn();
+const mockImageRelease = jest.fn();
+const mockResize = jest.fn();
 jest.mock('expo-image-manipulator', () => ({
-  ImageManipulator: { manipulate: jest.fn(() => ({ resize: mockResize })) },
+  ImageManipulator: { manipulate: jest.fn(() => {
+    const context = { resize: mockResize, renderAsync: mockRenderAsync, release: mockContextRelease };
+    mockResize.mockReturnValue(context);
+    return context;
+  }) },
   SaveFormat: { JPEG: 'jpeg' },
 }));
 
@@ -29,7 +35,10 @@ const constants = Constants as { executionEnvironment: string };
 beforeEach(() => {
   jest.clearAllMocks();
   constants.executionEnvironment = 'bare';
-  mockRenderAsync.mockResolvedValue({ saveAsync: jest.fn().mockResolvedValue({ uri: 'file:///small.jpg' }) });
+  mockRenderAsync.mockResolvedValue({
+    saveAsync: jest.fn().mockResolvedValue({ uri: 'file:///small.jpg' }),
+    release: mockImageRelease,
+  });
 });
 
 const mlkitResult = {
@@ -56,6 +65,16 @@ describe('preparePhoto', () => {
     await expect(preparePhoto('file:///big.jpg', 4032)).resolves.toBe('file:///small.jpg');
     expect(manipulate).toHaveBeenCalledWith('file:///big.jpg');
     expect(mockResize).toHaveBeenCalledWith({ width: 2000 });
+  });
+
+  it('işlem bitince yerel görüntü bağlamını bırakır (regresyon)', async () => {
+    await preparePhoto('file:///big.jpg', 4032);
+    expect(mockImageRelease).toHaveBeenCalledTimes(1);
+    expect(mockContextRelease).toHaveBeenCalledTimes(1);
+
+    mockRenderAsync.mockRejectedValueOnce(new Error('decode'));
+    await expect(preparePhoto('file:///big.jpg', 4032)).rejects.toThrow('decode');
+    expect(mockContextRelease).toHaveBeenCalledTimes(2);
   });
 });
 

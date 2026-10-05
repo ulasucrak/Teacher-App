@@ -189,9 +189,9 @@ describe('parseOcrResult — e-Okul listesi', () => {
   });
 
   it('adlardaki rakam ve l/I karışıklığını düzeltip rakamlı satırı uyarır', () => {
-    const rows = [['1', '402', 'AHMET Y1LMAZ'], ['2', '403', 'lŞIK KAYA'], ['3', '404', 'SeIin Ak0n']];
+    const rows = [['1', '402', 'AHMET Y1LDIZ'], ['2', '403', 'lŞIK KAYA'], ['3', '404', 'SeIin Ak0n']];
     const result = parseRows(rows);
-    expect(names(result)).toEqual(['Ahmet Yılmaz', 'Işık Kaya', 'Selin Akon']);
+    expect(names(result)).toEqual(['Ahmet Yıldız', 'Işık Kaya', 'Selin Akon']);
     expect(result[0].warnings).toContain('digits');
     expect(result[1].warnings).toEqual([]);
     expect(result[2].warnings).toContain('digits');
@@ -218,7 +218,7 @@ describe('parseOcrResult — e-Okul listesi', () => {
   });
 
   it('okul numarası adın sağındaysa onu kullanır', () => {
-    expect(parseRows([['NAZLI DOĞAN', '612']])).toEqual([{ number: '612', fullName: 'Nazlı Doğan', warnings: [] }]);
+    expect(parseRows([['EBRU DOĞAN', '612']])).toEqual([{ number: '612', fullName: 'Ebru Doğan', warnings: [] }]);
   });
 
   it('kısa ve tek kelimelik adları düşük güvenle işaretler', () => {
@@ -270,6 +270,74 @@ describe('parsePlainText — düz liste', () => {
   it('ikinci sayfanın ardışık sıra numaralarını da sıra numarası sayar', () => {
     const text = '31. Kaan Er\n32. Lale Su\n33. Mina Ay';
     expect(parsePlainText(text).every((s) => s.number === null)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// İnceleme sonrası regresyonlar
+// ---------------------------------------------------------------------------
+
+describe('regresyon — noktasız İ', () => {
+  it('BÜYÜK HARF kelimede ASCII I harfini İ yapar', () => {
+    expect(names(parseRows([['1', '12', 'SELIN BAYEZIT'], ['2', '13', 'ILKER EREN']]))).toEqual([
+      'Selin Bayezit',
+      'İlker Eren',
+    ]);
+  });
+
+  it('ünlüleri yalnızca I olan kelimeleri ı olarak bırakır', () => {
+    expect(names(parseRows([['1', '12', 'IŞIK KILIÇ'], ['2', '13', 'ALI YILDIZ']]))).toEqual([
+      'Işık Kılıç',
+      'Ali Yıldız',
+    ]);
+  });
+
+  it('fotoğrafta İ okunmuşsa I harflerine dokunmaz', () => {
+    expect(names(parseRows([['1', '12', 'SELİN YILMAZ'], ['2', '13', 'ASLI KOÇ']]))).toEqual([
+      'Selin Yılmaz',
+      'Aslı Koç',
+    ]);
+  });
+});
+
+describe('regresyon — numara ve başlık kuralları', () => {
+  it('numaralı satırı başlık kelimesi yüzünden atmaz', () => {
+    expect(parseRows([['1', '245', 'MEHMET ALİ SIRA']])).toEqual([
+      { number: '245', fullName: 'Mehmet Ali Sıra', warnings: [] },
+    ]);
+  });
+
+  it('1 ile başlamayan ardışık tek sayıları sıra numarası sayar', () => {
+    const result = parseRows([['33', 'KAAN ER'], ['34', 'LALE SU'], ['35', 'MİNA AY']]);
+    expect(result.map((s) => s.number)).toEqual([null, null, null]);
+  });
+
+  it('çoğu satırı iki sayılı tabloda tek sayılı satırın numarası sıra numarasıdır', () => {
+    const result = parseRows([
+      ['1', '112', 'SELİN AK'],
+      ['2', '245', 'CAN ER'],
+      ['3', 'DENİZ UÇAR'],
+      ['4', '389', 'EMRE TAŞ'],
+    ]);
+    expect(result.map((s) => s.number)).toEqual(['112', '245', null, '389']);
+  });
+
+  it('"S.No | Adı Soyadı | Okul No" düzeninde okul numarasını sağdan alır', () => {
+    const result = parseRows([
+      ['S.No', 'Adı Soyadı', 'Okul No'],
+      ['1', 'SELİN AK', '712'],
+      ['2', 'CAN ER', '688'],
+      ['3', 'DENİZ UÇAR', '701'],
+    ]);
+    expect(result.map((s) => [s.number, s.fullName])).toEqual([
+      ['712', 'Selin Ak'],
+      ['688', 'Can Er'],
+      ['701', 'Deniz Uçar'],
+    ]);
+  });
+
+  it('sondaki cinsiyet sütunundan en fazla bir kelime atar', () => {
+    expect(names(parseRows([['1', '12', 'AYŞE NUR E', 'Kız']]))).toEqual(['Ayşe Nur E']);
   });
 });
 

@@ -252,8 +252,31 @@ interface NameToken {
   hadDigits: boolean;
 }
 
-/** Ad kelimesindeki OCR karışıklıklarını düzeltir: "Y1LMAZ" → "YILMAZ", "AlŞE" → "AIŞE". */
-function cleanNameToken(token: string): NameToken | null {
+const TR_UPPER_DOTTED_I = 'İ';
+const VOWELS_RE = /[AEIİOÖUÜ]/g;
+
+/**
+ * BÜYÜK HARF kelimede ASCII "I" → "İ" (ML Kit "İ"nin noktasını çoğu zaman kaçırır):
+ * "SELIN" → "SELİN", "ILKER" → "İLKER".
+ *
+ * Ödünleşim: gerçek "ı" içeren kelimeler de büyük harfte "I" olarak gelir ("IŞIK", "KILIÇ",
+ * "YILMAZ"). Ayırt etmenin kesin yolu yok; "İ" tercih edilir, şu durumlar hariç:
+ * - Fotoğrafın geri kalanında "İ" okunmuşsa (`dotAware`) OCR noktaları görüyordur; "I" gerçekten "ı"dır.
+ * - Kelimenin tüm ünlüleri "I" ise ("KILIÇ", "IŞIK", "YILDIZ") büyük olasılıkla "ı"dır.
+ * - Kelimenin tek harfi "I" ise dokunulmaz.
+ * Yanlış kalan adları ("Yilmaz") öğretmen inceleme listesinde düzeltir.
+ */
+function restoreDottedI(text: string, dotAware: boolean): string {
+  if (dotAware || !text.includes('I')) return text;
+  const letters = text.replace(/[^\p{L}]/gu, '');
+  if (letters.length < 2 || letters !== letters.toLocaleUpperCase(LOCALE)) return text;
+  const vowels = letters.match(VOWELS_RE) ?? [];
+  if (vowels.length > 0 && vowels.every((v) => v === 'I')) return text;
+  return text.replace(/I/g, TR_UPPER_DOTTED_I);
+}
+
+/** Ad kelimesindeki OCR karışıklıklarını düzeltir: "Y1LMAZ" → "YILMAZ", "lŞIK" → "IŞIK". */
+function cleanNameToken(token: string, dotAware = true): NameToken | null {
   let text = token.replace(/[^\p{L}\d'’\-.]/gu, '').replace(/^[-'.’]+|[-'’]+$/g, '');
   // Tek harf + nokta baş harftir ("M."), diğer noktalar gürültü.
   if (!/^\p{L}\.$/u.test(text)) text = text.replace(/\./g, '');
@@ -282,11 +305,14 @@ function cleanNameToken(token: string): NameToken | null {
     // Küçük harf kelimenin ortasındaki "I" aslında "l": "SeIin" → "Selin".
     text = text.replace(/(?<=\p{Ll})I|I(?=\p{Ll}{2})(?<!^I)/gu, 'l');
   }
-  return { text, hadDigits };
+  return { text: restoreDottedI(text, dotAware), hadDigits };
 }
 
 interface RawRow {
+  /** Addan önceki sayılar (sıra no, okul no). */
   numbers: string[];
+  /** Addan sonraki sayılar ("S.No | Adı Soyadı | Okul No" düzeni). */
+  trailingNumbers: string[];
   /** İlk sayının ardından "." ")" "-" geldi mi (düz listede sıra numarası işareti). */
   punctuatedLead: boolean;
   nameTokens: NameToken[];
@@ -308,9 +334,9 @@ function tokenize(cells: string[]): string[] {
   );
 }
 
-function parseRow(cells: string[]): RawRow | null {
+function parseRow(cells: string[], dotAware: boolean): RawRow | null {
   const rowText = cells.join(' ');
-  if (isHeaderRow(rowText)) return null;
+  if (DATE_RE.test(rowText) || YEAR_RANGE_RE.test(rowText)) return null;
 
   const numbers: string[] = [];
   const trailingNumbers: string[] = [];
@@ -329,30 +355,36 @@ function parseRow(cells: string[]): RawRow | null {
       else trailingNumbers.push(num);
       return;
     }
-    const cleaned = cleanNameToken(token);
+    const cleaned = cleanNameToken(token, dotAware);
     if (cleaned) nameTokens.push(cleaned);
   });
 
-  // Sondaki cinsiyet sütunu: "Kız", "Erkek", "K", "E".
-  while (nameTokens.length > 0 && GENDER_WORDS.has(foldTurkish(nameTokens[nameTokens.length - 1].text))) {
-    nameTokens.pop();
-  }
+  // Başlık sözcükleri yalnızca numarasız satırlarda aranır: "1 245 MEHMET ALİ SIRA" bir öğrencidir.
+  if (numbers.length === 0 && isHeaderRow(rowText)) return null;
 
-  // Okul numarası adın sağındaki sütunda olabilir ("Ayşe Yılmaz 245").
-  if (numbers.length === 0 && trailingNumbers.length === 1) numbers.push(trailingNumbers[0]);
+  const isGender = (t: NameToken) => GENDER_WORDS.has(foldTurkish(t.text));
+  // Sondaki cinsiyet sütunu ("Kız", "Erkek", "K", "E"): en fazla bir kelime atılır.
+  if (nameTokens.length > 0 && isGender(nameTokens[nameTokens.length - 1])) nameTokens.pop();
+  // Yalnızca cinsiyet kelimelerinden oluşan satır özet satırıdır ("Erkek: 15 Kız: 17").
+  if (nameTokens.every(isGender)) return null;
 
   const letterCount = nameTokens.reduce((n, t) => n + t.text.replace(/[^\p{L}]/gu, '').length, 0);
   if (letterCount < 2) return null;
-  return { numbers, punctuatedLead, nameTokens };
+  return { numbers, trailingNumbers, punctuatedLead, nameTokens };
 }
 
 /**
- * Tek sayılı satırlarda sayı sıra numarası mı okul numarası mı?
- * Ardışık artan (1, 2, 3 …) ve 1'den başlıyor ya da "12." gibi işaretliyse sıra numarasıdır.
+ * Tek baştaki sayı sıra numarası mı okul numarası mı?
+ * - Tablonun çoğunda iki baştaki sayı varsa (S.No + Okul No) tek sayı sıra numarasıdır.
+ * - Tek sayılar ardışık artıyorsa (1, 2, 3 … ya da ikinci sayfada 33, 34, 35 …) sıra numarasıdır.
+ * - Tek satırlık listede 1 ya da "12." gibi işaretliyse sıra numarasıdır.
  */
 function singleNumbersAreOrdinals(rows: RawRow[]): boolean {
   const singles = rows.filter((r) => r.numbers.length === 1);
   if (singles.length === 0) return false;
+  const doubles = rows.filter((r) => r.numbers.length >= 2).length;
+  if (doubles > singles.length) return true;
+
   const values = singles.map((r) => Number(r.numbers[0]));
   if (singles.length === 1) return values[0] === 1 || singles[0].punctuatedLead;
 
@@ -360,10 +392,16 @@ function singleNumbersAreOrdinals(rows: RawRow[]): boolean {
   for (let i = 1; i < values.length; i += 1) {
     if (values[i] === values[i - 1] + 1) steps += 1;
   }
-  const sequential = steps / (values.length - 1) >= 0.6;
-  if (!sequential) return false;
-  const punctuated = singles.filter((r) => r.punctuatedLead).length / singles.length >= 0.5;
-  return values[0] <= 1 || punctuated;
+  return steps / (values.length - 1) >= 0.6;
+}
+
+/** Satırın okul numarası (yoksa null). */
+function schoolNumberOf(row: RawRow, singlesAreOrdinals: boolean): string | null {
+  // İlk sayı sıra no; sonuncusu okul no (aradaki çizgi "1" okunmuş olabilir).
+  if (row.numbers.length >= 2) return row.numbers[row.numbers.length - 1];
+  if (row.numbers.length === 1 && !singlesAreOrdinals) return row.numbers[0];
+  // Baştaki sayı sıra no ya da hiç yok: okul no adın sağındaki sütunda olabilir.
+  return row.trailingNumbers.length === 1 ? row.trailingNumbers[0] : null;
 }
 
 function keyOf(student: ParsedStudent): string {
@@ -372,16 +410,15 @@ function keyOf(student: ParsedStudent): string {
 
 /** Görsel satırlardan (hücre listeleri) öğrenci listesi üretir. */
 export function parseRows(rows: string[][]): ParsedStudent[] {
-  const raw = rows.map(parseRow).filter((r): r is RawRow => r !== null);
+  // Fotoğrafın herhangi bir yerinde "İ" okunduysa OCR noktaları ayırt ediyordur.
+  const dotAware = rows.some((cells) => cells.some((c) => c.includes('İ')));
+  const raw = rows.map((cells) => parseRow(cells, dotAware)).filter((r): r is RawRow => r !== null);
   const singlesAreOrdinals = singleNumbersAreOrdinals(raw);
 
   const seen = new Set<string>();
   const students: ParsedStudent[] = [];
   for (const row of raw) {
-    let number: string | null = null;
-    // İlk sayı sıra no; sonuncusu okul no (aradaki çizgi "1" okunmuş olabilir).
-    if (row.numbers.length >= 2) number = row.numbers[row.numbers.length - 1];
-    else if (row.numbers.length === 1 && !singlesAreOrdinals) number = row.numbers[0];
+    const number = schoolNumberOf(row, singlesAreOrdinals);
 
     const fullName = toTurkishTitleCase(row.nameTokens.map((t) => t.text).join(' '));
     const hadDigits = row.nameTokens.some((t) => t.hadDigits);

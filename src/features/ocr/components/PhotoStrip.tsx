@@ -17,8 +17,9 @@ export interface PhotoStripProps {
   onOpen: (photo: ImportPhoto, index: number) => void;
 }
 
-const THUMB_W = 60;
-const THUMB_H = 80;
+/** Küçük resim: 3:4 sayfa oranına yakın, ikon kutusu genişliğinde. */
+const THUMB_W = layout.iconBox;
+const THUMB_H = layout.iconBox + spacing.xl;
 
 /** Eklenen sayfaların küçük resimleri; dokununca büyük gösterilir. */
 export function PhotoStrip({ photos, onOpen }: PhotoStripProps) {

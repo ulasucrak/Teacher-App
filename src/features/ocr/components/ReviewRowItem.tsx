@@ -34,8 +34,8 @@ function ReviewRowItemBase({ row, issues, onChange, onRemove, autoFocus }: Revie
         hitSlop={spacing.xs}
         style={styles.checkTouch}
       >
-        <View style={[styles.checkbox, row.include ? styles.checkboxOn : styles.checkboxOff]}>
-          {row.include ? <Icon name="check" size={16} color={colors.textInverse} /> : null}
+        <View testID={`checkbox-${row.id}`} style={[styles.checkbox, row.include ? styles.checkboxOn : styles.checkboxOff]}>
+          {row.include ? <Icon name="check" size={ICON_SMALL} color={colors.textInverse} /> : null}
         </View>
       </Pressable>
 
@@ -83,7 +83,6 @@ function ReviewRowItemBase({ row, issues, onChange, onRemove, autoFocus }: Revie
           />
           <IconButton
             icon="trash"
-            size={20}
             color={colors.textMuted}
             accessibilityLabel={`${label} satırını sil`}
             onPress={() => onRemove(row.id)}
@@ -93,7 +92,7 @@ function ReviewRowItemBase({ row, issues, onChange, onRemove, autoFocus }: Revie
           <View style={styles.issues} accessibilityLiveRegion="polite">
             {issues.map((issue) => (
               <View key={issue} style={styles.issue}>
-                <Icon name="warning" size={14} color={tones.warning.onSoft} />
+                <Icon name="warning" size={ICON_SMALL} color={tones.warning.onSoft} />
                 <Text variant="caption" color={tones.warning.onSoft} style={styles.issueText}>
                   {issueLabels[issue]}
                 </Text>
@@ -108,7 +107,10 @@ function ReviewRowItemBase({ row, issues, onChange, onRemove, autoFocus }: Revie
 
 export const ReviewRowItem = memo(ReviewRowItemBase);
 
-const CHECKBOX = 24;
+/** Onay kutusu: 24 pt kutu, 48 pt dokunma alanı içinde. */
+export const CHECKBOX_SIZE = spacing.xxl;
+/** Kutu içi ve uyarı satırı ikonu: metin satırı yüksekliğine oturur. */
+const ICON_SMALL = spacing.lg;
 
 const styles = StyleSheet.create({
   row: {
@@ -126,8 +128,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkbox: {
-    width: CHECKBOX,
-    height: CHECKBOX,
+    width: CHECKBOX_SIZE,
+    height: CHECKBOX_SIZE,
     borderRadius: radii.xs,
     alignItems: 'center',
     justifyContent: 'center',

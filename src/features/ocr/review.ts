@@ -21,10 +21,12 @@ export interface ExistingStudent {
   number: string | null;
 }
 
-export type RowIssue = NameWarning | 'existing' | 'repeated' | 'emptyName';
+export type RowIssue = NameWarning | 'existing' | 'existingNumber' | 'existingName' | 'repeated' | 'emptyName';
 
 export const issueLabels: Record<RowIssue, string> = {
   existing: 'Bu sınıfta zaten var',
+  existingNumber: 'Bu numara sınıfta başka bir öğrencide var',
+  existingName: 'Bu adda bir öğrenci sınıfta zaten var',
   repeated: 'Listede birden fazla geçiyor',
   emptyName: 'Ad soyad boş',
   digits: 'Adda rakam okundu, kontrol edin',
@@ -33,7 +35,7 @@ export const issueLabels: Record<RowIssue, string> = {
 };
 
 /** Uyarılar arasında yinelemeler daha önemlidir; önce onlar gösterilir. */
-const ISSUE_ORDER: RowIssue[] = ['existing', 'repeated', 'emptyName', 'digits', 'short', 'singleWord'];
+const ISSUE_ORDER: RowIssue[] = ['existing', 'existingNumber', 'existingName', 'repeated', 'emptyName', 'digits', 'short', 'singleWord'];
 
 export function nameKey(name: string): string {
   return foldTurkish(name);
@@ -49,17 +51,39 @@ export function nextRowId(): string {
   return `row-${idCounter}`;
 }
 
-function sameStudent(
-  a: { name: string; number: string },
-  b: { name: string; number: string },
-): boolean {
+interface StudentKey {
+  name: string;
+  number: string;
+}
+
+/** Yineleme uyarısı için gevşek eşleşme: numara ya da ad aynı. */
+function looselySame(a: StudentKey, b: StudentKey): boolean {
   if (a.number && b.number && a.number === b.number) return true;
   return a.name.length > 0 && a.name === b.name;
 }
 
 /**
+ * Kesin eşleşme (işareti otomatik kaldırmak için): ad aynı ve numara da aynı ya da
+ * taraflardan birinde numara yok. Yalnızca numara tutuyorsa bu bir uyarıdır, eşleşme değil.
+ */
+export function sameStudent(a: StudentKey, b: StudentKey): boolean {
+  if (!a.name || a.name !== b.name) return false;
+  return !a.number || !b.number || a.number === b.number;
+}
+
+type ExistingMatch = 'same' | 'number' | 'name' | null;
+
+function matchExisting(key: StudentKey, existing: StudentKey[]): ExistingMatch {
+  if (existing.some((k) => sameStudent(k, key))) return 'same';
+  if (key.number && existing.some((k) => k.number === key.number)) return 'number';
+  if (key.name && existing.some((k) => k.name === key.name)) return 'name';
+  return null;
+}
+
+/**
  * Yeni fotoğrafın satırlarını listeye ekler. Sınıfta ya da listede zaten olan satırlar
- * işaretsiz eklenir (sayfalar çakışırsa öğrenci iki kez eklenmesin).
+ * (ad + numara eşleşmesi, bkz. `sameStudent`) işaretsiz eklenir; sayfalar çakışırsa
+ * öğrenci iki kez eklenmesin. Yalnızca numarası tutan satır işaretli kalır, uyarı alır.
  */
 export function appendParsed(
   rows: ReviewRow[],
@@ -99,7 +123,7 @@ export function createManualRow(makeId: () => string = nextRowId): ReviewRow {
  */
 export function computeIssues(rows: ReviewRow[], existing: ExistingStudent[]): Map<string, RowIssue[]> {
   const existingKeys = existing.map((s) => ({ name: nameKey(s.full_name), number: numberKey(s.number) }));
-  const seen: { name: string; number: string }[] = [];
+  const seen: StudentKey[] = [];
   const result = new Map<string, RowIssue[]>();
 
   for (const row of rows) {
@@ -111,9 +135,12 @@ export function computeIssues(rows: ReviewRow[], existing: ExistingStudent[]): M
     } else {
       for (const w of assessName(row.fullName, row.ocrDigits)) issues.add(w);
     }
-    if (existingKeys.some((k) => sameStudent(k, key))) issues.add('existing');
+    const match = matchExisting(key, existingKeys);
+    if (match === 'same') issues.add('existing');
+    else if (match === 'number') issues.add('existingNumber');
+    else if (match === 'name') issues.add('existingName');
     if (row.include) {
-      if (seen.some((k) => sameStudent(k, key))) issues.add('repeated');
+      if (seen.some((k) => looselySame(k, key))) issues.add('repeated');
       seen.push(key);
     }
     result.set(

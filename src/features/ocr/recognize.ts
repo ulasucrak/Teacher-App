@@ -39,9 +39,17 @@ export function isExpoGo(): boolean {
 /** Büyük fotoğrafı OCR için küçültür (genişlik ≤ 2000). Gerekmiyorsa aynı adresi döner. */
 export async function preparePhoto(uri: string, width?: number): Promise<string> {
   if (width !== undefined && width > 0 && width <= OCR_MAX_WIDTH) return uri;
-  const image = await ImageManipulator.manipulate(uri).resize({ width: OCR_MAX_WIDTH }).renderAsync();
-  const saved = await image.saveAsync({ compress: 0.9, format: SaveFormat.JPEG });
-  return saved.uri;
+  const context = ImageManipulator.manipulate(uri);
+  let image: Awaited<ReturnType<typeof context.renderAsync>> | null = null;
+  try {
+    image = await context.resize({ width: OCR_MAX_WIDTH }).renderAsync();
+    const saved = await image.saveAsync({ compress: 0.9, format: SaveFormat.JPEG });
+    return saved.uri;
+  } finally {
+    // Yerel bellekteki görüntüleri hemen bırak (kaydedilen dosya etkilenmez).
+    image?.release();
+    context.release();
+  }
 }
 
 /** Fotoğrafı küçültür, ML Kit ile okur ve öğrenci satırlarına çevirir. */

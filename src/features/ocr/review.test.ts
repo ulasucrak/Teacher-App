@@ -42,6 +42,27 @@ describe('appendParsed', () => {
     ]);
   });
 
+  it('yalnızca numarası sınıftakiyle aynı olan satırı işaretli bırakır (regresyon)', () => {
+    const rows = appendParsed(
+      [],
+      [p('Selin Bayezit', '112'), p('Can Su', '7'), p('Can Su', null)],
+      'photo-1',
+      [
+        { full_name: 'Başka Öğrenci', number: '112' },
+        { full_name: 'Can Su', number: '8' },
+      ],
+      idMaker(),
+    );
+    expect(rows.map((r) => r.include)).toEqual([true, true, false]);
+    const issues = computeIssues(rows, [
+      { full_name: 'Başka Öğrenci', number: '112' },
+      { full_name: 'Can Su', number: '8' },
+    ]);
+    expect(issues.get(rows[0].id)).toEqual(['existingNumber']);
+    expect(issues.get(rows[1].id)).toEqual(['existingName']);
+    expect(issues.get(rows[2].id)).toEqual(['existing']);
+  });
+
   it('okumada rakam düzeltildiyse bunu satırda saklar', () => {
     const [row] = appendParsed([], [p('Ahmet Yılmaz', '5', ['digits'])], 'a', [], idMaker());
     expect(row.ocrDigits).toBe(true);
@@ -59,12 +80,12 @@ describe('computeIssues', () => {
     ...over,
   });
 
-  it('sınıfta olan öğrenciyi numaradan ya da addan tanır', () => {
+  it('sınıfta olan öğrenciyi ad + numaradan tanır, yalnızca numara tutuyorsa ayrı uyarır', () => {
     const issues = computeIssues(
       [row({ id: 'a', number: '12', fullName: 'Başka Ad' }), row({ id: 'b', fullName: 'AYŞE YILMAZ' })],
       [{ full_name: 'Ayşe Yılmaz', number: '12' }],
     );
-    expect(issues.get('a')).toEqual(['existing']);
+    expect(issues.get('a')).toEqual(['existingNumber']);
     expect(issues.get('b')).toEqual(['existing']);
   });
 
