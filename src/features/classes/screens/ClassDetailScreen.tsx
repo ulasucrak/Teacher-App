@@ -64,6 +64,7 @@ export function ClassDetailScreen() {
   const [editor, setEditor] = useState<EditorState>({ key: 0, open: false, student: null });
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [deletingClass, setDeletingClass] = useState(false);
 
   const all = useMemo(() => students.data ?? [], [students.data]);
   const visible = useMemo(() => filterStudents(all, query), [all, query]);
@@ -173,17 +174,18 @@ export function ClassDetailScreen() {
           text: 'Sınıfı sil',
           style: 'destructive',
           onPress: async () => {
-            setMenuOpen(false);
-            setBusy(true);
+            // Panel açık kalır ve "Sınıfı sil" silme bitene kadar yükleniyor gösterir.
+            setDeletingClass(true);
             try {
               await deleteClass(c.id);
+              setMenuOpen(false);
               toast.show(`${c.name} silindi`);
               if (router.canGoBack()) router.back();
               else router.replace('/');
             } catch (err) {
               toast.show(toUserMessage(err, 'Sınıf silinemedi. Bağlantınızı kontrol edip tekrar deneyin.'), 'error');
             } finally {
-              setBusy(false);
+              setDeletingClass(false);
             }
           },
         },
@@ -211,6 +213,12 @@ export function ClassDetailScreen() {
       }
       return next;
     });
+
+  // Arama değişince seçim temizlenir: gizlenen öğrenciler toplu silmeye karışmasın.
+  const changeQuery = (text: string) => {
+    setQuery(text);
+    setSelected((prev) => (prev.size > 0 ? new Set() : prev));
+  };
 
   const stopSelecting = () => {
     setSelecting(false);
@@ -318,7 +326,7 @@ export function ClassDetailScreen() {
       {count > 0 ? (
         <SearchField
           value={query}
-          onChangeText={setQuery}
+          onChangeText={changeQuery}
           placeholder="Ad ya da numara ile arayın"
           accessibilityLabel="Öğrenci ara"
         />
@@ -428,20 +436,28 @@ export function ClassDetailScreen() {
         classmates={all}
         onSubmit={submitStudent}
         onDelete={editor.student ? () => confirmDeleteOne(editor.student!) : undefined}
+        deleting={busy}
       />
 
-      <Sheet visible={menuOpen} onClose={() => setMenuOpen(false)} title={c.name}>
+      <Sheet visible={menuOpen} onClose={() => (deletingClass ? undefined : setMenuOpen(false))} title={c.name}>
         <View style={styles.menu}>
           <Button
             label="Sınıfı düzenle"
             variant="secondary"
             icon="edit"
+            disabled={deletingClass}
             onPress={() => {
               setMenuOpen(false);
               router.push({ pathname: '/class/new', params: { classId: c.id } });
             }}
           />
-          <Button label="Sınıfı sil" variant="destructive" icon="trash" onPress={confirmDeleteClass} loading={busy} />
+          <Button
+            label="Sınıfı sil"
+            variant="destructive"
+            icon="trash"
+            onPress={confirmDeleteClass}
+            loading={deletingClass}
+          />
           <Text variant="caption" tone="muted">
             Sınıfı silmek öğrencilerini, formlarını ve tüm kayıtlarını da siler.
           </Text>

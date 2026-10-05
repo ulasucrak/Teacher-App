@@ -42,6 +42,7 @@ describe('classes api', () => {
     const result = await listClasses();
     expect(mockCalls).toContainEqual({ method: 'from', args: ['classes'] });
     expect(mockCalls).toContainEqual({ method: 'select', args: ['*, students(count), forms(count)'] });
+    expect(mockCalls).toContainEqual({ method: 'eq', args: ['forms.archived', false] });
     expect(result.map((c) => [c.name, c.studentCount, c.formCount])).toEqual([
       ['5/B', 30, 2],
       ['6/A', 3, 0],

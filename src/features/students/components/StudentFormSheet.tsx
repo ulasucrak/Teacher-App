@@ -19,6 +19,8 @@ export interface StudentFormSheetProps {
   onSubmit: (value: ValidStudent) => Promise<StudentSubmitResult>;
   /** Düzenlemede "Öğrenciyi sil" (onay ekranı çağıran tarafta). */
   onDelete?: () => void;
+  /** Silme sürüyor: "Öğrenciyi sil" yükleniyor gösterir, diğer eylemler kapanır. */
+  deleting?: boolean;
 }
 
 /**
@@ -26,7 +28,15 @@ export interface StudentFormSheetProps {
  * Eklemede "Ekle ve yenisini gir" ile panel kapanmadan art arda giriş yapılabilir.
  * Panel her açılışta yeniden bağlanmalı (çağıran `key` verir).
  */
-export function StudentFormSheet({ visible, onClose, student, classmates, onSubmit, onDelete }: StudentFormSheetProps) {
+export function StudentFormSheet({
+  visible,
+  onClose,
+  student,
+  classmates,
+  onSubmit,
+  onDelete,
+  deleting = false,
+}: StudentFormSheetProps) {
   const editing = Boolean(student);
   const nameRef = useRef<TextInput>(null);
   const numberRef = useRef<TextInput>(null);
@@ -40,8 +50,8 @@ export function StudentFormSheet({ visible, onClose, student, classmates, onSubm
   const others = student ? classmates.filter((s) => s.id !== student.id) : classmates;
 
   const submit = async (then: 'close' | 'next') => {
-    if (inFlight.current) return;
-    const result = validateStudentDraft({ fullName, number }, others);
+    if (inFlight.current || deleting) return;
+    const result = validateStudentDraft({ fullName, number }, others, student?.number);
     setFormError(null);
     if (!result.ok) {
       setErrors(result.errors);
@@ -78,11 +88,18 @@ export function StudentFormSheet({ visible, onClose, student, classmates, onSubm
             label={editing ? 'Değişiklikleri kaydet' : 'Öğrenciyi ekle'}
             onPress={() => submit('close')}
             loading={saving === 'close'}
-            disabled={saving === 'next'}
+            disabled={saving === 'next' || deleting}
           />
           {editing ? (
             onDelete ? (
-              <Button label="Öğrenciyi sil" variant="ghost" icon="trash" onPress={onDelete} disabled={Boolean(saving)} />
+              <Button
+                label="Öğrenciyi sil"
+                variant="ghost"
+                icon="trash"
+                onPress={onDelete}
+                loading={deleting}
+                disabled={Boolean(saving)}
+              />
             ) : null
           ) : (
             <Button
@@ -125,7 +142,9 @@ export function StudentFormSheet({ visible, onClose, student, classmates, onSubm
             if (errors.number) setErrors((e) => ({ ...e, number: null }));
           }}
           error={errors.number}
-          keyboardType="number-pad"
+          keyboardType="numbers-and-punctuation"
+          autoCapitalize="characters"
+          autoCorrect={false}
           returnKeyType="done"
           onSubmitEditing={() => submit('close')}
         />

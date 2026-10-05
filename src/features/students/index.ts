@@ -5,6 +5,7 @@ export {
   compareStudents,
   filterStudents,
   sortStudents,
+  studentNumberKey,
   STUDENT_NAME_MAX,
   STUDENT_NUMBER_MAX,
   validateStudentDraft,

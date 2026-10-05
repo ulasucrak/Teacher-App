@@ -4,16 +4,26 @@ import type { ClassRow } from '@/types/database';
 import { sortClasses, toClassSummary, type ClassRowWithCounts, type ClassSummary, type ValidClass } from './model';
 
 const CLASS_WITH_COUNTS = '*, students(count), forms(count)';
+/** Gömülü kaynak süzgeci: form sayısına arşivlenen formlar girmez (sınıf satırlarını süzmez). */
+const ACTIVE_FORMS_FILTER = 'forms.archived';
 
 /** Öğretmenin sınıfları, öğrenci ve form sayılarıyla (RLS yalnızca kendi sınıflarını döndürür). */
 export async function listClasses(): Promise<ClassSummary[]> {
-  const { data, error } = await supabase.from('classes').select(CLASS_WITH_COUNTS);
+  const { data, error } = await supabase
+    .from('classes')
+    .select(CLASS_WITH_COUNTS)
+    .eq(ACTIVE_FORMS_FILTER, false);
   if (error) throw error;
   return sortClasses(((data ?? []) as ClassRowWithCounts[]).map(toClassSummary));
 }
 
 export async function getClass(classId: string): Promise<ClassSummary> {
-  const { data, error } = await supabase.from('classes').select(CLASS_WITH_COUNTS).eq('id', classId).single();
+  const { data, error } = await supabase
+    .from('classes')
+    .select(CLASS_WITH_COUNTS)
+    .eq(ACTIVE_FORMS_FILTER, false)
+    .eq('id', classId)
+    .single();
   if (error) throw error;
   return toClassSummary(data as ClassRowWithCounts);
 }

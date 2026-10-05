@@ -127,6 +127,18 @@ describe('ClassDetailScreen', () => {
     alert.mockRestore();
   });
 
+  it('clears the selection when the search changes', async () => {
+    await renderScreen();
+    await screen.findByText('Ayşe Yılmaz');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Silmek için öğrenci seç' }));
+    await fireEvent.press(screen.getByRole('button', { name: /^Ayşe Yılmaz/ }));
+    expect(screen.getByRole('button', { name: '1 öğrenciyi sil' })).toBeOnTheScreen();
+
+    await fireEvent.changeText(screen.getByLabelText('Öğrenci ara'), 'can');
+    expect(screen.getByRole('button', { name: 'Öğrenci seçin' })).toBeDisabled();
+  });
+
   it('shows the empty state when the class has no students', async () => {
     mockListStudents.mockResolvedValue([]);
     await renderScreen();

@@ -1,4 +1,4 @@
-import { filterStudents, sortStudents, validateStudentDraft, type StudentListItem } from './model';
+import { filterStudents, sortStudents, studentNumberKey, validateStudentDraft, type StudentListItem } from './model';
 
 const s = (id: string, full_name: string, number: string | null): StudentListItem => ({ id, full_name, number });
 
@@ -61,10 +61,45 @@ describe('validateStudentDraft', () => {
     if (!r.ok) expect(r.errors.fullName).toMatch(/adını/);
   });
 
-  it('rejects non-digit and duplicate numbers', () => {
-    const bad = validateStudentDraft({ fullName: 'Ali Veli', number: '12a' }, others);
-    expect(!bad.ok && bad.errors.number).toMatch(/rakam/);
-    const dup = validateStudentDraft({ fullName: 'Ali Veli', number: '12' }, others);
+  it('accepts alphanumeric school numbers, trimmed and uppercased', () => {
+    expect(validateStudentDraft({ fullName: 'Ali Veli', number: ' 12a ' }, others)).toEqual({
+      ok: true,
+      value: { full_name: 'Ali Veli', number: '12A' },
+    });
+    expect(validateStudentDraft({ fullName: 'Ali Veli', number: '1234567B' }, others).ok).toBe(true);
+  });
+
+  it('rejects symbols and numbers longer than 8 characters', () => {
+    const symbol = validateStudentDraft({ fullName: 'Ali Veli', number: '12-A' }, others);
+    expect(!symbol.ok && symbol.errors.number).toMatch(/harf ve rakam/);
+    const long = validateStudentDraft({ fullName: 'Ali Veli', number: '123456789' }, others);
+    expect(!long.ok && long.errors.number).toMatch(/en fazla 8/);
+  });
+
+  it('skips format checks when an existing number is unchanged', () => {
+    // Fotoğraftan içe aktarılmış, kurala uymayan eski numara düzenlemede engel olmaz.
+    expect(validateStudentDraft({ fullName: 'Ali Veli', number: '2024-0012' }, others, '2024-0012')).toEqual({
+      ok: true,
+      value: { full_name: 'Ali Veli', number: '2024-0012' },
+    });
+    const changed = validateStudentDraft({ fullName: 'Ali Veli', number: '2024-0013' }, others, '2024-0012');
+    expect(changed.ok).toBe(false);
+  });
+
+  it('detects duplicates ignoring leading zeros and case', () => {
+    const dup = validateStudentDraft({ fullName: 'Ali Veli', number: '012' }, others);
     expect(!dup.ok && dup.errors.number).toMatch(/Ayşe Yılmaz/);
+    const withLetter = [s('9', 'Can Er', '7b')];
+    const dupLetter = validateStudentDraft({ fullName: 'Ali Veli', number: '007B' }, withLetter);
+    expect(!dupLetter.ok && dupLetter.errors.number).toMatch(/Can Er/);
+    expect(validateStudentDraft({ fullName: 'Ali Veli', number: '120' }, others).ok).toBe(true);
+  });
+});
+
+describe('studentNumberKey', () => {
+  it('strips leading zeros and folds case', () => {
+    expect(studentNumberKey(' 0012a ')).toBe('12A');
+    expect(studentNumberKey('000')).toBe('0');
+    expect(studentNumberKey(null)).toBe('');
   });
 });

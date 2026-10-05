@@ -59,17 +59,35 @@ export interface ValidStudent {
   number: string | null;
 }
 
+/** Okul numarası: harf ve rakam (örn. "128", "12A"); fotoğraftan içe aktarma da bu biçimi üretebilir. */
+const NUMBER_PATTERN = /^[\p{L}\p{N}]+$/u;
+
+/**
+ * Numara çakışması anahtarı: baştaki sıfırlar ve büyük/küçük harf farkı yok sayılır
+ * ("007" = "7", "12a" = "12A").
+ */
+export function studentNumberKey(number: string | null | undefined): string {
+  const trimmed = (number ?? '').trim().toLocaleUpperCase('tr-TR');
+  return trimmed.replace(/^0+(?=.)/, '');
+}
+
 /**
  * Elle eklenen/düzenlenen öğrenciyi doğrular ve kaydedilecek biçime getirir.
  * `others`: aynı sınıftaki diğer öğrenciler (numara çakışması için; düzenlenen öğrenci hariç).
+ * `originalNumber`: düzenlemede kayıtlı numara; değişmediyse biçim denetimi yapılmaz.
  */
 export function validateStudentDraft(
   draft: StudentDraft,
   others: readonly StudentListItem[],
+  originalNumber?: string | null,
 ): { ok: true; value: ValidStudent } | { ok: false; errors: StudentDraftErrors } {
   const errors: StudentDraftErrors = {};
   const fullName = normalizeStudentName(draft.fullName);
-  const number = draft.number.trim();
+  const original = (originalNumber ?? '').trim();
+  const rawNumber = draft.number.trim();
+  const unchanged = original !== '' && rawNumber === original;
+  // Yeni/değişen numara büyük harfe çevrilir ("12a" → "12A"); değişmeyen olduğu gibi kalır.
+  const number = unchanged ? rawNumber : rawNumber.toLocaleUpperCase('tr-TR');
 
   if (!fullName) {
     errors.fullName = 'Öğrencinin adını ve soyadını yazın.';
@@ -78,12 +96,13 @@ export function validateStudentDraft(
   }
 
   if (number) {
-    if (!/^\d+$/.test(number)) {
-      errors.number = 'Okul numarası yalnızca rakamlardan oluşmalı. Örnek: 128';
-    } else if (number.length > STUDENT_NUMBER_MAX) {
-      errors.number = `Okul numarası en fazla ${STUDENT_NUMBER_MAX} haneli olabilir.`;
+    if (!unchanged && !NUMBER_PATTERN.test(number)) {
+      errors.number = 'Okul numarası yalnızca harf ve rakamdan oluşabilir. Örnek: 128 ya da 12A';
+    } else if (!unchanged && number.length > STUDENT_NUMBER_MAX) {
+      errors.number = `Okul numarası en fazla ${STUDENT_NUMBER_MAX} karakter olabilir.`;
     } else {
-      const clash = others.find((s) => s.number?.trim() === number);
+      const key = studentNumberKey(number);
+      const clash = others.find((s) => s.number && studentNumberKey(s.number) === key);
       if (clash) errors.number = `${number} numarası ${clash.full_name} adına kayıtlı. Numarayı kontrol edin.`;
     }
   }
