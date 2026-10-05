@@ -3,7 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, Button, EmptyState, Icon, ListRow, LoadingState, Screen, Sheet, Text, useToast } from '@/components/ui';
-import { colors, layout, spacing } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
 import type { FormRow } from '@/types/database';
 
 import {
@@ -266,7 +266,7 @@ export default function FormsScreen() {
           accessibilityHint="Diğer sınıflarınızdaki bir formu bu sınıfa kopyalar"
           style={({ pressed }) => [styles.addOther, pressed && styles.addOtherPressed]}
         >
-          <FormIcon name="addFromOther" size={22} color={colors.primary} />
+          <FormIcon name="addFromOther" size={iconSize.xl} color={colors.primary} />
           <View style={styles.addOtherTexts}>
             <Text variant="label" tone="primary">
               Başka sınıftan form ekle
@@ -275,7 +275,7 @@ export default function FormsScreen() {
               Diğer sınıfınızdaki formu tek dokunuşla buraya ekleyin.
             </Text>
           </View>
-          <Icon name="chevronRight" size={16} color={colors.textMuted} />
+          <Icon name="chevronRight" size={iconSize.sm} color={colors.textMuted} />
         </Pressable>
 
         {active.length === 0 ? (
@@ -331,11 +331,11 @@ export default function FormsScreen() {
               accessibilityState={{ expanded: showArchived }}
               style={({ pressed }) => [styles.archiveToggle, pressed && styles.addOtherPressed]}
             >
-              <FormIcon name="archive" size={18} color={colors.textMuted} />
+              <FormIcon name="archive" size={iconSize.md} color={colors.textMuted} />
               <Text variant="label" tone="muted" style={styles.flex}>
                 Arşivdeki formlar ({archived.length})
               </Text>
-              <Icon name={showArchived ? 'chevronDown' : 'chevronRight'} size={16} color={colors.textMuted} />
+              <Icon name={showArchived ? 'chevronDown' : 'chevronRight'} size={iconSize.sm} color={colors.textMuted} />
             </Pressable>
             {showArchived
               ? archived.map((form) => (

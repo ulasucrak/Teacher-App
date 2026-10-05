@@ -4,7 +4,7 @@ import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Icon, type IconName } from '@/components/ui';
-import { colors, layout, radii } from '@/theme';
+import { colors, iconSize, layout, radii } from '@/theme';
 
 type SymbolName = Exclude<ComponentProps<typeof SymbolView>['name'], string>;
 
@@ -27,7 +27,7 @@ function isExtra(name: FormIconName): name is ExtraIconName {
 
 const symbolWeight = { ios: 'medium', android: androidMedium } as const;
 
-export function FormIcon({ name, size = 22, color = colors.text }: { name: FormIconName; size?: number; color?: string }) {
+export function FormIcon({ name, size = iconSize.xl, color = colors.text }: { name: FormIconName; size?: number; color?: string }) {
   if (!isExtra(name)) return <Icon name={name} size={size} color={color} />;
   return (
     <SymbolView
@@ -59,7 +59,7 @@ export function FormIconButton({
   onPress,
   disabled = false,
   color = colors.text,
-  size = 22,
+  size = iconSize.xl,
   style,
 }: FormIconButtonProps) {
   return (

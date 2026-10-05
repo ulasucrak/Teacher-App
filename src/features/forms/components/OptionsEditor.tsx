@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Button, Icon, Text } from '@/components/ui';
-import { colors, fontScale, layout, radii, spacing, tones, typography } from '@/theme';
+import { colors, fontScale, iconSize, layout, radii, spacing, tones, typography } from '@/theme';
 import type { FormOptionTone } from '@/types/database';
 
 import { MAX_LABEL_LENGTH, MAX_OPTIONS, createDraftOption, moveOption, type DraftOption } from '../options';
@@ -153,13 +153,13 @@ function OptionRow({
             accessibilityLabel={`${name} seçeneğini kaldır`}
             onPress={onRemove}
             color={colors.danger}
-            size={20}
+            size={iconSize.lg}
           />
         </View>
       </View>
       {error ? (
         <View style={styles.error} accessibilityLiveRegion="polite" accessibilityRole="alert">
-          <Icon name="error" size={16} color={colors.danger} />
+          <Icon name="error" size={iconSize.sm} color={colors.danger} />
           <Text variant="caption" tone="danger" style={styles.errorText}>
             {error}
           </Text>

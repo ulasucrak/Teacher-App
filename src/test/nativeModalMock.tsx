@@ -2,7 +2,7 @@
  * React Native'in jest Modal taklidi `onDismiss`'i hiç çağırmaz; iOS'ta ise yerel Modal
  * kapanınca çağrılır. Sheet'in `onDismissed` akışını test etmek için kullanın:
  *
- *   jest.mock('react-native/Libraries/Modal/Modal', () => require('@/test/nativeModalMock'));
+ *   jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
  */
 import { useEffect, useRef, type ReactNode } from 'react';
 import { View } from 'react-native';

@@ -30,7 +30,7 @@ import {
   type ValidStudent,
 } from '@/features/students';
 import type { StudentRow } from '@/types/database';
-import { colors, layout, spacing } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
 
 import { deleteClass, getClass } from '../api';
 import { EntryCard } from '../components/EntryCard';
@@ -412,7 +412,7 @@ export function ClassDetailScreen() {
                 selecting ? (
                   <SelectBox checked={isSelected} />
                 ) : (
-                  <Icon name="edit" size={18} color={colors.textMuted} />
+                  <Icon name="edit" size={iconSize.md} color={colors.textMuted} />
                 )
               }
               showChevron={false}

@@ -7,7 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
@@ -105,7 +105,7 @@ export function Button({
         {loading ? (
           <ActivityIndicator color={palette.fg} accessibilityElementsHidden />
         ) : icon ? (
-          <Icon name={icon} size={size === 'sm' ? 18 : 20} color={palette.fg} />
+          <Icon name={icon} size={size === 'sm' ? iconSize.md : iconSize.lg} color={palette.fg} />
         ) : null}
         <Text variant={size === 'md' ? 'bodyStrong' : 'label'} color={palette.fg} numberOfLines={1}>
           {label}

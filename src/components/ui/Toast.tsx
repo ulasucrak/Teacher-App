@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AccessibilityInfo, Animated, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, elevation, layout, motion, radii, spacing, tones, type ToneName } from '@/theme';
+import { colors, elevation, iconSize, layout, motion, radii, spacing, tones, type ToneName } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {toast ? (
         <View pointerEvents="none" style={[styles.host, { bottom: insets.bottom + spacing.huge + spacing.xxxl }]}>
           <Animated.View style={[styles.toast, { opacity }]} accessibilityLiveRegion="polite">
-            <Icon name={kindIcon[toast.kind]} size={20} color={tones[kindTone[toast.kind]].soft} />
+            <Icon name={kindIcon[toast.kind]} size={iconSize.lg} color={tones[kindTone[toast.kind]].soft} />
             <Text variant="label" tone="inverse" style={styles.text}>
               {toast.message}
             </Text>

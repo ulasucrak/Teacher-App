@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, Button, LoadingState, Sheet, Text } from '@/components/ui';
-import { colors, layout, spacing } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
 import type { FormRow } from '@/types/database';
 
 import { classLabel, optionCountLabel, sameTitle, type ClassFormsGroup } from '../format';
@@ -102,7 +102,7 @@ export function FormSourceSheet({
                     {busy ? (
                       <ActivityIndicator color={colors.primary} />
                     ) : (
-                      <FormIcon name="plus" size={20} color={colors.primary} />
+                      <FormIcon name="plus" size={iconSize.lg} color={colors.primary} />
                     )}
                   </Pressable>
                 );

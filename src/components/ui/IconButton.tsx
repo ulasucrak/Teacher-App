@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, layout, radii } from '@/theme';
+import { colors, iconSize, layout, radii } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 
@@ -23,7 +23,7 @@ export function IconButton({
   accessibilityHint,
   onPress,
   color = colors.text,
-  size = 22,
+  size = iconSize.xl,
   disabled = false,
   style,
 }: IconButtonProps) {

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon, Text } from '@/components/ui';
-import { colors, layout, spacing } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
 
 import { classMetaParts, type ClassSummary } from '../model';
 
@@ -49,7 +49,7 @@ export function ClassListRow({ item, onPress }: ClassListRowProps) {
           {forms}
         </Text>
       </View>
-      <Icon name="chevronRight" size={16} color={colors.textMuted} />
+      <Icon name="chevronRight" size={iconSize.sm} color={colors.textMuted} />
     </Pressable>
   );
 }

@@ -4,7 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Sheet } from './Sheet';
 
-jest.mock('react-native/Libraries/Modal/Modal', () => require('@/test/nativeModalMock'));
+jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
 
 const metrics = {
   frame: { x: 0, y: 0, width: 390, height: 844 },

@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Icon, IconButton } from '@/components/ui';
-import { colors, fontScale, layout, radii, spacing, typography } from '@/theme';
+import { colors, fontScale, iconSize, layout, radii, spacing, typography } from '@/theme';
 
 export interface SearchFieldProps {
   value: string;
@@ -14,7 +14,7 @@ export interface SearchFieldProps {
 export function SearchField({ value, onChangeText, placeholder, accessibilityLabel }: SearchFieldProps) {
   return (
     <View style={styles.wrap}>
-      <Icon name="search" size={18} color={colors.textMuted} />
+      <Icon name="search" size={iconSize.md} color={colors.textMuted} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -34,7 +34,7 @@ export function SearchField({ value, onChangeText, placeholder, accessibilityLab
       {value ? (
         <IconButton
           icon="close"
-          size={18}
+          size={iconSize.md}
           color={colors.textMuted}
           accessibilityLabel="Aramayı temizle"
           onPress={() => onChangeText('')}

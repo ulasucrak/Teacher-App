@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { radii, spacing, tones, type ToneName } from '@/theme';
+import { iconSize, radii, spacing, tones, type ToneName } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
@@ -36,7 +36,7 @@ export function Banner({ kind = 'info', title, message }: BannerProps) {
       accessibilityRole={kind === 'error' ? 'alert' : 'summary'}
       accessibilityLiveRegion="polite"
     >
-      <Icon name={kindIcon[kind]} size={20} color={t.onSoft} />
+      <Icon name={kindIcon[kind]} size={iconSize.lg} color={t.onSoft} />
       <View style={styles.texts}>
         {title ? (
           <Text variant="label" color={t.onSoft}>

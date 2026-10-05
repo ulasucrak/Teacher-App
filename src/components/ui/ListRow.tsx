@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, layout, spacing } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
 
 import { Icon } from './Icon';
 import { Text } from './Text';
@@ -58,7 +58,7 @@ export function ListRow({
         ) : null}
       </View>
       {trailing}
-      {showChevron ? <Icon name="chevronRight" size={16} color={colors.textMuted} /> : null}
+      {showChevron ? <Icon name="chevronRight" size={iconSize.sm} color={colors.textMuted} /> : null}
     </View>
   );
 

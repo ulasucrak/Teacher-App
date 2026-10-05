@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/ui';
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
 /** Çoklu seçimde satır sonundaki kutu (dekoratif; durum satırın etiketinde okunur). */
 export function SelectBox({ checked }: { checked: boolean }) {
@@ -11,7 +11,7 @@ export function SelectBox({ checked }: { checked: boolean }) {
       accessible={false}
       importantForAccessibility="no-hide-descendants"
     >
-      {checked ? <Icon name="check" size={16} color={colors.textInverse} /> : null}
+      {checked ? <Icon name="check" size={iconSize.sm} color={colors.textInverse} /> : null}
     </View>
   );
 }
