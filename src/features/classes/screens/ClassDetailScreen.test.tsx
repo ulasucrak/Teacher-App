@@ -10,14 +10,22 @@ import type { ClassSummary } from '../model';
 import { ClassDetailScreen } from './ClassDetailScreen';
 
 const mockPush = jest.fn();
+const mockSetParams = jest.fn();
+let mockParams: Record<string, string | undefined> = { classId: 'c1' };
 
 jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
 jest.mock('@/lib/supabase', () => ({ supabase: {} }));
 jest.mock('expo-router', () => {
   const { useEffect } = jest.requireActual<typeof import('react')>('react');
   return {
-    useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn(), canGoBack: () => true }),
-    useLocalSearchParams: () => ({ classId: 'c1' }),
+    useRouter: () => ({
+      push: mockPush,
+      replace: jest.fn(),
+      back: jest.fn(),
+      canGoBack: () => true,
+      setParams: mockSetParams,
+    }),
+    useLocalSearchParams: () => mockParams,
     useFocusEffect: (effect: () => void) => useEffect(effect, [effect]),
   };
 });
@@ -66,6 +74,7 @@ const renderScreen = () =>
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockParams = { classId: 'c1' };
   mockGetClass.mockResolvedValue(theClass);
   mockListStudents.mockResolvedValue(roster);
 });
@@ -82,6 +91,23 @@ describe('ClassDetailScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/class/c1/forms');
     await fireEvent.press(screen.getByRole('button', { name: /^Fotoğraftan öğrenci ekle/ }));
     expect(mockPush).toHaveBeenCalledWith('/class/c1/import');
+  });
+
+  it('confirms a photo import once and clears the route param', async () => {
+    mockParams = { classId: 'c1', imported: '7' };
+    await renderScreen();
+
+    expect(await screen.findByText('7 öğrenci eklendi')).toBeOnTheScreen();
+    expect(mockSetParams).toHaveBeenCalledTimes(1);
+    expect(mockSetParams).toHaveBeenCalledWith({ imported: undefined });
+  });
+
+  it('shows no import confirmation without the param', async () => {
+    await renderScreen();
+
+    expect(await screen.findByText('Ayşe Yılmaz')).toBeOnTheScreen();
+    expect(screen.queryByText(/öğrenci eklendi/)).toBeNull();
+    expect(mockSetParams).not.toHaveBeenCalled();
   });
 
   it('filters students by name ignoring Turkish diacritics', async () => {
