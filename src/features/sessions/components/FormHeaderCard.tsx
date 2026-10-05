@@ -24,7 +24,7 @@ export function FormHeaderCard({ subject, description, fallbackTitle, status, ch
     <Card style={styles.card}>
       <View style={styles.row}>
         <View style={styles.iconBox}>
-          <Icon name="book" size={20} color={colors.primary} />
+          <Icon name="book" color={colors.primary} />
         </View>
         <View style={styles.texts}>
           <Text variant="bodyStrong" numberOfLines={1}>

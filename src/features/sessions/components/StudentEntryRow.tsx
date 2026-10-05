@@ -48,6 +48,7 @@ export const StudentEntryRow = memo(function StudentEntryRow({
             icon="note"
             accessibilityLabel={hasNote ? `${student.full_name} notunu düzenle` : `${student.full_name} için not ekle`}
             onPress={() => onOpenNote(student.id)}
+            disabled={disabled}
             color={hasNote ? colors.primary : colors.textMuted}
             style={hasNote ? styles.noteFilled : undefined}
           />

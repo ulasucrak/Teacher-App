@@ -77,6 +77,10 @@ export function SessionFillScreen() {
     Promise.all([getForm(formId), getSession(sessionId), listStudents(classId), listEntries(sessionId), getClass(classId)])
       .then(([form, session, students, entries, klass]) => {
         if (cancelled) return;
+        if (session.form_id !== formId) {
+          setLoadError('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.');
+          return;
+        }
         setData({ form, session, students: sortStudents(students), klass });
         dispatch({ type: 'load', entries });
       })

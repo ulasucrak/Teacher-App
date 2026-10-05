@@ -27,7 +27,7 @@ export const BulkApplyCard = memo(function BulkApplyCard({
     <Card style={styles.card}>
       <View style={styles.header}>
         <View style={styles.iconBox}>
-          <Icon name="people" size={18} color={colors.primary} />
+          <Icon name="people" color={colors.primary} />
         </View>
         <Text variant="bodyStrong" style={styles.title}>
           Tümü

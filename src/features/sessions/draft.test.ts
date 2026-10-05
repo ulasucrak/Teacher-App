@@ -188,6 +188,14 @@ describe('upsert payload and saved', () => {
     expect(getDirtyStudentIds(after)).toEqual([]);
   });
 
+  it('saving drops a pending bulk undo offer', () => {
+    const s = run([{ type: 'bulkApply', studentIds: ['a', 'b', 'c'], optionKey: 'missing' }], loaded);
+    expect(s.undo).not.toBeNull();
+    const after = draftReducer(s, { type: 'saved', entries: buildUpsertPayload(s, 'sess-1') });
+    expect(after.undo).toBeNull();
+    expect(getDirtyStudentIds(after)).toEqual([]);
+  });
+
   it('edits made while saving stay dirty', () => {
     const s = run([{ type: 'toggle', studentId: 'c', optionKey: 'none' }], loaded);
     const payload = buildUpsertPayload(s, 'sess-1');

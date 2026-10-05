@@ -205,6 +205,14 @@ describe('SessionFillScreen', () => {
     expect(await screen.findByText('Ödev kontrolü')).toBeOnTheScreen();
   });
 
+  it('treats a session from another form as not found', async () => {
+    mocked.getSession.mockResolvedValueOnce({ ...session, form_id: 'other' });
+    await render(<SessionFillScreen />, { wrapper: Providers });
+
+    expect(await screen.findByText('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.')).toBeOnTheScreen();
+    expect(screen.queryByText('Matematik')).toBeNull();
+  });
+
   it('shows an empty state when the class has no students', async () => {
     mocked.listStudents.mockResolvedValueOnce([]);
     await renderScreen();

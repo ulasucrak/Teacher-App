@@ -122,7 +122,7 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
       for (const e of action.entries) {
         saved = withEntry(saved, e.student_id, { optionKey: e.option_key, note: e.note });
       }
-      return { ...state, saved };
+      return { ...state, saved, undo: null };
     }
   }
 }
