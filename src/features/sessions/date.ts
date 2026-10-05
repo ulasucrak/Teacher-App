@@ -67,6 +67,19 @@ export function formatShortDate(iso: string): string {
   return `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
+/**
+ * Liste satırları için kısa biçim: "Bugün" / "Dün" / "Yarın", bu yıl için "14 Şubat",
+ * başka yıl için "1 Aralık 2025". Geçersiz girdide null.
+ */
+export function formatCompactDate(iso: string, today: string = todayIso()): string | null {
+  const date = parse(iso);
+  if (!date) return null;
+  const relative = relativeDayLabel(iso, today);
+  if (relative) return relative;
+  const base = `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]}`;
+  return today.startsWith(String(date.getUTCFullYear())) ? base : `${base} ${date.getUTCFullYear()}`;
+}
+
 /** Bugüne göre göreli ad: "Bugün", "Dün", "Yarın"; diğer günler için null. */
 export function relativeDayLabel(iso: string, today: string = todayIso()): string | null {
   if (iso === today) return 'Bugün';

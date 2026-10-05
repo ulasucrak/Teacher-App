@@ -10,6 +10,8 @@
  *   ("12. Ali Veli", "12 - Ali Veli", "512 Ali Veli").
  */
 
+import { normalizeStudentName } from '@/features/students/name';
+
 // ---------------------------------------------------------------------------
 // Girdi tipleri (ML Kit `TextRecognitionResult` ile yapısal olarak uyumlu)
 // ---------------------------------------------------------------------------
@@ -76,25 +78,11 @@ export function foldTurkish(value: string): string {
     .trim();
 }
 
-function titleCaseWord(word: string): string {
-  // "AYŞE-NUR" → "Ayşe-Nur", "O'NEIL" → "O'neil" (kesme işaretinden sonra küçük kalır).
-  return word
-    .split('-')
-    .map((part) => {
-      const lower = part.toLocaleLowerCase(LOCALE);
-      return lower.charAt(0).toLocaleUpperCase(LOCALE) + lower.slice(1);
-    })
-    .join('-');
-}
-
-/** "SELİN BAYEZİT" → "Selin Bayezit", "ışık" → "Işık" (tr-TR kurallarıyla). */
-export function toTurkishTitleCase(value: string): string {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(titleCaseWord)
-    .join(' ');
-}
+/**
+ * "SELİN BAYEZİT" → "Selin Bayezit", "ışık" → "Işık" (tr-TR kurallarıyla).
+ * Elle eklenen öğrencilerle aynı biçim olsun diye öğrenci adı düzenleyicisini kullanır.
+ */
+export const toTurkishTitleCase: (value: string) => string = normalizeStudentName;
 
 /** Ad alanı için düşük güven nedenleri (düzenlenen satırlarda da yeniden hesaplanır). */
 export function assessName(fullName: string, hadDigits = false): NameWarning[] {

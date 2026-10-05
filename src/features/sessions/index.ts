@@ -1,7 +1,7 @@
 export * as sessionsApi from './api';
 export { SessionsApiError, toUserMessage } from './api';
 export type { SessionSummary } from './api';
-export { addDays, formatSessionDate, formatShortDate, relativeDayLabel, todayIso } from './date';
+export { addDays, formatCompactDate, formatSessionDate, formatShortDate, relativeDayLabel, todayIso } from './date';
 export {
   buildUpsertPayload,
   countByOption,
