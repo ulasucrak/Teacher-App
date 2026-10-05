@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, elevation, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
@@ -13,15 +13,29 @@ export interface SheetProps {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  /**
+   * Kapanış animasyonu bitip panel ekrandan tamamen kalktığında bir kez çağrılır
+   * (iOS'ta Modal `onDismiss`, diğer platformlarda animasyon sonu). Ardından ikinci bir
+   * Modal/Alert açmak için kullanın; iOS aynı anda iki modal sunamaz.
+   */
+  onDismissed?: () => void;
 }
 
+/** iOS Modal'ı yerel olarak kapanınca `onDismiss` bildirir; diğer platformlarda bildirim yok. */
+const hasNativeDismiss = () => Platform.OS === 'ios';
+
 /** Alttan açılan basit seçici / panel (RN Modal üstüne). Perdeye dokununca kapanır. */
-export function Sheet({ visible, onClose, title, children, footer }: SheetProps) {
+export function Sheet({ visible, onClose, title, children, footer, onDismissed }: SheetProps) {
   const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const [mounted, setMounted] = useState(visible);
   const [progress] = useState(() => new Animated.Value(0));
+  const onDismissedRef = useRef(onDismissed);
+  useEffect(() => {
+    onDismissedRef.current = onDismissed;
+  }, [onDismissed]);
+  const notifyDismissed = useCallback(() => onDismissedRef.current?.(), []);
 
   // Açılırken hemen bağla; kapanışta animasyon bitince ayır.
   if (visible && !mounted) setMounted(true);
@@ -34,9 +48,12 @@ export function Sheet({ visible, onClose, title, children, footer }: SheetProps)
       easing: motion.easing.standard,
       useNativeDriver: true,
     }).start(({ finished }) => {
-      if (finished && !visible) setMounted(false);
+      if (finished && !visible) {
+        setMounted(false);
+        if (!hasNativeDismiss()) notifyDismissed();
+      }
     });
-  }, [visible, mounted, progress]);
+  }, [visible, mounted, progress, notifyDismissed]);
 
   const translateY = progress.interpolate({
     inputRange: [0, 1],
@@ -44,7 +61,14 @@ export function Sheet({ visible, onClose, title, children, footer }: SheetProps)
   });
 
   return (
-    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
+    <Modal
+      visible={mounted}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+      onDismiss={hasNativeDismiss() ? notifyDismissed : undefined}
+      statusBarTranslucent
+    >
       <Animated.View style={[styles.scrim, { opacity: progress }]}>
         <Pressable
           style={StyleSheet.absoluteFill}
