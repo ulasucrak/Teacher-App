@@ -126,23 +126,13 @@ export function FormSessionsScreen() {
   const header = (
     <View style={styles.header}>
       <FormHeaderCard subject={form.subject} description={form.description} fallbackTitle={form.title}>
-        <View style={styles.links}>
-          <Button
-            label="Formu düzenle"
-            icon="edit"
-            variant="secondary"
-            size="sm"
-            fullWidth={false}
-            onPress={() => router.push(`/class/${classId}/form/${formId}/edit`)}
-          />
-          <Button
-            label="Formlara dön"
-            variant="ghost"
-            size="sm"
-            fullWidth={false}
-            onPress={() => router.push(`/class/${classId}/forms`)}
-          />
-        </View>
+        <Button
+          label="Formları göster"
+          variant="ghost"
+          size="sm"
+          fullWidth={false}
+          onPress={() => router.push(`/class/${classId}/forms`)}
+        />
       </FormHeaderCard>
 
       {loadError ? <Banner kind="error" message={loadError} /> : null}
@@ -207,7 +197,6 @@ export function FormSessionsScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: layout.pageX, paddingTop: spacing.sm, gap: spacing.md },
-  links: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   latest: { gap: spacing.sm },
   sectionTitle: {
     marginTop: spacing.md,
