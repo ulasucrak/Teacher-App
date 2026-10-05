@@ -334,6 +334,19 @@ describe('trNames', () => {
     expect(isKnownDotlessName('Yılmaz')).toBe(false);
     expect(isKnownDotlessName('yilmaz')).toBe(false);
   });
+
+  it('noktalı yazımı yaygın olan adları içermez', () => {
+    for (const name of ['ılayda', 'ılgın', 'ılkım', 'ıraz', 'ırmak', 'ılkay', 'ılhan']) {
+      expect(isKnownDotlessName(name)).toBe(false);
+    }
+  });
+
+  it('listede olmayan BÜYÜK HARF adlarda İ varsayımına döner', () => {
+    expect(names(parseRows([['1', '12', 'ILAYDA KAYA'], ['2', '13', 'IRMAK EREN']]))).toEqual([
+      'İlayda Kaya',
+      'İrmak Eren',
+    ]);
+  });
 });
 
 describe('regresyon — numara ve başlık kuralları', () => {

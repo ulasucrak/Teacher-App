@@ -94,6 +94,12 @@ export default function FormsScreen() {
 
   // ----- Eylemler -----------------------------------------------------------
 
+  const openActions = (form: FormListItem) => {
+    // Önceki kapanıştan kalmış (henüz çalışmamış) bir eylem yeni menünün kapanışında tetiklenmesin.
+    afterSheetAction.current = null;
+    setActionForm(form);
+  };
+
   const afterSheet = (fn: () => void) => {
     afterSheetAction.current = fn;
     setActionForm(null);
@@ -316,7 +322,7 @@ export default function FormsScreen() {
                 key={form.id}
                 form={form}
                 onOpen={() => router.push(formsRoutes.sessions(classId, form.id))}
-                onMore={() => setActionForm(form)}
+                onMore={() => openActions(form)}
               />
             ))}
           </View>
@@ -344,7 +350,7 @@ export default function FormsScreen() {
                     form={form}
                     muted
                     onOpen={() => router.push(formsRoutes.sessions(classId, form.id))}
-                    onMore={() => setActionForm(form)}
+                    onMore={() => openActions(form)}
                   />
                 ))
               : null}

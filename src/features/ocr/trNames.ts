@@ -5,14 +5,14 @@
  * okunmadıysa "I" harfleri varsayılan olarak "İ" kabul edilir ("SELIN" → "Selin"). Bu liste,
  * aynı kelimenin "ı"lı yazımı bilinen bir ad/soyad olduğunda o yazımın seçilmesini sağlar
  * ("YILMAZ" → "Yılmaz", "NAZLI" → "Nazlı"). Liste bilerek kısa tutulur: noktalı yazımı da
- * yaygın olan adlar (İlkay, İlhan, İrfan) eklenmez.
+ * yaygın olan adlar (İlkay, İlhan, İrfan, İlayda, İlgin, İlkim, İrmak) eklenmez.
  */
 
 const GIVEN_NAMES = [
   'akın', 'alkım', 'altın', 'arın', 'aslı', 'aslıhan', 'asım', 'aşkın', 'aydın', 'ayışığı',
   'aysıla', 'balkız', 'barış', 'barışcan', 'batıkan', 'cansın', 'çağrı', 'çınar', 'fırat',
-  'fıratcan', 'gülhanım', 'hakkı', 'hanım', 'hazım', 'ılayda', 'ılgaz', 'ılgın', 'ılkım', 'ıraz',
-  'ırmak', 'ışıl', 'ışın', 'ışık', 'kasım', 'kayıhan', 'kazım', 'kıvanç', 'kıymet',
+  'fıratcan', 'gülhanım', 'hakkı', 'hanım', 'hazım', 'ılgaz',
+  'ışıl', 'ışın', 'ışık', 'kasım', 'kayıhan', 'kazım', 'kıvanç', 'kıymet',
   'mısra', 'nazım', 'nazlı', 'pınar', 'rıdvan', 'rıfat', 'rıza', 'sıdıka', 'sıla', 'sırma',
   'sırrı', 'sıtkı', 'şıhmus', 'tarık', 'yağız', 'yıldırım', 'yıldız',
 ] as const;
