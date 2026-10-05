@@ -1,10 +1,12 @@
 /**
  * Cihaz üstü metin tanıma (ML Kit, ücretsiz, çevrimdışı). Yalnızca geliştirme
- * derlemesinde çalışır; Expo Go'da yerel modül yoktur.
+ * derlemesinde çalışır; Expo Go'da ve `npm run ios:sim` (NO_MLKIT=1) ile
+ * alınan simülatör derlemesinde yerel modül yoktur.
  */
-import TextRecognition from '@react-native-ml-kit/text-recognition';
+import type TextRecognitionDefault from '@react-native-ml-kit/text-recognition';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { NativeModules } from 'react-native';
 
 import { parseOcrResult, type OcrResult, type ParsedStudent } from './parser';
 
@@ -32,6 +34,24 @@ export function isModuleUnavailableError(error: unknown): boolean {
   return /doesn't seem to be linked|not linked|native module|cannot read propert(y|ies) of (undefined|null)/i.test(message);
 }
 
+type TextRecognitionModule = typeof TextRecognitionDefault;
+
+/**
+ * ML Kit modülünü yalnızca yerel taraf bağlıysa ve ihtiyaç anında yükler.
+ * Modül yoksa (Expo Go, ML Kit'siz simülatör derlemesi) `null` döner; dosya
+ * yüklenirken hiçbir şey çökmez.
+ */
+export function loadTextRecognition(): TextRecognitionModule | null {
+  if (!NativeModules.TextRecognition) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('@react-native-ml-kit/text-recognition') as { default?: TextRecognitionModule };
+    return mod.default ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function isExpoGo(): boolean {
   return Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 }
@@ -55,6 +75,8 @@ export async function preparePhoto(uri: string, width?: number): Promise<string>
 /** Fotoğrafı küçültür, ML Kit ile okur ve öğrenci satırlarına çevirir. */
 export async function recognizePhoto(uri: string, width?: number): Promise<RecognizeOutcome> {
   if (isExpoGo()) return fail('unavailable');
+  const TextRecognition = loadTextRecognition();
+  if (!TextRecognition) return fail('unavailable');
 
   let prepared: string;
   try {

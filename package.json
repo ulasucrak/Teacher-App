@@ -7,6 +7,7 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "ios:sim": "NO_MLKIT=1 expo prebuild --clean -p ios && NO_MLKIT=1 expo run:ios",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest"

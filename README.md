@@ -82,7 +82,7 @@ fotoğraftan öğrenci ekleme yalnızca geliştirme derlemesinde (development bu
 mağaza/dağıtım derlemesinde çalışır. Bir geliştirme derlemesi kullanın:
 
 ```bash
-npx expo run:ios       # iOS simülatör / cihaz (Xcode gerekir)
+npx expo run:ios       # iOS cihaz / Intel Mac simülatörü (Xcode gerekir)
 npx expo run:android   # Android emülatör / cihaz (Android Studio gerekir)
 ```
 
@@ -98,12 +98,29 @@ profili): `npx eas-cli@latest build --profile development --platform ios` (ya da
 `ios/` ve `android/` klasörleri `expo prebuild` ile üretilir; elle düzenlenmez ve git'e
 eklenmez. Yerel ayarlar `app.json` ve eklenti yapılandırmalarıyla yapılır.
 
+### Simülatörde çalıştırma
+
+ML Kit'in iOS pod'larında (GoogleMLKit) Apple Silicon simülatörü için arm64 dilimi yok; bu
+yüzden `npx expo run:ios` Apple Silicon Mac'lerde simülatör için derlenemez (gerçek cihazda
+sorun yoktur). Simülatörde denemek için ML Kit'siz bir geliştirme derlemesi alın:
+
+```bash
+npm run ios:sim
+```
+
+Bu komut `NO_MLKIT=1` ile `ios/` klasörünü temizden yeniden üretir (`react-native.config.js`
+ML Kit'i iOS'ta bağlamaz) ve uygulamayı çalıştırır. Bu derlemede fotoğraftan okuma yerine
+"bu sürümde yok" mesajı görünür; öğrenciler elle eklenebilir. Yalnızca geliştirme içindir:
+cihaz/dağıtım derlemesinden önce `ios/` klasörünü `npx expo prebuild --clean -p ios` ile
+(`NO_MLKIT` olmadan) yeniden üretin. Android etkilenmez.
+
 ## Komutlar
 
 | Komut | Ne yapar |
 |---|---|
 | `npm start` | Metro'yu geliştirme derlemesi için başlatır |
 | `npm run ios` | iOS için derler ve çalıştırır (`expo run:ios`) |
+| `npm run ios:sim` | ML Kit'siz iOS simülatör derlemesi (`NO_MLKIT=1`, yalnızca geliştirme) |
 | `npm run android` | Android için derler ve çalıştırır (`expo run:android`) |
 | `npm run typecheck` | TypeScript kontrolü (`tsc --noEmit`) |
 | `npm run lint` | ESLint (`expo lint`) |
@@ -128,6 +145,7 @@ src/
   theme/                 Renk, yazı, boşluk, ikon boyutu, radius, gölge ve hareket token'ları
 docs/DESIGN.md           Tasarım sistemi ve yazı dili kuralları
 supabase/                Göçler ve yerel Supabase yapılandırması
+react-native.config.js   NO_MLKIT=1 iken ML Kit'i iOS'ta bağlamaz (simülatör derlemesi)
 ```
 
 `@/` yolu `src/` klasörünü gösterir (`import { Button } from '@/components/ui'`).

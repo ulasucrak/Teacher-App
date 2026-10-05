@@ -1,8 +1,9 @@
 import TextRecognition from '@react-native-ml-kit/text-recognition';
 import Constants from 'expo-constants';
 import { ImageManipulator } from 'expo-image-manipulator';
+import { NativeModules } from 'react-native';
 
-import { isModuleUnavailableError, preparePhoto, recognizeMessages, recognizePhoto } from './recognize';
+import { isModuleUnavailableError, loadTextRecognition, preparePhoto, recognizeMessages, recognizePhoto } from './recognize';
 
 jest.mock('@react-native-ml-kit/text-recognition', () => ({
   __esModule: true,
@@ -31,10 +32,12 @@ jest.mock('expo-image-manipulator', () => ({
 const recognize = TextRecognition.recognize as jest.Mock;
 const manipulate = ImageManipulator.manipulate as jest.Mock;
 const constants = Constants as { executionEnvironment: string };
+const nativeModules = NativeModules as Record<string, unknown>;
 
 beforeEach(() => {
   jest.clearAllMocks();
   constants.executionEnvironment = 'bare';
+  nativeModules.TextRecognition = {};
   mockRenderAsync.mockResolvedValue({
     saveAsync: jest.fn().mockResolvedValue({ uri: 'file:///small.jpg' }),
     release: mockImageRelease,
@@ -111,6 +114,17 @@ describe('recognizePhoto', () => {
     expect(recognize).not.toHaveBeenCalled();
   });
 
+  it('ML Kit olmadan alınan derlemede (NO_MLKIT=1) elle eklemeye yönlendirir', async () => {
+    delete nativeModules.TextRecognition;
+    await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toEqual({
+      ok: false,
+      reason: 'unavailable',
+      message: recognizeMessages.unavailable,
+    });
+    expect(recognize).not.toHaveBeenCalled();
+    expect(manipulate).not.toHaveBeenCalled();
+  });
+
   it('okuma hatasında yeniden çekme önerir', async () => {
     recognize.mockRejectedValue(new Error('Image decode failed'));
     await expect(recognizePhoto('file:///a.jpg', 1000)).resolves.toMatchObject({ ok: false, reason: 'failed' });
@@ -126,5 +140,16 @@ describe('isModuleUnavailableError', () => {
   it('bağlantı hatalarını tanır', () => {
     expect(isModuleUnavailableError(new Error("doesn't seem to be linked"))).toBe(true);
     expect(isModuleUnavailableError(new Error('Image decode failed'))).toBe(false);
+  });
+});
+
+describe('loadTextRecognition', () => {
+  it('yerel modül bağlıysa ML Kit modülünü döner', () => {
+    expect(loadTextRecognition()).toBe(TextRecognition);
+  });
+
+  it('yerel modül yoksa null döner', () => {
+    delete nativeModules.TextRecognition;
+    expect(loadTextRecognition()).toBeNull();
   });
 });
