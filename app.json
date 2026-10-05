@@ -46,7 +46,8 @@
           "cameraPermission": "Öğrenci listesinin fotoğrafını çekebilmeniz için kameraya erişim gerekiyor.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "./plugins/withUIScene"
     ],
     "experiments": {
       "typedRoutes": false
