@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Banner, Button, LoadingState, Screen, useToast } from '@/components/ui';
@@ -23,18 +23,27 @@ export default function EditFormScreen() {
   const toast = useToast();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
 
-  const load = useCallback(async () => {
-    setState({ kind: 'loading' });
-    try {
-      setState({ kind: 'ready', form: await getForm(formId) });
-    } catch (error) {
-      setState({ kind: 'error', message: errorMessage(error, 'load') });
-    }
-  }, [formId]);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let alive = true;
+    getForm(formId).then(
+      (form) => {
+        if (alive) setState({ kind: 'ready', form });
+      },
+      (error: unknown) => {
+        if (alive) setState({ kind: 'error', message: errorMessage(error, 'load') });
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [formId, attempt]);
+
+  const retry = () => {
+    setState({ kind: 'loading' });
+    setAttempt((n) => n + 1);
+  };
 
   if (state.kind !== 'ready') {
     return (
@@ -44,7 +53,7 @@ export default function EditFormScreen() {
         ) : (
           <View style={styles.error}>
             <Banner kind="error" title="Form açılamadı" message={state.message} />
-            <Button label="Tekrar dene" variant="secondary" fullWidth={false} onPress={() => void load()} />
+            <Button label="Tekrar dene" variant="secondary" fullWidth={false} onPress={retry} />
           </View>
         )}
       </Screen>
