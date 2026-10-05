@@ -86,11 +86,6 @@ export function toDraftOptions(options: readonly FormOption[]): DraftOption[] {
   return options.map((o) => ({ id: nextDraftId(), key: o.key, label: o.label, tone: o.tone }));
 }
 
-/** Şablon seçenekleri yeni form içindir: anahtarlar kaydederken üretilir. */
-export function toNewDraftOptions(options: readonly Pick<FormOption, 'label' | 'tone'>[]): DraftOption[] {
-  return options.map((o) => ({ id: nextDraftId(), key: null, label: o.label, tone: o.tone }));
-}
-
 export function createDraftOption(tone: FormOptionTone = 'neutral'): DraftOption {
   return { id: nextDraftId(), key: null, label: '', tone };
 }

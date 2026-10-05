@@ -236,7 +236,7 @@ export default function FormsScreen() {
       <>
         {state.className ? (
           <Text variant="body" tone="muted" style={styles.className}>
-            {state.className} sınıfı
+            {state.className}
           </Text>
         ) : null}
 
