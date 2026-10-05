@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Sınıf Defteri",
+    "slug": "teacher-app",
+    "scheme": "teacherapp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "com.ulas.teacherapp",
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "tr"
+      }
+    },
+    "android": {
+      "package": "com.ulas.teacherapp",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Öğrenci listesinin fotoğrafını seçebilmeniz için fotoğraflarınıza erişim gerekiyor.",
+          "cameraPermission": "Öğrenci listesinin fotoğrafını çekebilmeniz için kameraya erişim gerekiyor.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
