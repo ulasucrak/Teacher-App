@@ -44,8 +44,8 @@ export async function fetchImportContext(classId: string): Promise<ImportContext
     if (studentResult.error) throw studentResult.error;
     if (!classResult.data) throw new OcrApiError(apiMessages.classNotFound);
     return {
-      classRow: classResult.data as ClassRow,
-      students: (studentResult.data ?? []) as StudentRow[],
+      classRow: classResult.data,
+      students: studentResult.data ?? [],
     };
   } catch (error) {
     throw toApiError(error, apiMessages.loadFailed);
@@ -63,7 +63,7 @@ export async function insertStudents(classId: string, drafts: StudentDraft[]): P
   try {
     const { data, error } = await supabase.from('students').insert(payload).select('id');
     if (error) throw error;
-    return (data as Pick<StudentRow, 'id'>[] | null)?.length ?? payload.length;
+    return data?.length ?? payload.length;
   } catch (error) {
     throw toApiError(error, apiMessages.saveFailed);
   }
