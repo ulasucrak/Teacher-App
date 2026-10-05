@@ -114,6 +114,17 @@ ML Kit'i iOS'ta bağlamaz) ve uygulamayı çalıştırır. Bu derlemede fotoğra
 cihaz/dağıtım derlemesinden önce `ios/` klasörünü `npx expo prebuild --clean -p ios` ile
 (`NO_MLKIT` olmadan) yeniden üretin. Android etkilenmez.
 
+### iOS 27 SDK ve UIScene
+
+Xcode 27 / iOS 27 SDK ile derlenen uygulamalar UIScene yaşam döngüsünü benimsemezse açılışta
+kapanır ("UIScene life cycle is required for apps built with this SDK"). Expo SDK 57'nin
+`expo prebuild` şablonu bunu henüz yapmadığından `plugins/withUIScene.js` (app.json'da kayıtlı)
+prebuild sırasında Info.plist'e `UIApplicationSceneManifest` ekler, sahne temsilcisi olarak
+Expo'nun hazır `ExpoAppSceneDelegate`'ini kullanır ve `AppDelegate.swift`'ten pencere oluşturmayı
+kaldırır. Pencere ve React Native sahnede başlatılır; `teacherapp://` bağlantıları sahne üzerinden
+`RCTLinkingManager`'a iletilir. `ios/` klasörünü elle düzenlemeyin. Şablon değişirse eklenti
+prebuild'i hatayla durdurur; Expo şablonu UIScene'i kendisi desteklediğinde eklenti kaldırılabilir.
+
 ## Komutlar
 
 | Komut | Ne yapar |
