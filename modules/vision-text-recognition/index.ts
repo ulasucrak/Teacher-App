@@ -15,6 +15,21 @@ export interface VisionObservation {
   y: number;
   width: number;
   height: number;
+  /**
+   * En iyi ilk 3 okuma (ilki `text`). Eski derlemelerde ve eski fikstürlerde olmayabilir.
+   */
+  candidates?: VisionCandidate[];
+  /**
+   * Satırın döndürülmüş dörtgeni (normalize, SOL-ALT orijinli): sol-üst, sağ-üst, sağ-alt, sol-alt.
+   * Eğik fotoğrafta satır eğimi buradan bulunur. Eski derlemelerde olmayabilir.
+   */
+  corners?: { x: number; y: number }[];
+}
+
+export interface VisionCandidate {
+  text: string;
+  /** 0...1 */
+  confidence: number;
 }
 
 export interface VisionRecognitionResult {

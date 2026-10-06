@@ -1,0 +1,27 @@
+{
+  "description": "e-Okul B, Georgia 30 başlık düzeni, −3° eğik, düşük karşıtlık",
+  "students": [
+    {"number": "165", "fullName": "İlayda Taşdemir"},
+    {"number": "214", "fullName": "Hüseyin Öğüt"},
+    {"number": "498", "fullName": "Zümra Ünal"},
+    {"number": "512", "fullName": "Özlem Şahin"},
+    {"number": "535", "fullName": "Ilgaz Ümit Ağaoğlu"},
+    {"number": "817", "fullName": "Ece Çakır"},
+    {"number": "880", "fullName": "Ömer Bozkurt"},
+    {"number": "1081", "fullName": "Süleyman Yıldırım"},
+    {"number": "1108", "fullName": "Görkem Kaya"},
+    {"number": "1211", "fullName": "Çiğdem Kaya"},
+    {"number": "1215", "fullName": "Fırat Polat"},
+    {"number": "1285", "fullName": "Gökçe Özer"},
+    {"number": "1415", "fullName": "Tolga Çalışkan"},
+    {"number": "1424", "fullName": "Ilgın Kara"},
+    {"number": "1591", "fullName": "Şeyma Çelik"},
+    {"number": "1667", "fullName": "Eren Ağaoğlu"},
+    {"number": "1683", "fullName": "Mehmet Yıldırım"},
+    {"number": "1874", "fullName": "Özlem Özer"},
+    {"number": "1928", "fullName": "Zeynep Erdoğan"},
+    {"number": "2316", "fullName": "Oğuzhan Söğüt"},
+    {"number": "2329", "fullName": "Ece Yılmaz"},
+    {"number": "2345", "fullName": "İpek Doğan"}
+  ]
+}
