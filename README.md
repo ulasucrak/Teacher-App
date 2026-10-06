@@ -139,6 +139,59 @@ kaldırır. Pencere ve React Native sahnede başlatılır; `teacherapp://` bağl
 `RCTLinkingManager`'a iletilir. `ios/` klasörünü elle düzenlemeyin. Şablon değişirse eklenti
 prebuild'i hatayla durdurur; Expo şablonu UIScene'i kendisi desteklediğinde eklenti kaldırılabilir.
 
+## Web sürümü
+
+Aynı kod tabanı tarayıcıda da çalışır (Expo web, `react-native-web`, Metro). Web'de ekranlar
+masaüstünde ortada okunur genişlikte (en fazla 720 px), telefon tarayıcısında tam genişliktedir;
+ikonlar Material Symbols ile çizilir, `Alert.alert` onayları tarayıcının `confirm`/`alert`
+pencereleriyle sorulur. Aynı hesapla açık mobil uygulama ve tarayıcı birbirini canlı izler
+(Supabase Realtime): bir yerde eklenen sınıf, öğrenci ya da işaret diğerinde yenilemeden görünür.
+
+### Yerelde çalıştırma
+
+```bash
+npm run web          # expo start --web → http://localhost:8081
+```
+
+`.env` dosyası mobil sürümle aynıdır (aşağıdaki ortam değişkenleri).
+
+### Derleme
+
+```bash
+npm run build:web    # expo export -p web → dist/ (tek sayfalık uygulama: dist/index.html + _expo/static)
+```
+
+`EXPO_PUBLIC_*` değişkenleri derleme anında pakete gömülür; değiştirdikten sonra yeniden derleyin.
+
+### Yayınlama notları
+
+- `dist/` klasörü herhangi bir statik barındırmaya (Netlify, Vercel, Cloudflare Pages, S3 +
+  CloudFront, nginx…) olduğu gibi yüklenir.
+- **SPA geri dönüşü gerekir:** bilinmeyen her yol `index.html`'e yönlendirilmelidir (`/class/…`,
+  `/reset-password` gibi adresler yenilemede ya da e-postadaki bağlantıdan açılabilsin). Örnekler:
+  Netlify `_redirects` içinde `/* /index.html 200`; nginx `try_files $uri /index.html;`;
+  Vercel `rewrites` ile `/(.*)` → `/index.html`. Yerelde denemek için:
+  `node scripts/e2e/web-serve.mjs 8099` (`dist/`'i SPA geri dönüşüyle sunar).
+- **Gerekli ortam değişkenleri (derleme ortamında):** `EXPO_PUBLIC_SUPABASE_URL`,
+  `EXPO_PUBLIC_SUPABASE_ANON_KEY`. Anon anahtarı herkese açıktır; yetki RLS kurallarıyla sağlanır.
+  Servis (service_role) anahtarını asla bu değişkenlere koymayın.
+- **Supabase Auth → URL Configuration → Redirect URLs** listesine şifre sıfırlama adreslerini
+  ekleyin (web'de bağlantı sitenin kendi adresine döner):
+
+  ```
+  http://localhost:8081/reset-password
+  https://<alan-adınız>/reset-password
+  ```
+
+  "Site URL"i de yayınlanan adres yapın. Liste dışındaki adresler Supabase tarafından reddedilir.
+
+### Web'de olmayanlar
+
+- **Fotoğraftan öğrenci ekleme (OCR):** cihaz üzerindeki metin tanıma yalnızca mobil uygulamada
+  var. Web'de "Fotoğraf" yolu Türkçe bir uyarı gösterir ("…yalnızca mobil uygulamada var…") ve
+  listeyi yapıştırmaya ya da adları elle yazmaya yönlendirir.
+- **Titreşim (haptics):** tarayıcıda yoktur; dokunuşlar sessizce titreşimsiz çalışır.
+
 ## E2E testleri (Maestro)
 
 `.maestro/` altındaki akışlar uygulamayı iOS simülatöründe uçtan uca dener
@@ -173,6 +226,50 @@ tuzaklar: iOS "Save Password?" penceresi akışlarda kapatılır; şifre alanın
 "Şifreyi göster"e dokunulur (güçlü şifre önerisi alanı örtmesin); panel açılırken dokunmadan
 önce animasyon beklenir. `auth.yaml` her çalıştırmada yeni bir test hesabı bırakır.
 
+## E2E (web)
+
+`e2e-web/` altındaki [Playwright](https://playwright.dev) testleri web sürümünü gerçek bir
+tarayıcıda (varsayılan: kurulu Google Chrome) uçtan uca dener. Uygulama `.env`'deki **gerçek
+Supabase projesine** bağlanır; test hesabı Maestro akışlarıyla aynıdır.
+
+| Test | Ne dener |
+|---|---|
+| `auth.spec.ts` | Yeni hesap (`e2e+web<zaman>@sinifdefteri.test`; doğrulama isteniyorsa test hesabı), yenilemede oturum korunur, çıkış; yeni hesap sonunda silinir; yanlış şifre Türkçe hata |
+| `classes.spec.ts` | Sihirbaz: yapıştırılan 5 ad (İ/ş/ğ) → sınıf; Öğrenciler: arama ("ayse"), ad düzenleme, silme |
+| `forms.spec.ts` | "+ Form" → Sözlü; Yoklama doldur, kaydet, yeniden açınca kayıtlı, Geçmiş özeti; Artı / eksi işaretle, geri al, özet ve liste |
+| `account.spec.ts` | Hesap ekranı bölümleri; silme onayı açılır ve vazgeçilir |
+| `live-sync.spec.ts` | İki ayrı tarayıcı bağlamı, aynı hesap: sınıf ekleme, öğrenci ekleme/silme, sınıf silme, işaretler (iki yön), geri alma, geçmiş özeti ve günlük kayıt diğer pencerede **yenilemeden** ≤ 8 sn içinde görünür |
+| `photo-import.spec.ts` | Web'de "Fotoğraf" yolu "yalnızca mobil uygulamada" uyarısı verir, fotoğraf düğmeleri kapalı; uyarıdan yapıştırmaya geçilir ve çalışır |
+| `responsive.spec.ts` | 390 px ve 1280 px: başlıca ekranlar yatay taşmasız, ana eylemler ekranın içinde, masaüstünde içerik ortada |
+
+Her test tarayıcı konsolundaki hataları toplar ve hata varsa başarısız olur (bilinen zararsız
+iletilerin izin listesi gerekçeleriyle `e2e-web/support/app.ts` içinde). `window.confirm`
+pencereleri otomatik onaylanır. Testler aynı hesabı paylaştığı için sırayla çalışır (`workers: 1`).
+
+```bash
+npm run e2e:web                          # derler (dist/), sunar ve tüm testleri çalıştırır
+npx playwright test live-sync            # tek dosya
+E2E_SKIP_BUILD=1 npm run e2e:web         # dist/ zaten güncelse derlemeyi atla
+npx playwright show-report               # HTML raporu (playwright-report/)
+```
+
+`playwright.config.ts`, `webServer` ile önce `scripts/e2e/web-build.mjs`'i (`expo export -p web`)
+çalıştırır, sonra `dist/`'i `scripts/e2e/web-serve.mjs` ile (ek bağımlılık yok, SPA geri dönüşlü)
+`http://localhost:8099`'da sunar. Ortam değişkenleri:
+
+| Değişken | Ne işe yarar |
+|---|---|
+| `EMAIL` / `PASSWORD` | Test hesabı (varsayılan `e2e+u02@sinifdefteri.test` / `Test1234!`) |
+| `E2E_ENV_FILE` | `.env` başka yerdeyse yolu (ör. git worktree'lerinde ana kopyadaki `.env`) |
+| `E2E_WEB_PORT` | Yerel sunucu portu (varsayılan 8099; 8081 Metro'ya kalsın diye) |
+| `E2E_BASE_URL` | Yerel sunucu yerine var olan bir adresi test et (ör. yayınlanmış site) |
+| `E2E_SKIP_BUILD` | Derlemeyi atla, var olan `dist/`'i sun |
+| `E2E_CHANNEL` | Tarayıcı: varsayılan `chrome`; `chromium` → `npx playwright install chromium` ile gelen |
+
+Test verisi: her test oluşturduğu "E2E Web …" sınıfını arayüzden siler; yarıda kalırsa test
+sonunda ve bir sonraki çalıştırmanın başında (`e2e-web/global-setup.ts`) Supabase üzerinden
+silinir. Rapor ve izler (`playwright-report/`, `test-results/`) git'e eklenmez.
+
 ## Komutlar
 
 | Komut | Ne yapar |
@@ -180,9 +277,12 @@ tuzaklar: iOS "Save Password?" penceresi akışlarda kapatılır; şifre alanın
 | `npm start` | Metro'yu geliştirme derlemesi için başlatır |
 | `npm run ios` | iOS için derler ve çalıştırır (`expo run:ios`) |
 | `npm run android` | Android için derler ve çalıştırır (`expo run:android`) |
+| `npm run web` | Web sürümünü tarayıcıda açar (`expo start --web`) |
+| `npm run build:web` | Web sürümünü `dist/`'e derler (`expo export -p web`) |
 | `npm run typecheck` | TypeScript kontrolü (`tsc --noEmit`) |
 | `npm run lint` | ESLint (`expo lint`) |
 | `npm test` | Jest testleri (`jest-expo`) |
+| `npm run e2e:web` | Web E2E testleri (Playwright, `e2e-web/`) |
 
 ## Klasör yapısı
 
@@ -204,7 +304,8 @@ src/
 modules/                 Yerel Expo modülleri (vision-text-recognition: iOS Apple Vision OCR)
 docs/DESIGN.md           Tasarım dili ("Kalem kutusu"), ekran kalıpları, yazı kuralları
 .maestro/                Maestro uçtan uca akışları (iOS simülatörü)
-scripts/e2e/             E2E çalıştırıcısı ve yapay sınıf listesi üreticisi
+e2e-web/                 Playwright web uçtan uca testleri (playwright.config.ts)
+scripts/e2e/             E2E çalıştırıcısı, yapay sınıf listesi üreticisi, web derleme/sunucu betikleri
 scripts/ocr/             OCR doğruluk fikstürleri üreticisi (Apple Vision, macOS)
 supabase/                Göçler ve yerel Supabase yapılandırması
 react-native.config.js   ML Kit'i iOS'ta bağlamaz (iOS'ta OCR Apple Vision ile yapılır)
