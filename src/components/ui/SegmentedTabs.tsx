@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, layout, radii, spacing } from '@/theme';
 
+import { selectionA11y } from './a11y';
 import { Text } from './Text';
 
 export interface SegmentedTab<K extends string = string> {
@@ -37,7 +38,7 @@ export function SegmentedTabs<K extends string>({
             onPress={() => onChange(tab.key)}
             accessibilityRole="tab"
             accessibilityLabel={tab.label}
-            accessibilityState={{ selected }}
+            {...selectionA11y({ selected })}
             style={({ pressed }) => [styles.tab, selected ? styles.selected : pressed && styles.pressed]}
           >
             <Text variant="label" tone={selected ? 'default' : 'muted'} numberOfLines={1}>
