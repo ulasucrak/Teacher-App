@@ -1,19 +1,19 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Avatar, IconButton, ListRow, OptionGrid, Text } from '@/components/ui';
-import { colors, layout, radii, spacing } from '@/theme';
+import { ChipGroup, IconButton, Text } from '@/components/ui';
+import { colors, iconSize, layout, radii, spacing } from '@/theme';
 import type { FormOption, StudentRow } from '@/types/database';
 
 import type { EntryValue } from '../draft';
 
 export interface StudentEntryRowProps {
-  student: Pick<StudentRow, 'id' | 'full_name' | 'number' | 'photo_url'>;
-  /** Sınıf adı ("5/B"). */
-  classLabel: string | null;
+  student: Pick<StudentRow, 'id' | 'full_name' | 'number'>;
+  /** Görünen listedeki sıra (testID: `student-row-<index>`). */
+  index: number;
   entry: EntryValue;
   options: readonly FormOption[];
-  /** Kaydedilmemiş değişiklik var mı (satır başında küçük işaret). */
+  /** Kaydedilmemiş değişiklik var mı (adın yanında küçük nokta). */
   dirty: boolean;
   disabled?: boolean;
   onToggle: (studentId: string, optionKey: string) => void;
@@ -21,12 +21,12 @@ export interface StudentEntryRowProps {
 }
 
 /**
- * Bir öğrencinin defter satırı: numara + kırmızı kenar çizgisi, avatar, ad, not düğmesi
- * ve 3 sütunlu seçenek ızgarası. 40+ satırlık listede `memo` ile yalnızca değişen satır çizilir.
+ * Kompakt doldurma satırı: numara + ad + soluk not ikonu; altında içerik genişliğinde çipler.
+ * 40+ satırlık listede `memo` ile yalnızca değişen satır yeniden çizilir.
  */
 export const StudentEntryRow = memo(function StudentEntryRow({
   student,
-  classLabel,
+  index,
   entry,
   options,
   dirty,
@@ -35,62 +35,77 @@ export const StudentEntryRow = memo(function StudentEntryRow({
   onOpenNote,
 }: StudentEntryRowProps) {
   const hasNote = Boolean(entry.note);
+  const testID = `student-row-${index}`;
   return (
-    <ListRow
-      title={student.full_name}
-      subtitle={classLabel ?? undefined}
-      number={student.number ?? undefined}
-      ruled
-      leading={<Avatar name={student.full_name} imageUri={student.photo_url} />}
-      trailing={
-        <View>
-          <IconButton
-            icon="note"
-            accessibilityLabel={hasNote ? `${student.full_name} notunu düzenle` : `${student.full_name} için not ekle`}
-            onPress={() => onOpenNote(student.id)}
-            disabled={disabled}
-            color={hasNote ? colors.primary : colors.textMuted}
-            style={hasNote ? styles.noteFilled : undefined}
-          />
-          {dirty ? (
-            <View
-              style={styles.dirtyDot}
-              accessible
-              accessibilityLabel="Kaydedilmemiş değişiklik"
-              testID={`dirty-${student.id}`}
-            />
+    <View style={styles.row} testID={testID}>
+      <View style={styles.head}>
+        <View style={styles.numberCol}>
+          {student.number ? (
+            <Text variant="number" tone="muted" align="right" numberOfLines={1} maxFontSizeMultiplier={1.2}>
+              {student.number}
+            </Text>
           ) : null}
         </View>
-      }
-    >
-      <OptionGrid
-        options={options}
-        value={entry.optionKey}
-        disabled={disabled}
-        contextLabel={student.full_name}
-        onChange={(key) => onToggle(student.id, key)}
-      />
-      {entry.note ? (
-        <Text variant="caption" tone="muted" numberOfLines={2} style={styles.note}>
-          {entry.note}
+        <Text variant="bodyStrong" numberOfLines={1} style={styles.name} testID={`${testID}-name`}>
+          {student.full_name}
         </Text>
-      ) : null}
-    </ListRow>
+        {dirty ? (
+          <View
+            style={styles.dirtyDot}
+            accessible
+            accessibilityLabel="Kaydedilmemiş değişiklik"
+            testID={`dirty-${student.id}`}
+          />
+        ) : null}
+        <IconButton
+          icon="note"
+          size={iconSize.md}
+          accessibilityLabel={hasNote ? `${student.full_name} notunu düzenle` : `${student.full_name} için not ekle`}
+          onPress={() => onOpenNote(student.id)}
+          disabled={disabled}
+          color={hasNote ? colors.primary : colors.textMuted}
+          testID={`${testID}-note`}
+        />
+      </View>
+      <View style={styles.body}>
+        <ChipGroup
+          options={options}
+          value={entry.optionKey}
+          disabled={disabled}
+          contextLabel={student.full_name}
+          onChange={(key) => onToggle(student.id, key)}
+          testIDPrefix={testID}
+        />
+        {entry.note ? (
+          <Text variant="caption" tone="muted" numberOfLines={1} testID={`${testID}-note-text`}>
+            {entry.note}
+          </Text>
+        ) : null}
+      </View>
+    </View>
   );
 });
 
+const INDENT = layout.numberColumn + spacing.md;
+
 const styles = StyleSheet.create({
-  noteFilled: { backgroundColor: colors.primaryMuted },
+  row: {
+    paddingLeft: layout.pageX,
+    paddingRight: spacing.sm,
+    paddingBottom: spacing.md,
+    borderBottomWidth: layout.hairline,
+    borderBottomColor: colors.rule,
+    backgroundColor: colors.surface,
+  },
+  head: { flexDirection: 'row', alignItems: 'center', minHeight: layout.minTouch },
+  numberCol: { width: layout.numberColumn, marginRight: spacing.md },
+  name: { flex: 1 },
   dirtyDot: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
     width: spacing.sm,
     height: spacing.sm,
     borderRadius: radii.full,
     backgroundColor: colors.primary,
-    borderWidth: layout.inputBorder,
-    borderColor: colors.surface,
+    marginHorizontal: spacing.xs,
   },
-  note: { marginTop: spacing.sm },
+  body: { marginLeft: INDENT, paddingRight: spacing.md, gap: spacing.xs },
 });

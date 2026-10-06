@@ -4,7 +4,7 @@ import { Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastProvider } from '@/components/ui';
-import type { ClassRow, FormEntryRow, FormRow, FormSessionRow, StudentRow } from '@/types/database';
+import type { FormEntryRow, FormRow, FormSessionRow, StudentRow } from '@/types/database';
 
 import * as api from '../api';
 import { SessionFillScreen } from './SessionFillScreen';
@@ -15,9 +15,10 @@ jest.mock('../api', () => {
     ...actual,
     getForm: jest.fn(),
     getSession: jest.fn(),
+    findSessionByDate: jest.fn(),
+    createSession: jest.fn(),
     listStudents: jest.fn(),
     listEntries: jest.fn(),
-    getClass: jest.fn(),
     upsertEntries: jest.fn(),
     updateSessionStatus: jest.fn(),
     deleteSession: jest.fn(),
@@ -26,12 +27,14 @@ jest.mock('../api', () => {
 
 const mockRouter = { back: jest.fn(), push: jest.fn(), canGoBack: jest.fn(() => true) };
 const mockAddListener = jest.fn((..._args: unknown[]) => () => undefined);
+let mockParams: Record<string, string> = { classId: 'c1', formId: 'f1', sessionId: 's1' };
 
 jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => ({ classId: 'c1', formId: 'f1', sessionId: 's1' }),
+  useLocalSearchParams: () => mockParams,
   useRouter: () => mockRouter,
   useNavigation: () => ({ addListener: mockAddListener, dispatch: jest.fn() }),
 }));
+jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
 
 const mocked = api as jest.Mocked<typeof api>;
 
@@ -58,7 +61,7 @@ const session: FormSessionRow = {
   teacher_id: 't',
   session_date: '2026-10-06',
   title: null,
-  status: 'draft',
+  status: 'published',
   created_at: '2026-10-06T08:00:00Z',
   updated_at: '2026-10-06T08:00:00Z',
 };
@@ -79,8 +82,6 @@ const entries: FormEntryRow[] = [
   { id: 'e1', session_id: 's1', student_id: 'st1', teacher_id: 't', option_key: 'done', note: null, updated_at: '' },
 ];
 
-const klass: ClassRow = { id: 'c1', teacher_id: 't', name: '5/B', grade: '5', section: 'B', created_at: '' };
-
 function Providers({ children }: { children: ReactNode }) {
   return (
     <SafeAreaProvider
@@ -98,41 +99,42 @@ async function renderScreen() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockParams = { classId: 'c1', formId: 'f1', sessionId: 's1' };
   mocked.getForm.mockResolvedValue(form);
   mocked.getSession.mockResolvedValue(session);
   mocked.listStudents.mockResolvedValue(students);
   mocked.listEntries.mockResolvedValue(entries);
-  mocked.getClass.mockResolvedValue(klass);
   mocked.upsertEntries.mockResolvedValue(undefined);
 });
 
 const saveButton = () => screen.getByTestId('save-button');
 
 describe('SessionFillScreen', () => {
-  it('renders the header, students sorted by number and a disabled save button', async () => {
+  it('renders compact rows sorted by number, date, progress and a disabled save button', async () => {
     await renderScreen();
 
-    expect(screen.getByText('Matematik')).toBeOnTheScreen();
-    expect(screen.getByText('5. sınıf MEB kitabı')).toBeOnTheScreen();
-    expect(screen.getByText('6 Ekim 2026 Salı')).toBeOnTheScreen();
-    expect(screen.getByText('Taslak')).toBeOnTheScreen();
-    expect(screen.getByText('3 öğrenci')).toBeOnTheScreen();
+    expect(screen.getByTestId('fill-date')).toHaveTextContent(/6 Ekim/);
+    expect(screen.getByTestId('fill-progress')).toHaveTextContent('1/3');
+    expect(screen.queryByText('Yayınla')).toBeNull();
 
     const names = screen.getAllByText(/^(Ayşe Yılmaz|Serra Güngör|Selin Bayezit)$/).map((n) => n.props.children);
     expect(names).toEqual(['Ayşe Yılmaz', 'Serra Güngör', 'Selin Bayezit']);
+    expect(screen.getByTestId('student-row-0-name')).toHaveTextContent('Ayşe Yılmaz');
 
     expect(screen.getByRole('radio', { name: 'Ayşe Yılmaz: Tamamlandı' })).toBeSelected();
     expect(saveButton()).toBeDisabled();
     expect(mockAddListener).toHaveBeenCalledWith('beforeRemove', expect.any(Function));
+    // Az öğrencide arama alanı yok.
+    expect(screen.queryByTestId('fill-search')).toBeNull();
   });
 
   it('saves only changed rows, clearing sends null', async () => {
     await renderScreen();
 
-    await fireEvent.press(screen.getByRole('radio', { name: 'Serra Güngör: Eksik' }));
+    await fireEvent.press(screen.getByTestId('student-row-1-missing'));
     await fireEvent.press(screen.getByRole('radio', { name: 'Ayşe Yılmaz: Tamamlandı' })); // tekrar dokun → temizle
 
-    expect(screen.getByText('2 değişikliği kaydet')).toBeOnTheScreen();
+    expect(screen.getByText('2 öğrencide kaydedilmemiş değişiklik')).toBeOnTheScreen();
     expect(saveButton()).toBeEnabled();
 
     await fireEvent.press(saveButton());
@@ -147,6 +149,47 @@ describe('SessionFillScreen', () => {
     expect(mocked.upsertEntries.mock.calls[0][0]).toHaveLength(2);
     expect(await screen.findByText('Kaydedildi')).toBeOnTheScreen();
     expect(saveButton()).toBeDisabled();
+    expect(mocked.createSession).not.toHaveBeenCalled();
+    expect(mocked.updateSessionStatus).not.toHaveBeenCalled();
+  });
+
+  it("opens today's unsaved session and creates it on first save", async () => {
+    mockParams = { classId: 'c1', formId: 'f1', sessionId: 'new', date: '2026-10-07' };
+    mocked.findSessionByDate.mockResolvedValue(null);
+    mocked.createSession.mockResolvedValue({ ...session, id: 'created', session_date: '2026-10-07' });
+    await renderScreen();
+
+    expect(mocked.findSessionByDate).toHaveBeenCalledWith('f1', '2026-10-07');
+    expect(mocked.listEntries).not.toHaveBeenCalled();
+    expect(screen.getByTestId('fill-progress')).toHaveTextContent('0/3');
+
+    await fireEvent.press(screen.getByTestId('bulk-done'));
+    await fireEvent.press(saveButton());
+
+    await waitFor(() => expect(mocked.upsertEntries).toHaveBeenCalledTimes(1));
+    expect(mocked.createSession).toHaveBeenCalledWith({ formId: 'f1', sessionDate: '2026-10-07' });
+    expect(mocked.upsertEntries.mock.calls[0][0]).toHaveLength(3);
+    expect(mocked.upsertEntries.mock.calls[0][0][0]).toMatchObject({ session_id: 'created' });
+  });
+
+  it("reuses the day's existing session", async () => {
+    mockParams = { classId: 'c1', formId: 'f1', sessionId: 'new', date: '2026-10-06' };
+    mocked.findSessionByDate.mockResolvedValue(session);
+    await renderScreen();
+
+    expect(mocked.listEntries).toHaveBeenCalledWith('s1');
+    expect(screen.getByRole('radio', { name: 'Ayşe Yılmaz: Tamamlandı' })).toBeSelected();
+  });
+
+  it('publishes an old draft session when saving', async () => {
+    mocked.getSession.mockResolvedValue({ ...session, status: 'draft' });
+    mocked.updateSessionStatus.mockResolvedValue(session);
+    await renderScreen();
+
+    await fireEvent.press(screen.getByTestId('student-row-2-none'));
+    await fireEvent.press(saveButton());
+
+    await waitFor(() => expect(mocked.updateSessionStatus).toHaveBeenCalledWith('s1', 'published'));
   });
 
   it('keeps changes and shows the error when saving fails', async () => {
@@ -161,7 +204,7 @@ describe('SessionFillScreen', () => {
     expect(
       await screen.findByText('Değişiklikler kaydedilemedi. Bağlantınızı kontrol edip tekrar kaydedin.'),
     ).toBeOnTheScreen();
-    expect(screen.getByText('1 değişikliği kaydet')).toBeOnTheScreen();
+    expect(screen.getByText('1 öğrencide kaydedilmemiş değişiklik')).toBeOnTheScreen();
   });
 
   it('applies an option to everyone and can undo it', async () => {
@@ -172,28 +215,32 @@ describe('SessionFillScreen', () => {
     for (const name of ['Ayşe Yılmaz', 'Serra Güngör', 'Selin Bayezit']) {
       expect(screen.getByRole('radio', { name: `${name}: Eksik` })).toBeSelected();
     }
-    expect(screen.getByText('3 öğrenci Eksik olarak işaretlendi')).toBeOnTheScreen();
-    expect(screen.getByText('3 değişikliği kaydet')).toBeOnTheScreen();
+    expect(screen.getByText('3 öğrenci: Eksik')).toBeOnTheScreen();
+    expect(screen.getByText('3 öğrencide kaydedilmemiş değişiklik')).toBeOnTheScreen();
 
     await fireEvent.press(screen.getByRole('button', { name: 'Geri al' }));
 
     expect(screen.getByRole('radio', { name: 'Ayşe Yılmaz: Tamamlandı' })).toBeSelected();
     expect(screen.getByRole('radio', { name: 'Serra Güngör: Eksik' })).not.toBeSelected();
-    expect(screen.queryByText('3 öğrenci Eksik olarak işaretlendi')).toBeNull();
+    expect(screen.queryByText('3 öğrenci: Eksik')).toBeNull();
     expect(saveButton()).toBeDisabled();
   });
 
-  it('filters students by name or number', async () => {
+  it('filters students by name or number in a large class', async () => {
+    const many = [
+      ...students,
+      ...Array.from({ length: 10 }, (_, i) => student(`x${i}`, `Öğrenci ${i}`, String(40 + i))),
+    ];
+    mocked.listStudents.mockResolvedValue(many);
     await renderScreen();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Öğrenci ara' }));
-    await fireEvent.changeText(screen.getByLabelText('Öğrenci ara'), 'ser');
+    await fireEvent.changeText(screen.getByTestId('fill-search'), 'ser');
 
     expect(screen.getByText('Serra Güngör')).toBeOnTheScreen();
     expect(screen.queryByText('Ayşe Yılmaz')).toBeNull();
 
-    await fireEvent.changeText(screen.getByLabelText('Öğrenci ara'), '99');
-    expect(screen.getByText(/ile eşleşen öğrenci yok/)).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByTestId('fill-search'), '99');
+    expect(screen.getByTestId('fill-no-match')).toBeOnTheScreen();
   });
 
   it('shows a retryable error when loading fails', async () => {
@@ -210,7 +257,7 @@ describe('SessionFillScreen', () => {
     await render(<SessionFillScreen />, { wrapper: Providers });
 
     expect(await screen.findByText('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.')).toBeOnTheScreen();
-    expect(screen.queryByText('Matematik')).toBeNull();
+    expect(screen.queryByTestId('student-row-0')).toBeNull();
   });
 
   it('shows an empty state when the class has no students', async () => {
@@ -218,8 +265,20 @@ describe('SessionFillScreen', () => {
     await renderScreen();
 
     expect(screen.getByText('Bu sınıfta öğrenci yok')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: 'Öğrenci ekle' }));
-    expect(mockRouter.push).toHaveBeenCalledWith('/class/c1/import');
+    await fireEvent.press(screen.getByTestId('fill-add-students'));
+    expect(mockRouter.push).toHaveBeenCalledWith('/class/c1/students');
+  });
+
+  it('deletes the session from the menu after confirmation', async () => {
+    mocked.deleteSession.mockResolvedValue(undefined);
+    await renderScreen();
+
+    await fireEvent.press(screen.getByTestId('fill-more'));
+    await fireEvent.press(await screen.findByTestId('fill-menu-delete'));
+    await fireEvent.press(await screen.findByTestId('fill-delete-confirm-confirm'));
+
+    await waitFor(() => expect(mocked.deleteSession).toHaveBeenCalledWith('s1'));
+    expect(mockRouter.back).toHaveBeenCalled();
   });
 
   it('asks before leaving with unsaved changes', async () => {
@@ -246,12 +305,12 @@ describe('SessionFillScreen', () => {
   it('adds a note through the sheet', async () => {
     await renderScreen();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Ayşe Yılmaz için not ekle' }));
-    await fireEvent.changeText(await screen.findByLabelText('Not'), 'Kitabını evde unuttu');
-    await fireEvent.press(screen.getByRole('button', { name: 'Notu kaydet' }));
+    await fireEvent.press(screen.getByTestId('student-row-0-note'));
+    await fireEvent.changeText(await screen.findByTestId('note-input'), 'Kitabını evde unuttu');
+    await fireEvent.press(screen.getByTestId('note-save'));
 
     expect(await screen.findByText('Kitabını evde unuttu')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Ayşe Yılmaz notunu düzenle' })).toBeOnTheScreen();
-    expect(screen.getByText('1 değişikliği kaydet')).toBeOnTheScreen();
+    expect(screen.getByText('1 öğrencide kaydedilmemiş değişiklik')).toBeOnTheScreen();
   });
 });

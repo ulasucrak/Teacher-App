@@ -4,21 +4,26 @@ import { Alert, FlatList, StyleSheet, View, type ListRenderItem } from 'react-na
 
 import {
   Banner,
+  BottomActionBar,
   Button,
+  ConfirmSheet,
   EmptyState,
   IconButton,
   LoadingState,
+  OverflowMenu,
   Screen,
+  SearchField,
   Text,
-  TextField,
   useToast,
+  type OverflowAction,
 } from '@/components/ui';
 import { colors, layout, spacing } from '@/theme';
-import type { ClassRow, FormRow, FormSessionRow, StudentRow } from '@/types/database';
+import type { FormEntryRow, FormRow, FormSessionRow, StudentRow } from '@/types/database';
 
 import {
+  createSession,
   deleteSession,
-  getClass,
+  findSessionByDate,
   getForm,
   getSession,
   listEntries,
@@ -27,13 +32,11 @@ import {
   updateSessionStatus,
   upsertEntries,
 } from '../api';
-import { BulkApplyCard } from '../components/BulkApplyCard';
-import { FormHeaderCard } from '../components/FormHeaderCard';
+import { BulkApplyRow } from '../components/BulkApplyRow';
 import { NoteSheet } from '../components/NoteSheet';
-import { OptionSummary } from '../components/OptionSummary';
 import { StudentEntryRow } from '../components/StudentEntryRow';
 import { UndoBar } from '../components/UndoBar';
-import { formatSessionDate } from '../date';
+import { formatDayLabel, isIsoDate, todayIso } from '../date';
 import {
   buildUpsertPayload,
   countByOption,
@@ -43,20 +46,45 @@ import {
   getUniformOption,
   initialDraftState,
 } from '../draft';
+import { NEW_SESSION_ID } from '../routes';
 import { filterStudents, sortStudents } from '../students';
+
+/** Bu kadar ve daha fazla öğrencide arama alanı gösterilir. */
+export const SEARCH_MIN_STUDENTS = 12;
 
 interface Loaded {
   form: FormRow;
-  session: FormSessionRow;
+  /** null → bu gün için henüz kayıt yok; ilk "Kaydet"te oluşturulur. */
+  session: FormSessionRow | null;
+  date: string;
   students: StudentRow[];
-  klass: ClassRow | null;
 }
 
-type Params = { classId: string; formId: string; sessionId: string };
+type Params = { classId: string; formId: string; sessionId: string; date?: string };
 
-/** Bir kaydı doldurma ekranı (referans: Ödev kontrolü). */
+async function loadScreen(formId: string, sessionId: string, classId: string, dateParam: string | undefined) {
+  if (sessionId === NEW_SESSION_ID) {
+    const date = dateParam && isIsoDate(dateParam) ? dateParam : todayIso();
+    const [form, session, students] = await Promise.all([
+      getForm(formId),
+      findSessionByDate(formId, date),
+      listStudents(classId),
+    ]);
+    const entries: FormEntryRow[] = session ? await listEntries(session.id) : [];
+    return { form, session, date, students, entries };
+  }
+  const [form, session, students, entries] = await Promise.all([
+    getForm(formId),
+    getSession(sessionId),
+    listStudents(classId),
+    listEntries(sessionId),
+  ]);
+  return { form, session, date: session.session_date, students, entries };
+}
+
+/** Bir günün kaydını doldurma ekranı: kompakt öğrenci satırları, "Tümü", altta "Kaydet". */
 export function SessionFillScreen() {
-  const { classId, formId, sessionId } = useLocalSearchParams<Params>();
+  const { classId, formId, sessionId, date: dateParam } = useLocalSearchParams<Params>();
   const router = useRouter();
   const navigation = useNavigation();
   const toast = useToast();
@@ -66,22 +94,23 @@ export function SessionFillScreen() {
   const [reloadKey, setReloadKey] = useState(0);
   const [state, dispatch] = useReducer(draftReducer, initialDraftState);
   const [saving, setSaving] = useState(false);
-  const [statusBusy, setStatusBusy] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [noteStudentId, setNoteStudentId] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // --- Yükleme ---------------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getForm(formId), getSession(sessionId), listStudents(classId), listEntries(sessionId), getClass(classId)])
-      .then(([form, session, students, entries, klass]) => {
+    loadScreen(formId, sessionId, classId, dateParam)
+      .then(({ form, session, date, students, entries }) => {
         if (cancelled) return;
-        if (session.form_id !== formId) {
+        if (session && session.form_id !== formId) {
           setLoadError('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.');
           return;
         }
-        setData({ form, session, students: sortStudents(students), klass });
+        setData({ form, session, date, students: sortStudents(students) });
         dispatch({ type: 'load', entries });
       })
       .catch((error: unknown) => {
@@ -90,7 +119,7 @@ export function SessionFillScreen() {
     return () => {
       cancelled = true;
     };
-  }, [classId, formId, sessionId, reloadKey]);
+  }, [classId, formId, sessionId, dateParam, reloadKey]);
 
   // --- Türetilmiş durum ------------------------------------------------------
   const options = useMemo(() => data?.form.options ?? [], [data]);
@@ -101,9 +130,8 @@ export function SessionFillScreen() {
   const dirtyCount = dirtyIds.size;
   const summary = useMemo(() => countByOption(state, studentIds, options), [state, studentIds, options]);
   const uniformOption = useMemo(() => getUniformOption(state, studentIds), [state, studentIds]);
-  const classLabel = data?.klass?.name ?? null;
 
-  // --- Kaydedilmemiş değişiklik koruması ------------------------------------
+  // --- Kaydedilmemiş değişiklik koruması (sistem Alert'i yalnızca burada) ----
   const dirtyRef = useRef(0);
   useEffect(() => {
     dirtyRef.current = dirtyCount;
@@ -115,18 +143,14 @@ export function SessionFillScreen() {
       if (allowLeaveRef.current || dirtyRef.current === 0) return;
       event.preventDefault();
       const n = dirtyRef.current;
-      Alert.alert(
-        'Değişiklikler kaydedilmedi',
-        `Çıkarsanız ${n} öğrencideki değişiklik kaybolur.`,
-        [
-          { text: 'Vazgeç', style: 'cancel' },
-          {
-            text: 'Kaydetmeden çık',
-            style: 'destructive',
-            onPress: () => navigation.dispatch(event.data.action),
-          },
-        ],
-      );
+      Alert.alert('Değişiklikler kaydedilmedi', `Çıkarsanız ${n} öğrencideki değişiklik kaybolur.`, [
+        { text: 'Vazgeç', style: 'cancel' },
+        {
+          text: 'Kaydetmeden çık',
+          style: 'destructive',
+          onPress: () => navigation.dispatch(event.data.action),
+        },
+      ]);
     });
     return unsubscribe;
   }, [navigation]);
@@ -151,83 +175,59 @@ export function SessionFillScreen() {
     const { optionKey, count } = state.undo;
     if (optionKey === null) return `${count} öğrencinin seçimi temizlendi`;
     const label = options.find((o) => o.key === optionKey)?.label ?? optionKey;
-    return `${count} öğrenci ${label} olarak işaretlendi`;
+    return `${count} öğrenci: ${label}`;
   }, [state.undo, options]);
 
-  const save = useCallback(async (): Promise<boolean> => {
-    const payload = buildUpsertPayload(state, sessionId);
-    if (payload.length === 0) return true;
+  const onSave = async () => {
+    if (!data || saving) return;
     setSaving(true);
     try {
+      let session = data.session;
+      if (!session) {
+        session = await createSession({ formId, sessionDate: data.date });
+        const created = session;
+        setData((d) => (d ? { ...d, session: created } : d));
+      }
+      const payload = buildUpsertPayload(state, session.id);
       await upsertEntries(payload);
       dispatch({ type: 'saved', entries: payload });
-      return true;
+      if (session.status === 'draft') {
+        // Eski taslak kayıtlar kaydedilince yayına alınır (taslak arayüzü kaldırıldı).
+        const published = await updateSessionStatus(session.id, 'published').catch(() => null);
+        if (published) setData((d) => (d ? { ...d, session: published } : d));
+      }
+      toast.show('Kaydedildi');
     } catch (error) {
       toast.show(toUserMessage(error, 'Değişiklikler kaydedilemedi. Tekrar kaydedin.'), 'error');
-      return false;
     } finally {
       setSaving(false);
     }
-  }, [state, sessionId, toast]);
-
-  const onSave = async () => {
-    if (await save()) toast.show('Kaydedildi');
   };
 
-  const onToggleStatus = async () => {
-    if (!data) return;
-    const next = data.session.status === 'published' ? 'draft' : 'published';
-    setStatusBusy(true);
+  const onDelete = async () => {
+    const session = data?.session;
+    if (!session) return;
+    setDeleting(true);
     try {
-      // Yayınlanan kayıt, ekrandaki son hâli içersin.
-      if (next === 'published' && !(await save())) return;
-      const session = await updateSessionStatus(sessionId, next);
-      setData((d) => (d ? { ...d, session } : d));
-      toast.show(next === 'published' ? 'Yayınlandı' : 'Taslağa alındı');
+      await deleteSession(session.id);
+      allowLeaveRef.current = true;
+      setConfirmDelete(false);
+      toast.show('Kayıt silindi');
+      router.back();
     } catch (error) {
-      toast.show(toUserMessage(error, 'Durum değiştirilemedi. Tekrar deneyin.'), 'error');
+      toast.show(toUserMessage(error, 'Kayıt silinemedi. Tekrar deneyin.'), 'error');
     } finally {
-      setStatusBusy(false);
+      setDeleting(false);
     }
-  };
-
-  const confirmDelete = () => {
-    if (!data) return;
-    Alert.alert(
-      'Bu kayıt silinsin mi?',
-      `${formatSessionDate(data.session.session_date)} kaydındaki tüm öğrenci girişleri de silinir. Bu işlem geri alınamaz.`,
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Kaydı sil',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteSession(sessionId);
-              allowLeaveRef.current = true;
-              toast.show('Kayıt silindi');
-              router.back();
-            } catch (error) {
-              toast.show(toUserMessage(error, 'Kayıt silinemedi. Tekrar deneyin.'), 'error');
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  const closeSearch = () => {
-    setSearchOpen(false);
-    setQuery('');
   };
 
   const noteStudent = noteStudentId ? students.find((s) => s.id === noteStudentId) : undefined;
 
   const renderItem = useCallback<ListRenderItem<StudentRow>>(
-    ({ item }) => (
+    ({ item, index }) => (
       <StudentEntryRow
         student={item}
-        classLabel={classLabel}
+        index={index}
         entry={getEntry(state.draft, item.id)}
         options={options}
         dirty={dirtyIds.has(item.id)}
@@ -236,19 +236,24 @@ export function SessionFillScreen() {
         onOpenNote={onOpenNote}
       />
     ),
-    [classLabel, state.draft, options, dirtyIds, saving, onToggle, onOpenNote],
+    [state.draft, options, dirtyIds, saving, onToggle, onOpenNote],
   );
 
   // --- Durumlar --------------------------------------------------------------
   if (loadError) {
     return (
-      <Screen title="Kayıt">
+      <Screen title="Kayıt" testID="fill-screen">
         <View style={styles.stateWrap}>
           <Banner kind="error" message={loadError} />
-          <Button label="Tekrar dene" variant="secondary" onPress={() => {
+          <Button
+            label="Tekrar dene"
+            variant="secondary"
+            testID="fill-retry"
+            onPress={() => {
               setLoadError(null);
               setReloadKey((k) => k + 1);
-            }} />
+            }}
+          />
         </View>
       </Screen>
     );
@@ -256,80 +261,58 @@ export function SessionFillScreen() {
 
   if (!data) {
     return (
-      <Screen title="Kayıt" scroll={false}>
+      <Screen title="Kayıt" scroll={false} testID="fill-screen">
         <LoadingState label="Öğrenciler yükleniyor" />
       </Screen>
     );
   }
 
   const { form, session } = data;
-  const published = session.status === 'published';
+  const dateLabel = formatDayLabel(data.date);
+  const filled = students.length - summary.empty;
+  const canFill = options.length > 0 && students.length > 0;
+
+  const menuActions: OverflowAction[] = [
+    {
+      key: 'edit',
+      label: 'Formu düzenle',
+      icon: 'edit',
+      onPress: () => router.push(`/class/${classId}/form/${formId}/edit`),
+    },
+  ];
+  if (session) {
+    menuActions.push({
+      key: 'delete',
+      label: 'Kaydı sil',
+      icon: 'trash',
+      destructive: true,
+      onPress: () => setConfirmDelete(true),
+    });
+  }
 
   const listHeader = (
     <View style={styles.listHeader}>
-      <FormHeaderCard
-        subject={form.subject}
-        description={form.description}
-        fallbackTitle={form.title}
-        status={session.status}
-      >
-        <View style={styles.sessionMeta}>
-          <View style={styles.sessionTexts}>
-            <Text variant="label">{formatSessionDate(session.session_date)}</Text>
-            {session.title ? (
-              <Text variant="caption" tone="muted" numberOfLines={1}>
-                {session.title}
-              </Text>
-            ) : null}
-          </View>
-          <Button
-            label={published ? 'Taslağa al' : 'Yayınla'}
-            variant="secondary"
-            size="sm"
-            fullWidth={false}
-            loading={statusBusy}
-            disabled={saving}
-            onPress={onToggleStatus}
-          />
-        </View>
-      </FormHeaderCard>
-
-      {searchOpen ? (
-        <View style={styles.search}>
-          <TextField
-            label="Öğrenci ara"
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Ad ya da okul numarası"
-            autoFocus
-            autoCorrect={false}
-            returnKeyType="search"
-            containerStyle={styles.searchField}
-          />
-          <IconButton icon="close" accessibilityLabel="Aramayı kapat" onPress={closeSearch} />
-        </View>
+      {students.length >= SEARCH_MIN_STUDENTS ? (
+        <SearchField
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Ad ya da numara"
+          accessibilityLabel="Öğrenci ara"
+          testID="fill-search"
+        />
       ) : null}
-
       {options.length === 0 ? (
         <View style={styles.stateWrap}>
-          <Banner
-            kind="warning"
-            message="Bu formda seçenek yok. Formu düzenleyip en az bir seçenek ekleyin."
-          />
+          <Banner kind="warning" message="Bu formda seçenek yok. Formu düzenleyip seçenek ekleyin." />
           <Button
             label="Formu düzenle"
             variant="secondary"
+            testID="fill-edit-form"
             onPress={() => router.push(`/class/${classId}/form/${formId}/edit`)}
           />
         </View>
       ) : students.length > 0 && !query ? (
-        <BulkApplyCard
-          options={options}
-          studentCount={students.length}
-          uniformOption={uniformOption}
-          onApply={onBulkApply}
-          disabled={saving}
-        />
+        <BulkApplyRow options={options} uniformOption={uniformOption} onApply={onBulkApply} disabled={saving} />
       ) : null}
     </View>
   );
@@ -340,15 +323,16 @@ export function SessionFillScreen() {
         <EmptyState
           icon="people"
           title="Bu sınıfta öğrenci yok"
-          description="Öğrenci eklediğinizde her biri için seçenekleri buradan işaretlersiniz. Listeyi fotoğraftan ya da elle ekleyin."
+          description="Öğrenci ekleyince listeyi buradan işaretlersiniz."
           actionLabel="Öğrenci ekle"
-          onAction={() => router.push(`/class/${classId}/import`)}
+          actionTestID="fill-add-students"
+          onAction={() => router.push(`/class/${classId}/students`)}
         />
       </View>
     ) : (
       <View style={styles.padded}>
-        <Text variant="body" tone="muted">
-          “{query.trim()}” ile eşleşen öğrenci yok. Adı ya da okul numarasını kontrol edin.
+        <Text variant="body" tone="muted" testID="fill-no-match">
+          “{query.trim()}” ile eşleşen öğrenci yok.
         </Text>
       </View>
     );
@@ -358,33 +342,46 @@ export function SessionFillScreen() {
       title={form.title}
       scroll={false}
       padded={false}
+      testID="fill-screen"
       headerRight={
-        <>
-          <IconButton
-            icon="search"
-            accessibilityLabel={searchOpen ? 'Aramayı kapat' : 'Öğrenci ara'}
-            onPress={searchOpen ? closeSearch : () => setSearchOpen(true)}
-            color={searchOpen ? colors.primary : colors.text}
-          />
-          <IconButton icon="trash" accessibilityLabel="Kaydı sil" onPress={confirmDelete} />
-        </>
+        <IconButton
+          icon="more"
+          accessibilityLabel="Diğer seçenekler"
+          onPress={() => setMenuOpen(true)}
+          testID="fill-more"
+        />
       }
       footer={
-        options.length > 0 && students.length > 0 ? (
-          <>
-            <OptionSummary options={options} counts={summary.counts} empty={summary.empty} />
-            <Button
-              label={dirtyCount > 0 ? `${dirtyCount} değişikliği kaydet` : 'Kaydet'}
-              onPress={onSave}
-              loading={saving}
-              disabled={dirtyCount === 0 || statusBusy}
-              accessibilityHint={dirtyCount === 0 ? 'Kaydedilmemiş değişiklik yok' : undefined}
-              testID="save-button"
-            />
-          </>
+        canFill ? (
+          <BottomActionBar
+            hint={dirtyCount > 0 ? `${dirtyCount} öğrencide kaydedilmemiş değişiklik` : undefined}
+            primary={{
+              label: 'Kaydet',
+              onPress: () => void onSave(),
+              loading: saving,
+              disabled: dirtyCount === 0,
+              accessibilityHint: dirtyCount === 0 ? 'Kaydedilmemiş değişiklik yok' : undefined,
+              testID: 'save-button',
+            }}
+          />
         ) : undefined
       }
     >
+      <View style={styles.metaRow}>
+        <Text variant="label" tone="muted" accessibilityLabel={`Tarih: ${dateLabel}`} testID="fill-date">
+          {dateLabel}
+        </Text>
+        {canFill ? (
+          <Text
+            variant="number"
+            tone="muted"
+            accessibilityLabel={`${students.length} öğrenciden ${filled} işaretli`}
+            testID="fill-progress"
+          >
+            {`${filled}/${students.length}`}
+          </Text>
+        ) : null}
+      </View>
       <FlatList
         data={visibleStudents as StudentRow[]}
         keyExtractor={(s) => s.id}
@@ -393,10 +390,11 @@ export function SessionFillScreen() {
         ListEmptyComponent={options.length > 0 ? listEmpty : null}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        initialNumToRender={8}
-        maxToRenderPerBatch={8}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
         windowSize={7}
         contentContainerStyle={styles.listContent}
+        testID="fill-list"
       />
       <UndoBar message={undoMessage} onUndo={onUndo} onDismiss={onDismissUndo} />
       <NoteSheet
@@ -409,23 +407,44 @@ export function SessionFillScreen() {
           setNoteStudentId(null);
         }}
       />
+      <OverflowMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        title={form.title}
+        actions={menuActions}
+        testID="fill-menu"
+      />
+      <ConfirmSheet
+        visible={confirmDelete}
+        title="Bu kayıt silinsin mi?"
+        message={`${dateLabel} kaydındaki tüm işaretlemeler silinir.`}
+        confirmLabel="Kaydı sil"
+        loading={deleting}
+        onConfirm={() => void onDelete()}
+        onCancel={() => setConfirmDelete(false)}
+        testID="fill-delete-confirm"
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingHorizontal: layout.pageX,
+    paddingBottom: spacing.sm,
+  },
   listHeader: {
     paddingHorizontal: layout.pageX,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.md,
     gap: spacing.md,
     borderBottomWidth: layout.hairline,
     borderBottomColor: colors.rule,
   },
-  sessionMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  sessionTexts: { flex: 1, gap: spacing.xxs },
-  search: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs },
-  searchField: { flex: 1 },
   stateWrap: { gap: spacing.md, paddingTop: spacing.sm },
   padded: { paddingHorizontal: layout.pageX, paddingVertical: spacing.lg },
   listContent: { paddingBottom: spacing.huge + spacing.xxxl },
