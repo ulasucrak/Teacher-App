@@ -4,11 +4,14 @@ import { useState } from 'react';
 import { useToast } from '@/components/ui';
 
 import { createForm, type FormInput } from '../api';
-import { FormBuilder, valuesForTemplate, type TemplateChoice } from '../components/FormBuilder';
-import { firstParam, formsRoutes } from '../params';
+import { FormBuilder, valuesForTemplate } from '../components/FormBuilder';
+import { firstParam } from '../params';
 import { getPreset } from '../presets';
 
-/** /class/[classId]/form/new — şablondan ya da boş form oluşturma. `?preset=yoklama` desteklenir. */
+/**
+ * /class/[classId]/form/new — boş form oluşturucu ("+ Form" → "Boş form").
+ * `?preset=yoklama` ile şablon değerleriyle açılır.
+ */
 export default function NewFormScreen() {
   const params = useLocalSearchParams<{ classId: string; preset?: string }>();
   const classId = firstParam(params.classId) ?? '';
@@ -16,22 +19,19 @@ export default function NewFormScreen() {
   const router = useRouter();
   const toast = useToast();
 
-  const [template] = useState<TemplateChoice>(() => getPreset(presetParam)?.id ?? 'blank');
-  const [initial] = useState(() => valuesForTemplate(template));
+  const [initial] = useState(() => valuesForTemplate(getPreset(presetParam)?.id ?? 'blank'));
 
   const onSubmit = async (input: FormInput) => {
     await createForm(classId, input);
     toast.show('Form oluşturuldu');
     if (router.canGoBack()) router.back();
-    else router.replace(formsRoutes.list(classId));
+    else router.replace(`/class/${classId}`);
   };
 
   return (
     <FormBuilder
       screenTitle="Yeni form"
       initial={initial}
-      initialTemplate={template}
-      showTemplates
       submitLabel="Formu oluştur"
       onSubmit={onSubmit}
     />

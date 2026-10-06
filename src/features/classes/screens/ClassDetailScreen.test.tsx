@@ -1,27 +1,30 @@
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import type { ReactNode } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastProvider } from '@/components/ui';
-import { addStudent, deleteStudents, listStudents } from '@/features/students/api';
-import type { StudentRow } from '@/types/database';
+import * as formsApi from '@/features/forms/api';
+import { todayIso } from '@/features/sessions/date';
+import type { FormOption } from '@/types/database';
 
-import { getClass } from '../api';
+import { deleteClass, getClass } from '../api';
 import type { ClassSummary } from '../model';
 import { ClassDetailScreen } from './ClassDetailScreen';
 
 const mockPush = jest.fn();
+const mockBack = jest.fn();
 const mockSetParams = jest.fn();
 let mockParams: Record<string, string | undefined> = { classId: 'c1' };
 
-jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);
 jest.mock('@/lib/supabase', () => ({ supabase: {} }));
+jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
 jest.mock('expo-router', () => {
   const { useEffect } = jest.requireActual<typeof import('react')>('react');
   return {
     useRouter: () => ({
       push: mockPush,
       replace: jest.fn(),
-      back: jest.fn(),
+      back: mockBack,
       canGoBack: () => true,
       setParams: mockSetParams,
     }),
@@ -30,17 +33,19 @@ jest.mock('expo-router', () => {
   };
 });
 jest.mock('../api', () => ({ getClass: jest.fn(), deleteClass: jest.fn() }));
-jest.mock('@/features/students/api', () => ({
-  listStudents: jest.fn(),
-  addStudent: jest.fn(),
-  updateStudent: jest.fn(),
-  deleteStudents: jest.fn(),
+jest.mock('@/features/forms/api', () => ({
+  listForms: jest.fn(),
+  createForm: jest.fn(),
+  listOtherClassesForms: jest.fn(),
+  copyFormToClasses: jest.fn(),
+  listClasses: jest.fn(),
+  archiveForm: jest.fn(),
+  deleteForm: jest.fn(),
 }));
 
-const mockGetClass = getClass as jest.MockedFunction<typeof getClass>;
-const mockListStudents = listStudents as jest.MockedFunction<typeof listStudents>;
-const mockAddStudent = addStudent as jest.MockedFunction<typeof addStudent>;
-const mockDeleteStudents = deleteStudents as jest.MockedFunction<typeof deleteStudents>;
+const mockGetClass = jest.mocked(getClass);
+const mockDeleteClass = jest.mocked(deleteClass);
+const forms = jest.mocked(formsApi);
 
 const theClass: ClassSummary = {
   id: 'c1',
@@ -49,48 +54,76 @@ const theClass: ClassSummary = {
   section: 'B',
   teacher_id: 't',
   created_at: '',
-  studentCount: 3,
+  studentCount: 28,
   formCount: 2,
 };
 
-const student = (id: string, full_name: string, number: string | null): StudentRow => ({
+const options: FormOption[] = [
+  { key: 'geldi', label: 'Geldi', tone: 'positive' },
+  { key: 'gelmedi', label: 'Gelmedi', tone: 'negative' },
+];
+
+const form = (id: string, title: string, extra: Partial<formsApi.FormListItem> = {}): formsApi.FormListItem => ({
   id,
-  full_name,
-  number,
   class_id: 'c1',
   teacher_id: 't',
-  photo_url: null,
+  title,
+  subject: null,
+  description: null,
+  options,
+  sort_order: 0,
+  archived: false,
   created_at: '',
+  lastSessionDate: null,
+  ...extra,
 });
 
-const roster = [student('s1', 'Ayşe Yılmaz', '12'), student('s2', 'Can Demir', '3'), student('s3', 'Işık Er', '20')];
-
-const renderScreen = () =>
-  render(
-    <ToastProvider>
-      <ClassDetailScreen />
-    </ToastProvider>,
+function Providers({ children }: { children: ReactNode }) {
+  return (
+    <SafeAreaProvider
+      initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}
+    >
+      <ToastProvider>{children}</ToastProvider>
+    </SafeAreaProvider>
   );
+}
+
+const renderScreen = () => render(<ClassDetailScreen />, { wrapper: Providers });
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockParams = { classId: 'c1' };
   mockGetClass.mockResolvedValue(theClass);
-  mockListStudents.mockResolvedValue(roster);
+  forms.listForms.mockResolvedValue([
+    form('f1', 'Yoklama', { lastSessionDate: todayIso() }),
+    form('f2', 'Ödev kontrolü'),
+    form('f3', 'Eski sözlü', { archived: true }),
+  ]);
 });
 
 describe('ClassDetailScreen', () => {
-  it('shows the class, entry points and students', async () => {
+  it('shows forms first and a single students row', async () => {
     await renderScreen();
 
-    expect(await screen.findByText('Ayşe Yılmaz')).toBeOnTheScreen();
+    expect(await screen.findByText('Yoklama')).toBeOnTheScreen();
     expect(screen.getByRole('header', { name: '5/B' })).toBeOnTheScreen();
-    expect(screen.getByText('3 öğrenci')).toBeOnTheScreen();
+    expect(screen.getByText('Son kayıt: Bugün')).toBeOnTheScreen();
+    expect(screen.getByText('Henüz kayıt yok')).toBeOnTheScreen();
+    // Arşivdeki form sınıf ekranında görünmez.
+    expect(screen.queryByText('Eski sözlü')).toBeNull();
+    expect(screen.getByTestId('class-student-count')).toHaveTextContent('28');
+    // Öğrenci listesi bu ekranda yok.
+    expect(screen.queryByLabelText('Öğrenci ara')).toBeNull();
 
-    await fireEvent.press(screen.getByRole('button', { name: /^Formlar/ }));
-    expect(mockPush).toHaveBeenCalledWith('/class/c1/forms');
-    await fireEvent.press(screen.getByRole('button', { name: /^Fotoğraftan öğrenci ekle/ }));
-    expect(mockPush).toHaveBeenCalledWith('/class/c1/import');
+    await fireEvent.press(screen.getByTestId('class-students-row'));
+    expect(mockPush).toHaveBeenCalledWith('/class/c1/students');
+  });
+
+  it("opens today's session when a form row is tapped", async () => {
+    await renderScreen();
+
+    await fireEvent.press(await screen.findByTestId('form-row-1'));
+    expect(mockPush).toHaveBeenCalledWith(`/class/c1/form/f2/session/new?date=${todayIso()}`);
   });
 
   it('confirms a photo import once and clears the route param', async () => {
@@ -102,72 +135,90 @@ describe('ClassDetailScreen', () => {
     expect(mockSetParams).toHaveBeenCalledWith({ imported: undefined });
   });
 
-  it('shows no import confirmation without the param', async () => {
+  it('adds a preset form with one tap from the + Form sheet', async () => {
+    forms.listForms.mockResolvedValueOnce([]);
+    forms.createForm.mockResolvedValue(form('f9', 'Yoklama'));
     await renderScreen();
 
-    expect(await screen.findByText('Ayşe Yılmaz')).toBeOnTheScreen();
-    expect(screen.queryByText(/öğrenci eklendi/)).toBeNull();
-    expect(mockSetParams).not.toHaveBeenCalled();
+    await fireEvent.press(await screen.findByTestId('class-forms-empty'));
+    await fireEvent.press(await screen.findByTestId('add-form-preset-yoklama'));
+
+    await waitFor(() => expect(forms.createForm).toHaveBeenCalledTimes(1));
+    const [classId, input] = forms.createForm.mock.calls[0]!;
+    expect(classId).toBe('c1');
+    expect(input.title).toBe('Yoklama');
+    expect(input.options.map((o) => o.key)).toEqual(['geldi', 'gelmedi', 'gec_geldi', 'izinli']);
+    expect(await screen.findByText('Yoklama eklendi')).toBeOnTheScreen();
+    await waitFor(() => expect(forms.listForms).toHaveBeenCalledTimes(2));
   });
 
-  it('filters students by name ignoring Turkish diacritics', async () => {
+  it('copies a form from another class', async () => {
+    forms.listOtherClassesForms.mockResolvedValue([
+      {
+        classInfo: { id: 'c2', name: '6/A', grade: null, section: null },
+        forms: [form('f7', 'Sözlü', { class_id: 'c2' })],
+      },
+    ]);
+    forms.copyFormToClasses.mockResolvedValue(1);
     await renderScreen();
-    await screen.findByText('Ayşe Yılmaz');
 
-    await fireEvent.changeText(screen.getByLabelText('Öğrenci ara'), 'isik');
-    expect(screen.getByText('Işık Er')).toBeOnTheScreen();
-    expect(screen.queryByText('Ayşe Yılmaz')).toBeNull();
+    await fireEvent.press(await screen.findByTestId('class-add-form'));
+    await fireEvent.press(await screen.findByTestId('add-form-copy'));
+    await fireEvent.press(await screen.findByTestId('source-form-0-0'));
+
+    await waitFor(() => expect(forms.copyFormToClasses).toHaveBeenCalledWith('f7', ['c1']));
+    expect(await screen.findByText('Sözlü eklendi')).toBeOnTheScreen();
   });
 
-  it('adds a student with a normalized name', async () => {
-    mockAddStudent.mockImplementation(async (_classId, s) => student('s4', s.full_name, s.number ?? null));
+  it('opens the blank form builder', async () => {
     await renderScreen();
-    await screen.findByText('Ayşe Yılmaz');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Öğrenci ekle' }));
-    await fireEvent.changeText(screen.getByLabelText('Ad soyad'), 'SELİN BAYEZİT');
-    await fireEvent.changeText(screen.getByLabelText('Okul numarası (isteğe bağlı)'), '45');
-    await fireEvent.press(screen.getByRole('button', { name: 'Öğrenciyi ekle' }));
+    await fireEvent.press(await screen.findByTestId('class-add-form'));
+    await fireEvent.press(await screen.findByTestId('add-form-blank'));
 
-    expect(mockAddStudent).toHaveBeenCalledWith('c1', { full_name: 'Selin Bayezit', number: '45' });
-    expect(await screen.findByText('Selin Bayezit')).toBeOnTheScreen();
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/class/c1/form/new'));
   });
 
-  it('bulk-deletes selected students after confirmation', async () => {
-    mockDeleteStudents.mockResolvedValue();
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_title, _msg, buttons) => {
-      buttons?.find((b) => b.style === 'destructive')?.onPress?.();
-    });
+  it('archives a form from its row menu without confirmation', async () => {
+    forms.archiveForm.mockResolvedValue();
     await renderScreen();
-    await screen.findByText('Ayşe Yılmaz');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Silmek için öğrenci seç' }));
-    await fireEvent.press(screen.getByRole('button', { name: /^Ayşe Yılmaz, numara 12, seçili değil/ }));
-    await fireEvent.press(screen.getByRole('button', { name: /^Can Demir/ }));
-    await fireEvent.press(screen.getByRole('button', { name: '2 öğrenciyi sil' }));
+    await fireEvent.press(await screen.findByTestId('form-row-0-more'));
+    await fireEvent.press(await screen.findByTestId('form-menu-archive'));
 
-    expect(alert).toHaveBeenCalledWith('2 öğrenci silinsin mi?', expect.any(String), expect.any(Array));
-    expect(mockDeleteStudents).toHaveBeenCalledWith(expect.arrayContaining(['s1', 's2']));
-    expect(await screen.findByText('1 öğrenci')).toBeOnTheScreen();
-    expect(within(screen.getByRole('button', { name: /^Işık Er/ })).getByText('Işık Er')).toBeOnTheScreen();
-    alert.mockRestore();
+    await waitFor(() => expect(forms.archiveForm).toHaveBeenCalledWith('f1', true));
+    expect(await screen.findByText('Yoklama arşivlendi')).toBeOnTheScreen();
   });
 
-  it('clears the selection when the search changes', async () => {
+  it('renames, opens the archive and deletes the class from the menu', async () => {
+    mockDeleteClass.mockResolvedValue();
     await renderScreen();
-    await screen.findByText('Ayşe Yılmaz');
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Silmek için öğrenci seç' }));
-    await fireEvent.press(screen.getByRole('button', { name: /^Ayşe Yılmaz/ }));
-    expect(screen.getByRole('button', { name: '1 öğrenciyi sil' })).toBeOnTheScreen();
+    await fireEvent.press(await screen.findByTestId('class-more'));
+    await fireEvent.press(await screen.findByTestId('class-menu-edit'));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith({ pathname: '/class/new', params: { classId: 'c1' } }));
 
-    await fireEvent.changeText(screen.getByLabelText('Öğrenci ara'), 'can');
-    expect(screen.getByRole('button', { name: 'Öğrenci seçin' })).toBeDisabled();
+    await fireEvent.press(screen.getByTestId('class-more'));
+    await fireEvent.press(await screen.findByTestId('class-menu-archive'));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/class/c1/forms'));
+
+    await fireEvent.press(screen.getByTestId('class-more'));
+    await fireEvent.press(await screen.findByTestId('class-menu-delete'));
+    expect(await screen.findByText('5/B silinsin mi?')).toBeOnTheScreen();
+    expect(mockDeleteClass).not.toHaveBeenCalled();
+
+    await fireEvent.press(screen.getByTestId('class-delete-confirm-confirm'));
+    await waitFor(() => expect(mockDeleteClass).toHaveBeenCalledWith('c1'));
+    expect(mockBack).toHaveBeenCalled();
+    expect(await screen.findByText('5/B silindi')).toBeOnTheScreen();
   });
 
-  it('shows the empty state when the class has no students', async () => {
-    mockListStudents.mockResolvedValue([]);
+  it('shows a retryable error when the class cannot be loaded', async () => {
+    mockGetClass.mockRejectedValueOnce(new Error('boom'));
     await renderScreen();
-    expect(await screen.findByText('Bu sınıfta henüz öğrenci yok')).toBeOnTheScreen();
+
+    expect(await screen.findByText('Sınıf açılamadı')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('class-retry'));
+    expect(await screen.findByText('Yoklama')).toBeOnTheScreen();
   });
 });

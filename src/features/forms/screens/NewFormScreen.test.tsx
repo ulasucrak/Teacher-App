@@ -36,8 +36,9 @@ describe('NewFormScreen', () => {
     await renderScreen();
 
     expect(screen.getByLabelText('Form adı')).toHaveDisplayValue('Yoklama');
-    // Önizleme ızgarası seçenekleri çip olarak gösterir.
-    expect(screen.getByRole('radio', { name: 'Önizleme, Ayşe Yılmaz: Geç geldi' })).toBeOnTheScreen();
+    // Ders/açıklama "Ayrıntı ekle" arkasında.
+    expect(screen.queryByLabelText('Ders (isteğe bağlı)')).toBeNull();
+    await fireEvent.press(screen.getByTestId('form-details-toggle'));
 
     await fireEvent.changeText(screen.getByLabelText('Ders (isteğe bağlı)'), 'Matematik');
     await fireEvent.changeText(screen.getByLabelText('Seçenek adı: Geldi'), 'Derste');
@@ -70,9 +71,13 @@ describe('NewFormScreen', () => {
     const inputs = screen.getAllByLabelText('Seçenek adı: Adsız seçenek');
     await fireEvent.changeText(inputs[0]!, 'Okudu');
     await fireEvent.changeText(inputs[1]!, 'Okumadı');
-    await fireEvent.press(screen.getByRole('button', { name: 'Seçenek ekle' }));
+    await fireEvent.press(screen.getByTestId('option-add'));
     await fireEvent.changeText(screen.getByLabelText('Seçenek adı: Adsız seçenek'), 'Yarım');
+    await fireEvent.press(screen.getByTestId('option-row-2-tone'));
     await fireEvent.press(screen.getByRole('radio', { name: 'Yarım: Uyarı' }));
+    // Sıralama ve kaldırma "Düzenle" ile açılır.
+    expect(screen.queryByRole('button', { name: 'Yarım seçeneğini yukarı taşı' })).toBeNull();
+    await fireEvent.press(screen.getByTestId('form-options-edit'));
     await fireEvent.press(screen.getByRole('button', { name: 'Yarım seçeneğini yukarı taşı' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Okudu seçeneğini kaldır' }));
 

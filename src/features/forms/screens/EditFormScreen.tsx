@@ -10,7 +10,7 @@ import { getForm, updateForm, type FormInput } from '../api';
 import { FormBuilder } from '../components/FormBuilder';
 import { errorMessage, getFormsErrorMessage } from '../errors';
 import { toDraftOptions } from '../options';
-import { firstParam, formsRoutes } from '../params';
+import { firstParam } from '../params';
 
 type LoadState = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; form: FormRow };
 
@@ -59,7 +59,7 @@ export default function EditFormScreen() {
         ) : (
           <View style={styles.error}>
             <Banner kind="error" title="Form açılamadı" message={state.message} />
-            <Button label="Tekrar dene" variant="secondary" fullWidth={false} onPress={retry} />
+            <Button label="Tekrar dene" variant="secondary" fullWidth={false} onPress={retry} testID="form-edit-retry" />
           </View>
         )}
       </Screen>
@@ -70,9 +70,9 @@ export default function EditFormScreen() {
 
   const onSubmit = async (input: FormInput) => {
     await updateForm(form.id, input);
-    toast.show('Değişiklikler kaydedildi');
+    toast.show('Kaydedildi');
     if (router.canGoBack()) router.back();
-    else router.replace(formsRoutes.list(classId || form.class_id));
+    else router.replace(`/class/${classId || form.class_id}`);
   };
 
   return (
@@ -86,7 +86,7 @@ export default function EditFormScreen() {
         options: toDraftOptions(form.options),
       }}
       originalOptions={form.options}
-      submitLabel="Değişiklikleri kaydet"
+      submitLabel="Kaydet"
       onSubmit={onSubmit}
     />
   );

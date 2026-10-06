@@ -1,15 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { Banner, Button, Chip, Screen, Text, TextField } from '@/components/ui';
+import { Banner, BottomActionBar, Button, ConfirmSheet, Screen, SectionHeader, TextField } from '@/components/ui';
 import { spacing } from '@/theme';
 import type { FormOption } from '@/types/database';
 
 import type { FormInput } from '../api';
 import { errorMessage } from '../errors';
 import {
-  MAX_OPTIONS,
-  MIN_OPTIONS,
   createDraftOption,
   finalizeOptions,
   removedOptions,
@@ -18,9 +16,8 @@ import {
   type DraftOption,
   type FormValidation,
 } from '../options';
-import { PRESETS, getPreset, type PresetId } from '../presets';
+import { getPreset, type PresetId } from '../presets';
 import { OptionsEditor } from './OptionsEditor';
-import { OptionsPreview } from './OptionsPreview';
 
 export type TemplateChoice = PresetId | 'blank';
 
@@ -35,9 +32,6 @@ export interface FormBuilderProps {
   initial: FormBuilderValues;
   /** Düzenleme: kayıtlı seçenekler (kaldırılan seçenek uyarısı için). */
   originalOptions?: readonly FormOption[];
-  /** Yeni form: şablon seçici gösterilir. */
-  initialTemplate?: TemplateChoice | null;
-  showTemplates?: boolean;
   /** Üst çubuk başlığı ("Yeni form", "Formu düzenle"). */
   screenTitle: string;
   submitLabel: string;
@@ -63,22 +57,18 @@ function quoteList(labels: string[]): string {
   return labels.map((l) => `"${l}"`).join(', ');
 }
 
-/** Yeni form ve düzenleme ekranlarının ortak gövdesi (alanlar, seçenekler, önizleme). */
-export function FormBuilder({
-  initial,
-  originalOptions,
-  initialTemplate = null,
-  showTemplates = false,
-  screenTitle,
-  submitLabel,
-  onSubmit,
-}: FormBuilderProps) {
+/**
+ * Yeni form ve düzenleme ekranlarının ortak gövdesi: ad + seçenekler (renkli).
+ * Ders/açıklama "Ayrıntı ekle" ile, sıralama/kaldırma "Düzenle" ile açılır.
+ */
+export function FormBuilder({ initial, originalOptions, screenTitle, submitLabel, onSubmit }: FormBuilderProps) {
   const [values, setValues] = useState<FormBuilderValues>(initial);
-  const [template, setTemplate] = useState<TemplateChoice | null>(initialTemplate);
-  const [dirty, setDirty] = useState(false);
+  const [showDetails, setShowDetails] = useState(Boolean(initial.subject || initial.description));
+  const [editingOptions, setEditingOptions] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const validation = useMemo(() => validateForm(values), [values]);
   const removed = useMemo(
@@ -86,38 +76,7 @@ export function FormBuilder({
     [originalOptions, values.options],
   );
 
-  const patch = (next: Partial<FormBuilderValues>) => {
-    setValues((v) => ({ ...v, ...next }));
-    setDirty(true);
-  };
-
-  const applyTemplate = (choice: TemplateChoice) => {
-    const next = valuesForTemplate(choice);
-    setValues((v) => {
-      const prevPresetTitle = getPreset(template)?.title;
-      const keepTitle = v.title.trim() !== '' && v.title !== prevPresetTitle;
-      return {
-        ...v,
-        title: keepTitle ? v.title : next.title,
-        options: next.options,
-      };
-    });
-    setTemplate(choice);
-    setDirty(false);
-    setAttempted(false);
-  };
-
-  const chooseTemplate = (choice: TemplateChoice) => {
-    if (choice === template) return;
-    if (!dirty) {
-      applyTemplate(choice);
-      return;
-    }
-    Alert.alert('Şablon uygulansın mı?', 'Yazdığınız seçenekler şablondakilerle değişir.', [
-      { text: 'Vazgeç', style: 'cancel' },
-      { text: 'Şablonu uygula', onPress: () => applyTemplate(choice) },
-    ]);
-  };
+  const patch = (next: Partial<FormBuilderValues>) => setValues((v) => ({ ...v, ...next }));
 
   const save = async () => {
     setSaving(true);
@@ -131,24 +90,17 @@ export function FormBuilder({
       });
     } catch (error) {
       setSaveError(errorMessage(error, 'save'));
+    } finally {
       setSaving(false);
-      return;
+      setConfirmRemove(false);
     }
-    setSaving(false);
   };
 
   const submit = () => {
     setAttempted(true);
     if (!validation.valid || saving) return;
     if (removed.length > 0) {
-      Alert.alert(
-        removed.length === 1 ? 'Seçenek kaldırılsın mı?' : 'Seçenekler kaldırılsın mı?',
-        `${quoteList(removed.map((o) => o.label))} ile yapılmış eski işaretlemeler etiketsiz görünür.`,
-        [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Kaldır ve kaydet', style: 'destructive', onPress: () => void save() },
-        ],
-      );
+      setConfirmRemove(true);
       return;
     }
     void save();
@@ -156,44 +108,20 @@ export function FormBuilder({
 
   const show: Omit<FormValidation, 'valid'> = attempted ? validation : { optionErrors: {} };
 
-  const footer = (
-    <>
-      {attempted && !validation.valid ? (
-        <Text variant="caption" tone="danger" accessibilityLiveRegion="polite">
-          Kaydetmeden önce kırmızı işaretli alanları düzeltin.
-        </Text>
-      ) : null}
-      <Button label={submitLabel} onPress={submit} loading={saving} />
-    </>
-  );
-
   return (
-    <Screen title={screenTitle} headerDivider footer={footer}>
+    <Screen
+      title={screenTitle}
+      headerDivider
+      testID="form-builder"
+      footer={
+        <BottomActionBar
+          hint={attempted && !validation.valid ? 'Kırmızı işaretli alanları düzeltin.' : undefined}
+          primary={{ label: submitLabel, onPress: submit, loading: saving, testID: 'form-save' }}
+        />
+      }
+    >
       <View style={styles.body}>
         {saveError ? <Banner kind="error" message={saveError} /> : null}
-
-        {showTemplates ? (
-          <View style={styles.section}>
-            <Text variant="label">Şablonla başlayın</Text>
-            <View style={styles.templates} accessibilityRole="radiogroup" accessibilityLabel="Şablon">
-              {PRESETS.map((p) => (
-                <Chip
-                  key={p.id}
-                  label={p.title}
-                  selected={template === p.id}
-                  onPress={() => chooseTemplate(p.id)}
-                  accessibilityLabel={`${p.title} şablonu: ${p.summary}`}
-                />
-              ))}
-              <Chip
-                label="Boş form"
-                selected={template === 'blank'}
-                onPress={() => chooseTemplate('blank')}
-                accessibilityLabel="Boş form: seçenekleri kendiniz yazın"
-              />
-            </View>
-          </View>
-        ) : null}
 
         <View style={styles.fields}>
           <TextField
@@ -204,38 +132,55 @@ export function FormBuilder({
             error={show.title}
             autoCapitalize="sentences"
             returnKeyType="next"
+            testID="form-title-input"
           />
-          <TextField
-            label="Ders (isteğe bağlı)"
-            value={values.subject}
-            onChangeText={(subject) => patch({ subject })}
-            placeholder="Örneğin Matematik"
-            autoCapitalize="words"
-            returnKeyType="next"
-          />
-          <TextField
-            label="Açıklama (isteğe bağlı)"
-            value={values.description}
-            onChangeText={(description) => patch({ description })}
-            placeholder="Örneğin 5. sınıf MEB kitabı"
-            hint="İşaretleme ekranında form adının altında görünür."
-          />
+          {showDetails ? (
+            <>
+              <TextField
+                label="Ders (isteğe bağlı)"
+                value={values.subject}
+                onChangeText={(subject) => patch({ subject })}
+                placeholder="Örneğin Matematik"
+                autoCapitalize="words"
+                returnKeyType="next"
+                testID="form-subject-input"
+              />
+              <TextField
+                label="Açıklama (isteğe bağlı)"
+                value={values.description}
+                onChangeText={(description) => patch({ description })}
+                placeholder="Örneğin 5. sınıf MEB kitabı"
+                testID="form-description-input"
+              />
+            </>
+          ) : (
+            <Button
+              label="Ayrıntı ekle"
+              icon="plus"
+              variant="ghost"
+              size="sm"
+              fullWidth={false}
+              onPress={() => setShowDetails(true)}
+              testID="form-details-toggle"
+              style={styles.ghostStart}
+            />
+          )}
         </View>
 
         <View style={styles.section}>
-          <View style={styles.sectionHead}>
-            <Text variant="heading" accessibilityRole="header">
-              Seçenekler
-            </Text>
-            <Text variant="caption" tone="muted">
-              {MIN_OPTIONS}–{MAX_OPTIONS} seçenek. Renk, listede kimin sorunlu olduğunu bir bakışta
-              gösterir.
-            </Text>
-          </View>
+          <SectionHeader
+            title="Seçenekler"
+            count={values.options.length}
+            actionLabel={editingOptions ? 'Bitti' : 'Düzenle'}
+            actionIcon={editingOptions ? 'check' : 'edit'}
+            actionAccessibilityLabel={editingOptions ? 'Düzenlemeyi bitir' : 'Seçenekleri sırala ya da kaldır'}
+            onAction={() => setEditingOptions((v) => !v)}
+            actionTestID="form-options-edit"
+          />
           {removed.length > 0 ? (
             <Banner
               kind="warning"
-              message={`${quoteList(removed.map((o) => o.label))} kaldırıldı. Bu seçenekle yapılmış eski işaretlemeler etiketsiz görünür.`}
+              message={`${quoteList(removed.map((o) => o.label))} kaldırıldı; eski işaretlemeler etiketsiz görünür.`}
             />
           ) : null}
           {show.options ? <Banner kind="error" message={show.options} /> : null}
@@ -243,24 +188,28 @@ export function FormBuilder({
             options={values.options}
             onChange={(options) => patch({ options })}
             errors={show.optionErrors}
+            editing={editingOptions}
           />
         </View>
-
-        <View style={styles.section}>
-          <Text variant="heading" accessibilityRole="header">
-            Önizleme
-          </Text>
-          <OptionsPreview options={values.options} title={values.title} />
-        </View>
       </View>
+
+      <ConfirmSheet
+        visible={confirmRemove}
+        title={removed.length === 1 ? 'Seçenek kaldırılsın mı?' : 'Seçenekler kaldırılsın mı?'}
+        message={`${quoteList(removed.map((o) => o.label))} ile yapılmış eski işaretlemeler etiketsiz görünür.`}
+        confirmLabel="Kaldır ve kaydet"
+        loading={saving}
+        onConfirm={() => void save()}
+        onCancel={() => setConfirmRemove(false)}
+        testID="form-remove-confirm"
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   body: { gap: spacing.xxl, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
-  section: { gap: spacing.md },
-  sectionHead: { gap: spacing.xs },
-  templates: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  fields: { gap: spacing.lg },
+  section: { gap: spacing.sm },
+  fields: { gap: spacing.md },
+  ghostStart: { alignSelf: 'flex-start', marginLeft: -spacing.md },
 });
