@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react-native';
 import { useState, type ReactElement } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -80,6 +80,17 @@ describe('SegmentedChoice', () => {
 });
 
 describe('OverflowMenu', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    // Unmount before restoring real timers so animations cannot leak into other tests.
+    await cleanup();
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   it('runs the chosen action only after the sheet has closed', async () => {
     const onEdit = jest.fn();
     function Harness() {
@@ -98,10 +109,19 @@ describe('OverflowMenu', () => {
       );
     }
     await render(<Harness />);
+    await act(async () => {
+      await jest.runAllTimersAsync();
+    });
 
     await fireEvent.press(screen.getByTestId('class-menu-edit'));
+    // The async press can outlast the real closing animation on a busy worker.
+    // Keep time frozen until we have checked that the action is still pending.
     expect(onEdit).not.toHaveBeenCalled();
-    await waitFor(() => expect(onEdit).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('Sınıfı sil')).toBeOnTheScreen();
+    await act(async () => {
+      await jest.runAllTimersAsync();
+    });
+    expect(onEdit).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Sınıfı sil')).toBeNull();
   });
 
@@ -120,8 +140,14 @@ describe('OverflowMenu', () => {
       );
     }
     await render(<Harness />);
+    await act(async () => {
+      await jest.runAllTimersAsync();
+    });
     await fireEvent.press(screen.getByTestId('menu-close'));
-    await waitFor(() => expect(screen.queryByText('Sınıfı düzenle')).toBeNull());
+    await act(async () => {
+      await jest.runAllTimersAsync();
+    });
+    expect(screen.queryByText('Sınıfı düzenle')).toBeNull();
     expect(onEdit).not.toHaveBeenCalled();
   });
 });
