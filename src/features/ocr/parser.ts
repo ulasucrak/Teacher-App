@@ -131,8 +131,7 @@ export interface RowCell {
 }
 
 interface PositionedLine {
-  text: string;
-  confidence?: number;
+  cell: RowCell;
   left: number;
   width: number;
   height: number;
@@ -255,10 +254,9 @@ export function groupIntoCells(result: OcrResult): RowCell[][] {
   const allFramed = lines.every((l) => l.frame && l.frame.height > 0);
   if (!allFramed) return lines.map((l) => [cellOf(l, pickCandidate(l))]);
 
-  const positioned: (PositionedLine & { cell: RowCell })[] = lines.map((l) => {
+  const positioned: PositionedLine[] = lines.map((l) => {
     const f = l.frame as OcrFrame;
     return {
-      text: l.text,
       cell: cellOf(l, pickCandidate(l)),
       left: f.left,
       width: f.width,
