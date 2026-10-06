@@ -634,6 +634,20 @@ function tokenize(cells: string[]): string[] {
   );
 }
 
+/**
+ * Metinde sözlükte "i" ile yazılan bir ad BÜYÜK HARF ve noktasız ("SELIN", "ELIF") okunmuş mu?
+ * Öyleyse OCR "İ"nin noktasını bu fotoğrafta da düşürüyordur.
+ */
+function dropsDots(text: string): boolean {
+  return text.split(/[^\p{L}]+/u).some((word) => {
+    if (word.length < 3 || !word.includes('I') || word !== word.toLocaleUpperCase(LOCALE)) return false;
+    const restored = restoreTurkishLetters(word);
+    if (!restored) return false;
+    const read = Array.from(word);
+    return Array.from(restored).some((c, i) => read[i] === 'I' && c === 'İ');
+  });
+}
+
 /** Aday okumalardan biri kelimeyi baş "İ" ile okumuş mu ("Brahim" ↔ "İbrahim")? */
 function alternatesSupportDroppedI(word: string, rowCells: RowCell[]): boolean {
   const target = foldTurkish(`i${word}`);
@@ -658,11 +672,14 @@ function parseRow(rowCells: RowCell[], context: RowContext): RawRow | null {
   const nameTokens: NameToken[] = [];
   let punctuatedLead = false;
 
+  // Aynı satırda sözlükteki bir ad noktasız okunduysa ("SELIN BAYEZIT") bu satırda noktalar
+  // düşmüştür: satırın diğer "I"ları da "İ" olabilir.
+  const dotAware = context.dotAware && !rowCells.some((c) => dropsDots(c.text));
   const rowConfidence = minConfidence(rowCells);
   const lowConfidence = rowConfidence !== undefined && rowConfidence < DROPPED_I_MAX_CONFIDENCE;
   const ctx: CleanContext = {
     ocr: context.ocr,
-    dotAware: context.dotAware,
+    dotAware,
     asciiCaps: context.asciiCaps,
     droppedI: (word) => lowConfidence || alternatesSupportDroppedI(word, rowCells),
   };

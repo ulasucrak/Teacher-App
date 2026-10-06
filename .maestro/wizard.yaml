@@ -1,0 +1,69 @@
+# b. Yeni sınıf sihirbazı: "E2E 6/A" → 5 ad yapıştır (İ/ş/ğ) → gözden geçir → Yoklama + Ödev
+# kontrolü → oluştur → sınıf ekranı formları gösterir.
+appId: com.ulas.teacherapp
+name: wizard
+env:
+  EMAIL: e2e+u02@sinifdefteri.test
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/ensure-login.yaml
+- runFlow: subflows/delete-e2e-classes.yaml
+- tapOn:
+    id: "classes-fab|classes-empty-new"
+- extendedWaitUntil:
+    visible:
+      id: "wizard-step-1"
+    timeout: 10000
+- tapOn:
+    id: "wizard-name-input"
+- inputText: "E2E 6/A"
+- takeScreenshot: wizard-01-name
+- tapOn:
+    id: "wizard-next"
+- extendedWaitUntil:
+    visible:
+      id: "wizard-step-2"
+    timeout: 10000
+- tapOn:
+    id: "collect-method-paste"
+- tapOn:
+    id: "collect-paste-input"
+# Virgül de ayraçtır; satır sonu yazmak klavyede güvenilir değil.
+- inputText: "Ayşe Yılmaz, İlker Doğan, Şule Ağaoğlu, Gökhan Çelik, İpek Öztürk"
+- hideKeyboard
+- tapOn:
+    id: "collect-paste-add"
+- assertVisible: "Ayşe Yılmaz.*"
+- assertVisible: "İlker Doğan.*"
+- assertVisible: "Şule Ağaoğlu.*"
+- assertVisible: "Gökhan Çelik.*"
+- assertVisible: "İpek Öztürk.*"
+- takeScreenshot: wizard-02-students
+- tapOn:
+    id: "wizard-next"
+- extendedWaitUntil:
+    visible:
+      id: "wizard-step-3"
+    timeout: 10000
+- assertVisible:
+    id: "wizard-form-yoklama"
+    selected: true
+- tapOn:
+    id: "wizard-form-odev"
+- assertVisible:
+    id: "wizard-form-odev"
+    selected: true
+- takeScreenshot: wizard-03-forms
+- tapOn:
+    id: "wizard-create"
+- extendedWaitUntil:
+    visible:
+      id: "class-students-row"
+    timeout: 30000
+- assertVisible: "E2E 6/A"
+- assertVisible: "Yoklama.*"
+- assertVisible: "Ödev kontrolü.*"
+- assertVisible:
+    id: "class-student-count"
+    text: "5"
+- takeScreenshot: wizard-04-class

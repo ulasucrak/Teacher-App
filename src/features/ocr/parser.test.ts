@@ -480,6 +480,23 @@ describe('eğik fotoğraf', () => {
 // Türkçe harf geri getirme (sözlük)
 // ---------------------------------------------------------------------------
 
+describe('noktası yer yer düşen OCR', () => {
+  it('aynı satırdaki sözlük adı noktasız okunduysa sözlükte olmayan ad da "İ" alır', () => {
+    // Simülatördeki Vision: "ÖZDEMİR" noktalı, "SELIN BAYEZIT" noktasız.
+    expect(names(parseRows([['1', '1101', 'SELIN BAYEZIT'], ['2', '1104', 'BURAK ÖZDEMİR']]))).toEqual([
+      'Selin Bayezit',
+      'Burak Özdemir',
+    ]);
+  });
+
+  it('satırda noktası düşen sözlük adı yoksa noktasız "I" "ı" kalır', () => {
+    expect(names(parseRows([['1', '12', 'SELİN KAYA'], ['2', '13', 'MERT BAYEZIT']]))).toEqual([
+      'Selin Kaya',
+      'Mert Bayezıt',
+    ]);
+  });
+});
+
 describe('restoreTurkishLetters', () => {
   it.each([
     ['Irem', 'İrem'],

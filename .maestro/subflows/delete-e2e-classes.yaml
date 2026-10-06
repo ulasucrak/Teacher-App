@@ -3,7 +3,7 @@ appId: com.ulas.teacherapp
 ---
 - repeat:
     while:
-      visible: "E2E 6/A"
+      visible: "E2E 6/A,.*"
     commands:
       - runFlow: open-e2e-class.yaml
       - runFlow: delete-current-class.yaml
