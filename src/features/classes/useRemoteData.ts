@@ -1,6 +1,8 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState, type SetStateAction } from 'react';
 
+import { useRealtimeRefresh, type RealtimeTable, type RealtimeTableSpec } from '@/lib/realtime';
+
 import { toUserMessage } from './errors';
 
 export type RemoteStatus = 'loading' | 'ready' | 'error';
@@ -21,11 +23,28 @@ export interface RemoteData<T> {
 
 type Mode = 'initial' | 'refresh' | 'silent';
 
+export interface RemoteDataOptions {
+  /**
+   * Canlı eşitleme: bu tablolarda (başka cihazdan) değişiklik olunca ekran odaktayken sessizce
+   * yeniden yükler. Varsayılan sınıf/öğrenci/form tabloları; `false` kapatır.
+   */
+  live?: readonly (RealtimeTable | RealtimeTableSpec)[] | false;
+}
+
+/** Sınıf, öğrenci ve form ekranlarının (sayılar dâhil) bağlı olduğu tablolar. */
+export const DEFAULT_LIVE_TABLES: readonly RealtimeTable[] = ['classes', 'students', 'forms'];
+
 /**
  * Ekran odaklandığında veriyi yükler (başka ekrandan dönüldüğünde de sessizce yeniler).
- * `load` kararlı olmalı (useCallback). Eski isteklerin sonucu yok sayılır.
+ * Odaktayken başka cihazdaki değişiklikler ve uygulamanın ön plana dönmesi de sessiz yenileme
+ * tetikler (bkz. `useRealtimeRefresh`). `load` kararlı olmalı (useCallback). Eski isteklerin
+ * sonucu yok sayılır.
  */
-export function useRemoteData<T>(load: () => Promise<T>, errorFallback: string): RemoteData<T> {
+export function useRemoteData<T>(
+  load: () => Promise<T>,
+  errorFallback: string,
+  options: RemoteDataOptions = {},
+): RemoteData<T> {
   const [data, setData] = useState<T | null>(null);
   const [status, setStatus] = useState<RemoteStatus>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +80,25 @@ export function useRemoteData<T>(load: () => Promise<T>, errorFallback: string):
     [load, errorFallback],
   );
 
+  const [focused, setFocused] = useState(false);
   useFocusEffect(
     useCallback(() => {
       void run(hasData.current ? 'silent' : 'initial');
+      setFocused(true);
+      return () => setFocused(false);
     }, [run]),
   );
+
+  const live = options.live ?? DEFAULT_LIVE_TABLES;
+  useRealtimeRefresh({
+    name: 'remote',
+    tables: live || [],
+    enabled: focused && live !== false,
+    // İlk yükleme bitmeden gelen olaylar zaten yüklemede; yalnızca veri varken yenile.
+    onChange: () => {
+      if (hasData.current) void run('silent');
+    },
+  });
 
   const refresh = useCallback(() => run('refresh'), [run]);
   const retry = useCallback(() => run('initial'), [run]);
