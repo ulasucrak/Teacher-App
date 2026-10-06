@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { isHovered, isWeb } from '@/lib/platform';
 import { colors, iconSize, layout, spacing } from '@/theme';
 
 import { Icon } from './Icon';
@@ -97,7 +98,12 @@ export function ListRow({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? [title, subtitle].filter(Boolean).join(', ')}
         accessibilityHint={accessibilityHint}
-        style={({ pressed }) => [styles.row, pressed && styles.pressed, style]}
+        style={(state) => [
+          styles.row,
+          isHovered(state) && styles.pressed,
+          state.pressed && (isWeb ? styles.webPressed : styles.pressed),
+          style,
+        ]}
       >
         {body}
       </Pressable>
@@ -112,7 +118,10 @@ export function ListRow({
 
 const styles = StyleSheet.create({
   row: { backgroundColor: colors.surface, minHeight: layout.rowHeight },
+  /** Basılı (mobil) ve fareyle üstünde (web) zemin. */
   pressed: { backgroundColor: colors.surfaceMuted },
+  /** Web'de basılı satır, üstüne gelinmiş satırdan bir ton koyu. */
+  webPressed: { backgroundColor: colors.rule },
   inner: { flexDirection: 'row', paddingLeft: layout.pageX },
   numberCol: {
     width: layout.numberColumn,

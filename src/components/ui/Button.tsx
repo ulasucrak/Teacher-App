@@ -7,6 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { isHovered, isWeb } from '@/lib/platform';
 import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
@@ -84,11 +85,14 @@ export function Button({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: inactive, busy: loading }}
       hitSlop={size === 'sm' ? 4 : 0}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.base,
         size === 'sm' ? styles.sm : styles.md,
         fullWidth ? styles.full : styles.inline,
-        { backgroundColor: pressed ? palette.bgPressed : palette.bg },
+        { backgroundColor: state.pressed ? palette.bgPressed : palette.bg },
+        // Web: fareyle üstüne gelince hafif koyulaşır, basınca iOS'taki gibi hafifçe küçülür.
+        !inactive && !state.pressed && isHovered(state) && hoverStyles[variant],
+        !inactive && isWeb && state.pressed && styles.webPressed,
         style,
       ]}
     >
@@ -111,7 +115,16 @@ export function Button({
   );
 }
 
+/** Yalnızca web (fare): iOS/Android'de `hovered` hiç gelmez. */
+const hoverStyles = StyleSheet.create<Record<ButtonVariant, ViewStyle>>({
+  primary: { filter: 'brightness(0.96)' },
+  secondary: { filter: 'brightness(0.97)' },
+  ghost: { backgroundColor: colors.pressedOverlay },
+  destructive: { filter: 'brightness(0.92)' },
+});
+
 const styles = StyleSheet.create({
+  webPressed: { transform: [{ scale: 0.98 }] },
   base: {
     alignItems: 'center',
     justifyContent: 'center',

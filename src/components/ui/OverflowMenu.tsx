@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { isHovered, isWeb } from '@/lib/platform';
 import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
@@ -73,10 +74,12 @@ export function OverflowMenu({ visible, onClose, title, description, actions, te
               accessibilityRole="button"
               accessibilityLabel={action.description ? `${action.label}. ${action.description}` : action.label}
               accessibilityState={{ disabled: action.disabled }}
-              style={({ pressed }) => [
+              style={(state) => [
                 styles.item,
-                index < actions.length - 1 && styles.divider,
-                pressed && styles.pressed,
+                isWeb ? styles.itemFlat : styles.itemRounded,
+                !isWeb && index < actions.length - 1 && styles.border,
+                !action.disabled && isHovered(state) && styles.highlighted,
+                state.pressed && (isWeb ? styles.webPressed : styles.highlighted),
                 action.disabled && styles.disabled,
               ]}
             >
@@ -95,6 +98,7 @@ export function OverflowMenu({ visible, onClose, title, description, actions, te
                   </Text>
                 ) : null}
               </View>
+              {isWeb && index < actions.length - 1 ? <View style={styles.divider} /> : null}
             </Pressable>
           );
         })}
@@ -110,12 +114,28 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     minHeight: layout.rowHeight,
     paddingVertical: spacing.sm,
-    marginHorizontal: -spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.sm,
   },
-  divider: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
-  pressed: { backgroundColor: colors.surfaceMuted },
+  /** iOS/Android: hafif yuvarlak basılı zemin, ayraç satırın alt kenarı. */
+  itemRounded: { marginHorizontal: -spacing.sm, paddingHorizontal: spacing.sm, borderRadius: radii.sm },
+  border: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
+  /**
+   * Web: iOS eylem listesi gibi düz satır. Tarayıcı yuvarlak kutunun alt kenarını uçlarda
+   * kıvırıp kart gölgesi gibi çizdiği için köşe yok; üstünde/basılı zemini panelin iki
+   * kenarına kadar uzanır, ayraç ise içerikle hizalı ayrı, düz bir çizgidir.
+   */
+  itemFlat: { marginHorizontal: -layout.pageX, paddingHorizontal: layout.pageX },
+  divider: {
+    position: 'absolute',
+    left: layout.pageX,
+    right: layout.pageX,
+    bottom: 0,
+    height: layout.hairline,
+    backgroundColor: colors.rule,
+  },
+  /** Basılı (mobil) ve fareyle üstünde (web) zemin. */
+  highlighted: { backgroundColor: colors.surfaceMuted },
+  /** Web'de basılı satır, üstüne gelinmiş satırdan bir ton koyu. */
+  webPressed: { backgroundColor: colors.rule },
   disabled: { opacity: 0.45 },
   iconBox: {
     width: layout.minTouch - spacing.sm,
