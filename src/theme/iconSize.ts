@@ -1,4 +1,4 @@
-/** İkon boyutları (pt) — bkz. docs/DESIGN.md §9. Sabit sayı yerine bunları kullanın. */
+/** İkon boyutları (pt) — bkz. docs/DESIGN.md §10. Sabit sayı yerine bunları kullanın. */
 export const iconSize = {
   /** Çip ve küçük onay kutusu içindeki ✓. */
   xs: 14,

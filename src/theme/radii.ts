@@ -1,5 +1,5 @@
 /**
- * Radius hiyerarşisi — bkz. docs/DESIGN_V2.md §6. Her şeye aynı radius verilmez:
+ * Radius hiyerarşisi — bkz. docs/DESIGN.md §6. Her şeye aynı radius verilmez:
  * içteki küçük öğe küçük, dıştaki taşıyıcı büyük köşe alır.
  */
 export const radii = {

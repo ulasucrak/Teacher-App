@@ -1,5 +1,5 @@
 /**
- * Renk token'ları — bkz. docs/DESIGN_V2.md §3 ("Kalem kutusu").
+ * Renk token'ları — bkz. docs/DESIGN.md §3 ("Kalem kutusu").
  * Uygulamanın geri kalanında hex renk yazılmaz; buradan içe aktarılır.
  */
 
@@ -74,7 +74,7 @@ export interface ToneColors {
   onSoft: string;
 }
 
-/** Seçenek tonları: boya kalemleri. Kontrastlar docs/DESIGN_V2.md §3'te. */
+/** Seçenek tonları: boya kalemleri. Kontrastlar docs/DESIGN.md §3'te. */
 export const tones: Record<ToneName, ToneColors> = {
   positive: {
     solid: '#17744A',

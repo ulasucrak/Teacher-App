@@ -1,6 +1,8 @@
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
+  // Yük altında (paralel işçiler) ekran testleri 5 sn'yi aşabiliyor.
+  testTimeout: 20000,
   setupFiles: ['<rootDir>/src/test/setup.ts'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',

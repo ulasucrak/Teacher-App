@@ -32,7 +32,6 @@ export { OptionGrid } from './OptionGrid';
 export type { OptionGridItem } from './OptionGrid';
 export { OverflowMenu } from './OverflowMenu';
 export type { OverflowAction, OverflowMenuProps } from './OverflowMenu';
-export { RULED_MARGIN_X, RuledPaper } from './RuledPaper';
 export { Screen } from './Screen';
 export type { ScreenProps } from './Screen';
 export { SearchField } from './SearchField';

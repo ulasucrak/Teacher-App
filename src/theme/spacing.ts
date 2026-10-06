@@ -1,4 +1,4 @@
-/** 4 tabanlı boşluk ölçeği — bkz. docs/DESIGN_V2.md §5. */
+/** 4 tabanlı boşluk ölçeği — bkz. docs/DESIGN.md §5. */
 export const spacing = {
   xxs: 2,
   xs: 4,
