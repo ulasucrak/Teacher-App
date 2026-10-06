@@ -26,7 +26,9 @@ export default function ResetPasswordScreen() {
   const { session, recoverSession, updatePassword } = useAuth();
   const linkingUrl = Linking.useLinkingURL();
   // Web: yönlendirici adresi değiştirmiş olabilir; açılıştaki bağlantı önceliklidir.
-  const url = isRecoveryUrl(linkingUrl) ? linkingUrl : (getInitialRecoveryUrl() ?? linkingUrl);
+  // İlk çizimde bir kez okunur: ayrılırken adres temizlense de bu ekran bağlantıyı kullanabilir.
+  const [initialUrl] = useState(getInitialRecoveryUrl);
+  const url = isRecoveryUrl(linkingUrl) ? linkingUrl : (initialUrl ?? linkingUrl);
   const handledUrl = useRef<string | null>(null);
   const confirmRef = useRef<TextInput>(null);
 
@@ -37,6 +39,9 @@ export default function ResetPasswordScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const inFlight = useRef(false);
+
+  // Ekran doğrulama bitmeden kapanırsa da token'lar adres çubuğunda kalmasın (web; mobilde etkisiz).
+  useEffect(() => clearRecoveryFromAddressBar, []);
 
   useEffect(() => {
     if (!isRecoveryUrl(url)) {

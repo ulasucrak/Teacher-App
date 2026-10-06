@@ -10,11 +10,19 @@ function dialogText(title: string, message?: string): string {
   return message ? `${title}\n\n${message}` : title;
 }
 
+function runLater(button: AlertButton | undefined): void {
+  const onPress = button?.onPress;
+  if (onPress) setTimeout(() => onPress(), 0);
+}
+
 /**
  * `Alert.alert`'in tarayıcı karşılığı. react-native-web'de `Alert.alert` hiçbir şey yapmaz;
  * uygulamadaki onaylar (vazgeç + eylem) `window.confirm` ile sorulur.
  * - Düğme yok / tek düğme: bilgi kutusu, ardından (varsa) düğmenin eylemi.
  * - Birden çok düğme: "Tamam" → iptal olmayan ilk yıkıcı (yoksa son) düğme; "İptal" → iptal düğmesi.
+ *   Tarayıcı düğme adlarını değiştiremediği için eylemin adı metne yazılır ("Tamam = Kaydetmeden çık").
+ * Düğme eylemleri bir sonraki görev turunda çalışır: `beforeRemove` dinleyicisi içinde çağrıldığında
+ * `navigation.dispatch` süren gezinmenin ortasında tetiklenmez.
  */
 export function showBrowserAlert(
   dialogs: BrowserDialogs,
@@ -26,14 +34,15 @@ export function showBrowserAlert(
   const list = buttons ?? [];
   if (list.length <= 1) {
     dialogs.alert(text);
-    list[0]?.onPress?.();
+    runLater(list[0]);
     return;
   }
   const cancel = list.find((b) => b.style === 'cancel');
   const actions = list.filter((b) => b !== cancel);
   const primary = actions.find((b) => b.style === 'destructive') ?? actions[actions.length - 1];
-  if (dialogs.confirm(text)) primary?.onPress?.();
-  else cancel?.onPress?.();
+  const confirmText = primary?.text ? `${text}\n\nTamam = ${primary.text}` : text;
+  if (dialogs.confirm(confirmText)) runLater(primary);
+  else runLater(cancel);
 }
 
 let installed = false;
