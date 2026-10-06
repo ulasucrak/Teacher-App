@@ -23,6 +23,8 @@ env:
 # hideKeyboard yerine (iOS 27'de güvenilir değil, bkz. auth.yaml) sayaç metnine dokunulur.
 - tapOn:
     id: "students-count"
+# Klavye kapanırken düzen kayar; eski konuma dokunmamak için animasyon beklenir.
+- waitForAnimationToEnd
 - assertVisible:
     id: "student-row-0"
     text: ".*Ayşe Yılmaz.*"
