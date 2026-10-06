@@ -1,77 +1,65 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { Text } from '@/components/ui';
+import { IconButton, IconTile, ListRow } from '@/components/ui';
 import { formatCompactDate } from '@/features/sessions/date';
-import { colors, layout, spacing } from '@/theme';
+import { colors, iconSize, layout } from '@/theme';
 
 import type { FormListItem } from '../api';
-import { optionCountLabel } from '../format';
-import { FormIconButton } from './FormIcon';
-import { ToneDots } from './ToneDots';
+import { presetIcon } from '../presets';
 
 interface FormListRowProps {
   form: FormListItem;
+  /** Listedeki sıra (testID: `form-row-<index>`). */
+  index: number;
   onOpen: () => void;
   onMore: () => void;
-  muted?: boolean;
+  /** Satıra dokunulduktan sonra açılış sürüyor. */
+  busy?: boolean;
+  /** Erişilebilirlik ipucu: satıra dokunmak ne yapar. */
+  openHint?: string;
 }
 
-/**
- * Defter satırı gibi form satırı: ad, ders, seçeneklerin renk özeti ve son oturum.
- * Satıra dokunmak oturumları açar; "⋯" diğer eylemleri.
- */
-export function FormListRow({ form, onOpen, onMore, muted = false }: FormListRowProps) {
-  const last = form.lastSessionDate ? formatCompactDate(form.lastSessionDate) : null;
-  const count = optionCountLabel(form.options.length);
-  const lastText = last ? `Son oturum: ${last}` : 'Henüz oturum yok';
-  const a11y = [form.title, form.subject, count, lastText].filter(Boolean).join(', ');
+/** Son kayıt tarihinin kısa metni: "Son kayıt: Bugün" ya da "Henüz kayıt yok". */
+export function lastSessionLabel(date: string | null): string {
+  const compact = date ? formatCompactDate(date) : null;
+  return compact ? `Son kayıt: ${compact}` : 'Henüz kayıt yok';
+}
 
+/** Kompakt form satırı: ikon, ad, son kayıt; sağda "⋯". Uzun basış da menüyü açar. */
+export function FormListRow({ form, index, onOpen, onMore, busy = false, openHint }: FormListRowProps) {
+  const subtitle = lastSessionLabel(form.lastSessionDate);
+  const testID = `form-row-${index}`;
   return (
-    <View style={styles.row}>
-      <Pressable
-        onPress={onOpen}
-        accessibilityRole="button"
-        accessibilityLabel={a11y}
-        accessibilityHint="Formun oturumlarını açar"
-        style={({ pressed }) => [styles.main, pressed && styles.pressed]}
-      >
-        <Text variant="heading" numberOfLines={2} color={muted ? colors.textMuted : colors.text}>
-          {form.title}
-        </Text>
-        {form.subject || form.description ? (
-          <Text variant="bodySmall" tone="muted" numberOfLines={1}>
-            {[form.subject, form.description].filter(Boolean).join(', ')}
-          </Text>
-        ) : null}
-        <View style={styles.meta}>
-          <ToneDots options={form.options} />
-          <Text variant="caption" tone="muted">
-            {count}
-          </Text>
-          <Text variant="caption" tone="muted" style={styles.last} numberOfLines={1}>
-            {lastText}
-          </Text>
+    <ListRow
+      title={form.title}
+      subtitle={subtitle}
+      leading={<IconTile icon={presetIcon(form.title)} />}
+      showChevron={false}
+      onPress={busy ? undefined : onOpen}
+      onLongPress={onMore}
+      accessibilityLabel={`${form.title}, ${subtitle}`}
+      accessibilityHint={openHint}
+      testID={testID}
+      trailing={
+        <View style={styles.trailing}>
+          {busy ? (
+            <ActivityIndicator color={colors.primary} testID={`${testID}-busy`} />
+          ) : (
+            <IconButton
+              icon="more"
+              size={iconSize.lg}
+              color={colors.textMuted}
+              accessibilityLabel={`${form.title} için diğer seçenekler`}
+              onPress={onMore}
+              testID={`${testID}-more`}
+            />
+          )}
         </View>
-      </Pressable>
-      <FormIconButton
-        icon="more"
-        accessibilityLabel={`${form.title} için diğer eylemler`}
-        onPress={onMore}
-        color={colors.textMuted}
-      />
-    </View>
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: layout.hairline,
-    borderBottomColor: colors.rule,
-  },
-  main: { flex: 1, gap: spacing.xs, paddingVertical: spacing.lg, paddingRight: spacing.sm },
-  pressed: { backgroundColor: colors.pressedOverlay },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xxs },
-  last: { flexShrink: 1, marginLeft: 'auto' },
+  trailing: { width: layout.minTouch, alignItems: 'center', justifyContent: 'center', marginRight: -layout.pageX / 2 },
 });

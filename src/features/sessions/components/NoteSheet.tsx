@@ -14,7 +14,7 @@ export interface NoteSheetProps {
   onClose: () => void;
 }
 
-/** Öğrenciye kısa not. Kaydet taslağa yazar; sunucuya alt çubuktaki "Kaydet" ile gider. */
+/** Öğrenciye kısa not. Taslağa yazar; sunucuya alt çubuktaki "Kaydet" ile gider. */
 export function NoteSheet({ visible, studentName, initialNote, onSave, onClose }: NoteSheetProps) {
   const [text, setText] = useState(initialNote ?? '');
   const [lastInitial, setLastInitial] = useState({ initialNote, visible });
@@ -30,11 +30,12 @@ export function NoteSheet({ visible, studentName, initialNote, onSave, onClose }
       visible={visible}
       onClose={onClose}
       title={studentName}
+      testID="note-sheet"
       footer={
         <View style={styles.actions}>
-          <Button label="Notu kaydet" onPress={() => onSave(text)} />
+          <Button label="Notu kaydet" onPress={() => onSave(text)} testID="note-save" />
           {initialNote ? (
-            <Button label="Notu sil" variant="ghost" onPress={() => onSave(null)} />
+            <Button label="Notu sil" variant="ghost" onPress={() => onSave(null)} testID="note-delete" />
           ) : null}
         </View>
       }
@@ -43,12 +44,12 @@ export function NoteSheet({ visible, studentName, initialNote, onSave, onClose }
         label="Not"
         value={text}
         onChangeText={setText}
-        placeholder="Örneğin: Kitabını evde unuttu"
-        hint="Not yalnızca sizin için tutulur."
+        placeholder="Örneğin: Kitabını unuttu"
         multiline
         maxLength={NOTE_MAX_LENGTH}
         autoFocus
         textAlignVertical="top"
+        testID="note-input"
       />
     </Sheet>
   );

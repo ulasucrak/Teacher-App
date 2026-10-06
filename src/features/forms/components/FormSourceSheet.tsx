@@ -37,10 +37,13 @@ export function FormSourceSheet({
   onPick,
 }: FormSourceSheetProps) {
   return (
-    <Sheet visible={visible} onClose={onClose} title="Başka sınıftan form ekle">
-      <Text variant="bodySmall" tone="muted" style={styles.lead}>
-        Dokunduğunuz form, seçenekleriyle birlikte bu sınıfa eklenir. Eski işaretlemeler kopyalanmaz.
-      </Text>
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      title="Başka sınıftan kopyala"
+      description="Dokunduğunuz form bu sınıfa eklenir."
+      testID="source-sheet"
+    >
       {pickError ? (
         <View style={styles.pickError}>
           <Banner kind="error" message={pickError} />
@@ -59,22 +62,23 @@ export function FormSourceSheet({
         <Banner
           kind="info"
           title="Diğer sınıflarınızda form yok"
-          message="Başka bir sınıfta form oluşturduğunuzda buradan tek dokunuşla bu sınıfa ekleyebilirsiniz."
+          message="Başka sınıfta form oluşturunca buradan kopyalayabilirsiniz."
         />
       ) : (
         <View style={styles.groups}>
-          {groups.map((group) => (
+          {groups.map((group, groupIndex) => (
             <View key={group.classInfo.id}>
               <Text variant="heading" accessibilityRole="header" style={styles.groupTitle}>
                 {classLabel(group.classInfo)}
               </Text>
-              {group.forms.map((form) => {
+              {group.forms.map((form, formIndex) => {
                 const duplicate = existingTitles.some((t) => sameTitle(t, form.title));
                 const busy = busyFormId === form.id;
                 const meta = [form.subject, optionCountLabel(form.options.length)].filter(Boolean).join(', ');
                 return (
                   <Pressable
                     key={form.id}
+                    testID={`source-form-${groupIndex}-${formIndex}`}
                     onPress={() => onPick(form)}
                     disabled={Boolean(busyFormId)}
                     accessibilityRole="button"
@@ -95,7 +99,7 @@ export function FormSourceSheet({
                       </View>
                       {duplicate ? (
                         <Text variant="caption" tone="muted">
-                          Bu sınıfta aynı adlı bir form var.
+                          Bu sınıfta var
                         </Text>
                       ) : null}
                     </View>
@@ -116,7 +120,6 @@ export function FormSourceSheet({
 }
 
 const styles = StyleSheet.create({
-  lead: { marginBottom: spacing.sm },
   gap: { gap: spacing.md },
   pickError: { marginBottom: spacing.md },
   loading: { paddingVertical: spacing.xl },

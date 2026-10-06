@@ -25,6 +25,8 @@ jest.mock('expo-router', () => {
   };
 });
 
+jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
+
 const mocked = api as jest.Mocked<typeof api>;
 
 const form: FormRow = {
@@ -75,35 +77,53 @@ beforeEach(() => {
 });
 
 describe('FormSessionsScreen', () => {
-  it('lists sessions with Turkish dates, status and progress, plus the latest summary', async () => {
+  it('lists sessions with Turkish dates and progress', async () => {
     await render(<FormSessionsScreen />, { wrapper: Providers });
 
     expect(await screen.findByText('Ödev kontrolü')).toBeOnTheScreen();
-    expect(screen.getByText('15 Eylül 2026 Salı')).toBeOnTheScreen();
-    expect(screen.getByText('14 Eylül 2026 Pazartesi')).toBeOnTheScreen();
+    expect(screen.getByText(/^15 Eylül/)).toBeOnTheScreen();
+    expect(screen.getByText('Ünite 2')).toBeOnTheScreen();
     expect(screen.getByText('38/44')).toBeOnTheScreen();
     expect(screen.getByText('44/44')).toBeOnTheScreen();
-    expect(screen.getByText('Yayında')).toBeOnTheScreen();
-    expect(screen.getByText('Taslak')).toBeOnTheScreen();
-    expect(screen.getByText('Son kayıt, 15 Eylül 2026 Salı')).toBeOnTheScreen();
-    expect(screen.getByRole('summary', { name: 'Tamamlandı 30, Getirmedi 8, Boş 6' })).toBeOnTheScreen();
+    expect(screen.queryByText('Taslak')).toBeNull();
 
-    await fireEvent.press(screen.getByRole('button', { name: /^14 Eylül 2026 Pazartesi/ }));
+    await fireEvent.press(screen.getByTestId('session-row-1'));
     expect(mockRouter.push).toHaveBeenCalledWith('/class/c1/form/f1/session/s1');
   });
 
-  it('creates a session for the chosen day and opens it', async () => {
-    mocked.createSession.mockResolvedValue(session('new', todayIso(), 'draft'));
+  it("starts today's session without creating it up front", async () => {
     await render(<FormSessionsScreen />, { wrapper: Providers });
     await screen.findByText('Ödev kontrolü');
 
-    expect(screen.getByRole('button', { name: 'Sonraki gün' })).toBeDisabled();
-    await fireEvent.press(screen.getByRole('button', { name: 'Önceki gün' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Yeni kayıt başlat' }));
+    expect(screen.getByTestId('history-today')).toHaveTextContent('Bugünün kaydını başlat');
+    await fireEvent.press(screen.getByTestId('history-today'));
+    expect(mockRouter.push).toHaveBeenCalledWith(`/class/c1/form/f1/session/new?date=${todayIso()}`);
+    expect(mocked.createSession).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => expect(mockRouter.push).toHaveBeenCalledWith('/class/c1/form/f1/session/new'));
+  it("offers to open today's session when it exists", async () => {
+    mocked.listSessions.mockResolvedValueOnce([
+      { session: session('s3', todayIso(), 'published'), filled: 2, counts: { done: 2 } },
+    ]);
+    await render(<FormSessionsScreen />, { wrapper: Providers });
+
+    expect(await screen.findByText('Bugünün kaydını aç')).toBeOnTheScreen();
+    expect(screen.getByText(/^Bugün, /)).toBeOnTheScreen();
+  });
+
+  it('opens another day from the day sheet', async () => {
+    await render(<FormSessionsScreen />, { wrapper: Providers });
+    await screen.findByText('Ödev kontrolü');
+
+    await fireEvent.press(screen.getByTestId('history-other-day'));
+    expect(await screen.findByTestId('date-next')).toBeDisabled();
+    await fireEvent.press(screen.getByTestId('date-prev'));
+    await fireEvent.press(screen.getByTestId('day-sheet-open'));
+
     const { addDays } = jest.requireActual<typeof import('../date')>('../date');
-    expect(mocked.createSession).toHaveBeenCalledWith({ formId: 'f1', sessionDate: addDays(todayIso(), -1) });
+    await waitFor(() =>
+      expect(mockRouter.push).toHaveBeenCalledWith(`/class/c1/form/f1/session/new?date=${addDays(todayIso(), -1)}`),
+    );
   });
 
   it('shows an empty state without sessions', async () => {

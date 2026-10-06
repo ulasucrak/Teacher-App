@@ -64,14 +64,19 @@ export function ClassPickerSheet({
         disabled={count === 0}
         loading={busy}
         onPress={() => onConfirm([...selected])}
+        testID="copy-classes-confirm"
       />
     ) : undefined;
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Diğer sınıflara kopyala" footer={footer}>
-      <Text variant="bodySmall" tone="muted" style={styles.lead}>
-        {`"${formTitle}" formunun adı, açıklaması ve seçenekleri seçtiğiniz sınıflara eklenir. İşaretlemeler kopyalanmaz.`}
-      </Text>
+    <Sheet
+      visible={visible}
+      onClose={onClose}
+      title="Diğer sınıflara kopyala"
+      description={formTitle ? `${formTitle} seçtiğiniz sınıflara eklenir.` : undefined}
+      footer={footer}
+      testID="copy-classes-sheet"
+    >
       {submitError ? (
         <View style={styles.submitError}>
           <Banner kind="error" message={submitError} />
@@ -90,13 +95,19 @@ export function ClassPickerSheet({
         <Banner
           kind="info"
           title="Başka sınıfınız yok"
-          message="Bu formu kopyalamak için önce yeni bir sınıf ekleyin; sonra bu menüden kopyalayın."
+          message="Kopyalamak için önce yeni bir sınıf ekleyin."
         />
       ) : (
         <View>
-          <CheckRow label="Tümünü seç" checked={allSelected} onPress={toggleAll} strong />
-          {list.map((c) => (
-            <CheckRow key={c.id} label={classLabel(c)} checked={selected.has(c.id)} onPress={() => toggle(c.id)} />
+          <CheckRow label="Tümünü seç" checked={allSelected} onPress={toggleAll} strong testID="copy-class-all" />
+          {list.map((c, index) => (
+            <CheckRow
+              key={c.id}
+              label={classLabel(c)}
+              checked={selected.has(c.id)}
+              onPress={() => toggle(c.id)}
+              testID={`copy-class-${index}`}
+            />
           ))}
         </View>
       )}
@@ -109,14 +120,17 @@ function CheckRow({
   checked,
   onPress,
   strong = false,
+  testID,
 }: {
   label: string;
   checked: boolean;
   onPress: () => void;
   strong?: boolean;
+  testID?: string;
 }) {
   return (
     <Pressable
+      testID={testID}
       onPress={onPress}
       accessibilityRole="checkbox"
       accessibilityLabel={label}
@@ -136,7 +150,6 @@ function CheckRow({
 const BOX = spacing.xxl;
 
 const styles = StyleSheet.create({
-  lead: { marginBottom: spacing.md },
   gap: { gap: spacing.md },
   submitError: { marginBottom: spacing.md },
   loading: { paddingVertical: spacing.xl },

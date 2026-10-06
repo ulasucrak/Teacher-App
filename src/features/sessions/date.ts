@@ -87,3 +87,22 @@ export function relativeDayLabel(iso: string, today: string = todayIso()): strin
   if (iso === addDays(today, 1)) return 'Yarın';
   return null;
 }
+
+/** "2026-10-06" biçiminde geçerli bir gün mü? */
+export function isIsoDate(value: string): boolean {
+  const date = parse(value);
+  return date !== null && /^\d{4}-\d{2}-\d{2}$/.test(value) && toIso(date) === value;
+}
+
+/**
+ * Doldurma ekranının tarih etiketi: "Bugün, 6 Ekim", "Dün, 5 Ekim", "14 Şubat",
+ * başka yıl için "1 Aralık 2025".
+ */
+export function formatDayLabel(iso: string, today: string = todayIso()): string {
+  const date = parse(iso);
+  if (!date) return iso;
+  const base = `${date.getUTCDate()} ${MONTHS[date.getUTCMonth()]}`;
+  const withYear = today.startsWith(String(date.getUTCFullYear())) ? base : `${base} ${date.getUTCFullYear()}`;
+  const relative = relativeDayLabel(iso, today);
+  return relative ? `${relative}, ${withYear}` : withYear;
+}

@@ -1,5 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, type AlertButton } from 'react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import * as api from '../api';
 import { Providers, makeForm } from '../test-utils';
@@ -13,6 +12,8 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('../api', () => ({ getForm: jest.fn(), updateForm: jest.fn() }));
+
+jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
 
 const mocked = jest.mocked(api);
 
@@ -40,21 +41,18 @@ describe('EditFormScreen', () => {
         ],
       }),
     );
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await renderScreen();
 
     await fireEvent.changeText(await screen.findByLabelText('Seçenek adı: Geldi'), 'Var');
+    await fireEvent.press(screen.getByTestId('form-options-edit'));
     await fireEvent.press(screen.getByRole('button', { name: 'İzinli seçeneğini kaldır' }));
     expect(screen.getByText(/"İzinli" kaldırıldı/)).toBeOnTheScreen();
 
-    await fireEvent.press(screen.getByRole('button', { name: 'Değişiklikleri kaydet' }));
+    await fireEvent.press(screen.getByTestId('form-save'));
     expect(mocked.updateForm).not.toHaveBeenCalled();
-    expect(alert).toHaveBeenCalledWith('Seçenek kaldırılsın mı?', expect.any(String), expect.any(Array));
+    expect(await screen.findByText('Seçenek kaldırılsın mı?')).toBeOnTheScreen();
 
-    const buttons = alert.mock.calls[0]![2] as AlertButton[];
-    await act(async () => {
-      buttons.find((b) => b.text === 'Kaldır ve kaydet')!.onPress!();
-    });
+    await fireEvent.press(screen.getByTestId('form-remove-confirm-confirm'));
 
     await waitFor(() => expect(mocked.updateForm).toHaveBeenCalled());
     const [formId, input] = mocked.updateForm.mock.calls[0]!;
@@ -64,7 +62,6 @@ describe('EditFormScreen', () => {
       { key: 'gelmedi', label: 'Gelmedi', tone: 'negative' },
     ]);
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
-    alert.mockRestore();
   });
 
   it('shows a retryable error when the form cannot be loaded', async () => {

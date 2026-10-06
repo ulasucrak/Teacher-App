@@ -122,18 +122,42 @@ export async function listSessions(formId: string): Promise<SessionSummary[]> {
   });
 }
 
+/**
+ * Taslak/yayın ayrımı arayüzden kaldırıldı: yeni kayıtlar doğrudan `published` oluşturulur
+ * (sütun veritabanında korunur; eski taslaklar ilk kayıtta yayına alınır).
+ */
 export async function createSession(input: {
   formId: string;
   sessionDate: string;
   title?: string | null;
+  status?: FormSessionStatus;
 }): Promise<FormSessionRow> {
   const { data, error } = await supabase
     .from('form_sessions')
-    .insert({ form_id: input.formId, session_date: input.sessionDate, title: input.title ?? null, status: 'draft' })
+    .insert({
+      form_id: input.formId,
+      session_date: input.sessionDate,
+      title: input.title ?? null,
+      status: input.status ?? 'published',
+    })
     .select('*')
     .single();
   if (error) fail(error, 'Kayıt oluşturulamadı. Tekrar deneyin.');
   return toSession(data);
+}
+
+/** Formun verilen tarihteki (en son oluşturulan) kaydı; yoksa null. */
+export async function findSessionByDate(formId: string, sessionDate: string): Promise<FormSessionRow | null> {
+  const { data, error } = await supabase
+    .from('form_sessions')
+    .select('*')
+    .eq('form_id', formId)
+    .eq('session_date', sessionDate)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) fail(error, 'Kayıt yüklenemedi. Tekrar deneyin.');
+  const row = data?.[0];
+  return row ? toSession(row) : null;
 }
 
 export async function getSession(sessionId: string): Promise<FormSessionRow> {

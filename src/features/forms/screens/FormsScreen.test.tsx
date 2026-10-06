@@ -1,5 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Alert, type AlertButton } from 'react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import * as api from '../api';
 import { Providers, makeForm } from '../test-utils';
@@ -23,7 +22,6 @@ jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test
 
 jest.mock('../api', () => ({
   listForms: jest.fn(),
-  getClass: jest.fn(),
   listClasses: jest.fn(),
   listOtherClassesForms: jest.fn(),
   copyFormToClasses: jest.fn(),
@@ -35,14 +33,6 @@ const mocked = jest.mocked(api);
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mocked.getClass.mockResolvedValue({
-    id: 'class-1',
-    name: '5/B',
-    grade: '5',
-    section: 'B',
-    created_at: '',
-    teacher_id: 'teacher-1',
-  });
 });
 
 async function renderScreen() {
@@ -53,32 +43,27 @@ async function renderScreen() {
   );
 }
 
-describe('FormsScreen', () => {
-  it('lists the class forms with option count', async () => {
+describe('FormsScreen (arşiv)', () => {
+  it('lists only archived forms and opens their history', async () => {
     mocked.listForms.mockResolvedValue([
       makeForm(),
-      makeForm({ id: 'form-2', title: 'Sözlü', subject: null, archived: true }),
+      makeForm({ id: 'form-2', title: 'Sözlü', archived: true, lastSessionDate: '2025-12-01' }),
     ]);
     await renderScreen();
 
-    expect(await screen.findByText('Yoklama')).toBeOnTheScreen();
-    expect(screen.getByText('5/B')).toBeOnTheScreen();
-    expect(screen.getAllByText('2 seçenek').length).toBeGreaterThan(0);
-    // Arşivdeki form varsayılan olarak kapalı bölümde.
-    expect(screen.queryByText('Sözlü')).toBeNull();
-    expect(screen.getByText('Arşivdeki formlar (1)')).toBeOnTheScreen();
+    expect(await screen.findByText('Sözlü')).toBeOnTheScreen();
+    expect(screen.queryByText('Yoklama')).toBeNull();
+    expect(screen.getByText('Son kayıt: 1 Aralık 2025')).toBeOnTheScreen();
 
-    await fireEvent.press(screen.getByRole('button', { name: /^Yoklama, Matematik/ }));
-    expect(mockPush).toHaveBeenCalledWith('/class/class-1/form/form-1');
+    await fireEvent.press(screen.getByTestId('form-row-0'));
+    expect(mockPush).toHaveBeenCalledWith('/class/class-1/form/form-2');
   });
 
-  it('shows the empty state with template shortcuts', async () => {
-    mocked.listForms.mockResolvedValue([]);
+  it('shows a short empty state', async () => {
+    mocked.listForms.mockResolvedValue([makeForm()]);
     await renderScreen();
 
-    expect(await screen.findByText('Bu sınıfta henüz form yok')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: /Ödev kontrolü şablonuyla form oluştur/ }));
-    expect(mockPush).toHaveBeenCalledWith('/class/class-1/form/new?preset=odev');
+    expect(await screen.findByText('Arşiv boş')).toBeOnTheScreen();
   });
 
   it('shows a retryable error when loading fails', async () => {
@@ -87,32 +72,25 @@ describe('FormsScreen', () => {
 
     expect(await screen.findByText('Formlar yüklenemedi')).toBeOnTheScreen();
     expect(screen.getByText(/İnternet bağlantınızı kontrol edip/)).toBeOnTheScreen();
-    mocked.listForms.mockResolvedValue([makeForm()]);
-    await fireEvent.press(screen.getByRole('button', { name: 'Tekrar dene' }));
+    mocked.listForms.mockResolvedValue([makeForm({ archived: true })]);
+    await fireEvent.press(screen.getByTestId('archive-retry'));
     expect(await screen.findByText('Yoklama')).toBeOnTheScreen();
   });
 
-  it('adds a form from another class in two taps', async () => {
-    mocked.listForms.mockResolvedValue([]);
-    mocked.listOtherClassesForms.mockResolvedValue([
-      {
-        classInfo: { id: 'class-2', name: '6/A', grade: null, section: null },
-        forms: [makeForm({ id: 'form-9', class_id: 'class-2', title: 'Ödev kontrolü' })],
-      },
-    ]);
-    mocked.copyFormToClasses.mockResolvedValue(1);
+  it('unarchives from the row menu without confirmation', async () => {
+    mocked.listForms.mockResolvedValue([makeForm({ archived: true })]);
+    mocked.archiveForm.mockResolvedValue();
     await renderScreen();
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Başka sınıftan form ekle' }));
-    expect(await screen.findByText('6/A')).toBeOnTheScreen();
-    await fireEvent.press(screen.getByRole('button', { name: /^Ödev kontrolü, Matematik/ }));
+    await fireEvent.press(await screen.findByTestId('form-row-0-more'));
+    await fireEvent.press(await screen.findByTestId('form-menu-archive'));
 
-    await waitFor(() => expect(mocked.copyFormToClasses).toHaveBeenCalledWith('form-9', ['class-1']));
-    expect(await screen.findByText('"Ödev kontrolü" bu sınıfa eklendi')).toBeOnTheScreen();
+    await waitFor(() => expect(mocked.archiveForm).toHaveBeenCalledWith('form-1', false));
+    expect(await screen.findByText('Yoklama arşivden çıkarıldı')).toBeOnTheScreen();
   });
 
   it('copies a form to selected classes', async () => {
-    mocked.listForms.mockResolvedValue([makeForm()]);
+    mocked.listForms.mockResolvedValue([makeForm({ archived: true })]);
     mocked.listClasses.mockResolvedValue([
       { id: 'class-1', name: '5/B', grade: null, section: null },
       { id: 'class-2', name: '6/A', grade: null, section: null },
@@ -121,92 +99,48 @@ describe('FormsScreen', () => {
     mocked.copyFormToClasses.mockResolvedValue(2);
     await renderScreen();
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Yoklama için diğer eylemler' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Diğer sınıflara kopyala' }));
+    await fireEvent.press(await screen.findByTestId('form-row-0-more'));
+    await fireEvent.press(await screen.findByTestId('form-menu-copy'));
 
-    const selectAll = await screen.findByRole('checkbox', { name: 'Tümünü seç' });
+    const selectAll = await screen.findByTestId('copy-class-all');
     // Formun kendi sınıfı hedef listesinde yok.
     expect(screen.queryByRole('checkbox', { name: '5/B' })).toBeNull();
     await fireEvent.press(selectAll);
-    await fireEvent.press(screen.getByRole('button', { name: '2 sınıfa kopyala' }));
+    await fireEvent.press(screen.getByTestId('copy-classes-confirm'));
 
     await waitFor(() =>
       expect(mocked.copyFormToClasses).toHaveBeenCalledWith('form-1', expect.arrayContaining(['class-2', 'class-3'])),
     );
-    expect(await screen.findByText('Form 2 sınıfa eklendi')).toBeOnTheScreen();
+    expect(await screen.findByText('Form 2 sınıfa kopyalandı')).toBeOnTheScreen();
   });
 
-  it('reports an error instead of "0 sınıfa eklendi" when nothing was copied', async () => {
-    mocked.listForms.mockResolvedValue([makeForm()]);
+  it('reports an error instead of "0 sınıfa" when nothing was copied', async () => {
+    mocked.listForms.mockResolvedValue([makeForm({ archived: true })]);
     mocked.listClasses.mockResolvedValue([{ id: 'class-2', name: '6/A', grade: null, section: null }]);
     mocked.copyFormToClasses.mockResolvedValue(0);
     await renderScreen();
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Yoklama için diğer eylemler' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Diğer sınıflara kopyala' }));
-    await fireEvent.press(await screen.findByRole('checkbox', { name: '6/A' }));
-    await fireEvent.press(screen.getByRole('button', { name: '1 sınıfa kopyala' }));
+    await fireEvent.press(await screen.findByTestId('form-row-0-more'));
+    await fireEvent.press(await screen.findByTestId('form-menu-copy'));
+    await fireEvent.press(await screen.findByTestId('copy-class-0'));
+    await fireEvent.press(screen.getByTestId('copy-classes-confirm'));
 
     expect(await screen.findByText(/Form hiçbir sınıfa eklenmedi/)).toBeOnTheScreen();
-    expect(screen.queryByText('Form 0 sınıfa eklendi')).toBeNull();
-    // Sınıf listesi açılışta ve hatadan sonra yeniden yüklenir.
     await waitFor(() => expect(mocked.listClasses).toHaveBeenCalledTimes(2));
   });
 
-  it('archives a form after confirmation', async () => {
-    mocked.listForms.mockResolvedValue([makeForm()]);
-    mocked.archiveForm.mockResolvedValue();
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
-    await renderScreen();
-
-    await fireEvent.press(await screen.findByRole('button', { name: 'Yoklama için diğer eylemler' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Arşivle' }));
-    await waitFor(() => expect(alert).toHaveBeenCalledWith('"Yoklama" arşivlensin mi?', expect.any(String), expect.any(Array)));
-    const buttons = alert.mock.calls[0]![2] as AlertButton[];
-    await act(async () => {
-      await buttons.find((b) => b.text === 'Arşivle')!.onPress!();
-    });
-
-    expect(mocked.archiveForm).toHaveBeenCalledWith('form-1', true);
-    expect(await screen.findByText('Form arşivlendi')).toBeOnTheScreen();
-    alert.mockRestore();
-  });
-
-  it('unarchives without confirmation and adapts the empty copy when all forms are archived', async () => {
+  it('deletes a form only after the confirm sheet', async () => {
     mocked.listForms.mockResolvedValue([makeForm({ archived: true })]);
-    mocked.archiveForm.mockResolvedValue();
-    await renderScreen();
-
-    expect(await screen.findByText('Kullanımda form yok')).toBeOnTheScreen();
-    expect(screen.queryByText('Bu sınıfta henüz form yok')).toBeNull();
-
-    await fireEvent.press(screen.getByRole('button', { name: 'Arşivdeki formlar, 1' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Yoklama için diğer eylemler' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Arşivden çıkar' }));
-
-    await waitFor(() => expect(mocked.archiveForm).toHaveBeenCalledWith('form-1', false));
-    expect(await screen.findByText('Form arşivden çıkarıldı')).toBeOnTheScreen();
-  });
-
-  it('deletes a form only after the destructive confirmation', async () => {
-    mocked.listForms.mockResolvedValue([makeForm()]);
     mocked.deleteForm.mockResolvedValue();
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     await renderScreen();
 
-    await fireEvent.press(await screen.findByRole('button', { name: 'Yoklama için diğer eylemler' }));
-    await fireEvent.press(screen.getByRole('button', { name: 'Formu sil' }));
-    await waitFor(() => expect(alert).toHaveBeenCalled());
-    expect(alert.mock.calls[0]![0]).toBe('"Yoklama" formu silinsin mi?');
+    await fireEvent.press(await screen.findByTestId('form-row-0-more'));
+    await fireEvent.press(await screen.findByTestId('form-menu-delete'));
+    expect(await screen.findByText('Yoklama silinsin mi?')).toBeOnTheScreen();
     expect(mocked.deleteForm).not.toHaveBeenCalled();
 
-    const buttons = alert.mock.calls[0]![2] as AlertButton[];
-    expect(buttons.find((b) => b.text === 'Formu sil')?.style).toBe('destructive');
-    await act(async () => {
-      await buttons.find((b) => b.text === 'Formu sil')!.onPress!();
-    });
-    expect(mocked.deleteForm).toHaveBeenCalledWith('form-1');
-    expect(await screen.findByText('Form silindi')).toBeOnTheScreen();
-    alert.mockRestore();
+    await fireEvent.press(screen.getByTestId('form-delete-confirm-confirm'));
+    await waitFor(() => expect(mocked.deleteForm).toHaveBeenCalledWith('form-1'));
+    expect(await screen.findByText('Yoklama silindi')).toBeOnTheScreen();
   });
 });

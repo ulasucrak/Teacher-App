@@ -1,3 +1,4 @@
+import type { IconName } from '@/components/ui';
 import type { FormOption } from '@/types/database';
 
 export type PresetId = 'yoklama' | 'odev' | 'sozlu' | 'katilim';
@@ -63,4 +64,22 @@ export const PRESETS: readonly FormPreset[] = [
 
 export function getPreset(id: string | null | undefined): FormPreset | undefined {
   return PRESETS.find((p) => p.id === id);
+}
+
+/** Şablonun (ya da şablonla aynı adlı formun) satır ikonu. */
+export function presetIcon(idOrTitle: string | null | undefined): IconName {
+  const key = (idOrTitle ?? '').trim().toLocaleLowerCase('tr-TR');
+  const preset = PRESETS.find((p) => p.id === key || p.title.toLocaleLowerCase('tr-TR') === key);
+  switch (preset?.id) {
+    case 'yoklama':
+      return 'checklist';
+    case 'odev':
+      return 'book';
+    case 'sozlu':
+      return 'person';
+    case 'katilim':
+      return 'people';
+    default:
+      return 'list';
+  }
 }

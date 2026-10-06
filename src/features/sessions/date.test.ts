@@ -1,4 +1,13 @@
-import { addDays, formatCompactDate, formatSessionDate, formatShortDate, relativeDayLabel, todayIso } from './date';
+import {
+  addDays,
+  formatCompactDate,
+  formatDayLabel,
+  formatSessionDate,
+  formatShortDate,
+  isIsoDate,
+  relativeDayLabel,
+  todayIso,
+} from './date';
 
 describe('formatSessionDate', () => {
   it('formats a date in Turkish with the weekday', () => {
@@ -63,5 +72,23 @@ describe('formatCompactDate', () => {
 
   it('returns null for malformed values', () => {
     expect(formatCompactDate('dün', today)).toBeNull();
+  });
+});
+
+describe('formatDayLabel', () => {
+  it('prefixes relative days and drops the current year', () => {
+    expect(formatDayLabel('2026-10-06', '2026-10-06')).toBe('Bugün, 6 Ekim');
+    expect(formatDayLabel('2026-10-05', '2026-10-06')).toBe('Dün, 5 Ekim');
+    expect(formatDayLabel('2026-02-14', '2026-10-06')).toBe('14 Şubat');
+    expect(formatDayLabel('2025-12-01', '2026-10-06')).toBe('1 Aralık 2025');
+  });
+});
+
+describe('isIsoDate', () => {
+  it('accepts only real YYYY-MM-DD days', () => {
+    expect(isIsoDate('2026-10-06')).toBe(true);
+    expect(isIsoDate('2026-02-30')).toBe(false);
+    expect(isIsoDate('2026-10-06T10:00:00Z')).toBe(false);
+    expect(isIsoDate('bugün')).toBe(false);
   });
 });
