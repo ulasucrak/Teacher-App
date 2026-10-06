@@ -169,12 +169,10 @@ export function escapeRegExp(text: string): string {
 }
 
 /**
- * Seçenek düğmesinin (OptionChip / SegmentedChoice) seçili olup olmadığı. react-native-web 0.21
- * `accessibilityState`'i aria-checked/aria-selected'a çevirmediği için durum DOM'da yok; seçili
- * düğme bir onay ikonu (Material Symbols) gösterir, ona bakılır.
+ * Seçenek düğmesinin (OptionChip / SegmentedChoice) seçili olup olmadığı. Bileşenler
+ * accessibilityState'in yanında aria-checked de verir (react-native-web 0.21 yalnızca aria-*'yı
+ * DOM'a yazar); ekran okuyucunun gördüğü bu öznitelik doğrulanır.
  */
 export async function expectChosen(option: Locator, chosen = true): Promise<void> {
-  const check = option.locator('[style*="MaterialSymbols"]');
-  if (chosen) await expect(check).toHaveCount(1);
-  else await expect(check).toHaveCount(0);
+  await expect(option).toHaveAttribute('aria-checked', chosen ? 'true' : 'false');
 }
