@@ -7,6 +7,6 @@ export const extraIcons = {
   archive: { ios: 'archivebox', android: 'archive' },
   unarchive: { ios: 'arrow.uturn.backward', android: 'unarchive' },
   addFromOther: { ios: 'tray.and.arrow.down', android: 'move_to_inbox' },
-  list: { ios: 'list.bullet', android: 'list' },
+  list: { ios: 'list.bullet', android: 'list', web: 'format_list_bulleted' },
 } satisfies Record<string, SymbolName>;
 

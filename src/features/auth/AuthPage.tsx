@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { Button, Icon, Screen, Text } from '@/components/ui';
 import { colors, iconSize, layout, radii, spacing } from '@/theme';
@@ -24,7 +24,7 @@ export function AuthPage({ title, description, size = 'title', back, switchPromp
   const isHome = size === 'display';
   return (
     <Screen back={back ?? (isHome ? false : undefined)} testID={testID} contentStyle={[styles.content, isHome && styles.contentHome]}>
-      <View style={styles.heading}>
+      <View style={[styles.heading, styles.column]}>
         {isHome ? <AppMark /> : null}
         <Text variant={size} accessibilityRole="header">
           {title}
@@ -33,7 +33,7 @@ export function AuthPage({ title, description, size = 'title', back, switchPromp
           {description}
         </Text>
       </View>
-      <View style={styles.body}>{children}</View>
+      <View style={[styles.body, styles.column]}>{children}</View>
       {switchPrompt ? (
         <View style={styles.switch}>
           <Text variant="bodySmall" tone="muted">
@@ -66,7 +66,15 @@ function AppMark() {
 const styles = StyleSheet.create({
   content: { paddingTop: spacing.lg },
   contentHome: { paddingTop: spacing.huge + spacing.xl },
-  heading: { gap: spacing.sm, marginBottom: spacing.xxxl, maxWidth: layout.readableWidth },
+  heading: { gap: spacing.sm, marginBottom: spacing.xxxl },
+  /**
+   * Okunur genişlikte sütun. Web'de (masaüstü kartı daha geniş) sütun ortalanır; yoksa sağda
+   * boş bir şerit kalır. Telefonda içerik zaten bu genişlikten dar olduğundan fark yoktur.
+   */
+  column: Platform.select({
+    web: { width: '100%', maxWidth: layout.readableWidth, alignSelf: 'center' },
+    default: { maxWidth: layout.readableWidth },
+  }),
   mark: {
     width: layout.iconBox,
     height: layout.iconBox,
@@ -76,7 +84,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
-  body: { gap: spacing.lg, maxWidth: layout.readableWidth },
+  body: { gap: spacing.lg },
   switch: {
     flexDirection: 'row',
     flexWrap: 'wrap',

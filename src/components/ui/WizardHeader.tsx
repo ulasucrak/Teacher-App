@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { colors, layout, radii, spacing } from '@/theme';
 
 import { IconButton } from './IconButton';
+import { backIconSize, desktopBarInset, useDesktopWeb } from './ScreenChrome';
 import { Text } from './Text';
 
 export interface StepperProps {
@@ -60,12 +61,19 @@ export interface WizardHeaderProps extends StepperProps {
  * `Screen header={<WizardHeader … />}` ile kullanın; altta `BottomActionBar` ile "Devam".
  */
 export function WizardHeader({ title, description, steps, current, onBack, onClose, testID }: WizardHeaderProps) {
+  const desktopWeb = useDesktopWeb();
   return (
     <View style={styles.header} testID={testID}>
-      <View style={styles.bar0}>
+      <View style={[styles.bar0, desktopWeb && styles.barDesktop]}>
         <View style={styles.side}>
           {onBack ? (
-            <IconButton icon="back" accessibilityLabel="Önceki adım" onPress={onBack} testID="wizard-back" />
+            <IconButton
+              icon="back"
+              accessibilityLabel="Önceki adım"
+              onPress={onBack}
+              size={backIconSize}
+              testID="wizard-back"
+            />
           ) : null}
         </View>
         <View style={styles.stepperWrap}>
@@ -105,6 +113,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xs,
   },
+  barDesktop: { paddingTop: desktopBarInset },
   side: { width: layout.minTouch, flexDirection: 'row' },
   sideRight: { justifyContent: 'flex-end' },
   stepperWrap: { flex: 1, paddingHorizontal: spacing.md, paddingTop: spacing.md },
