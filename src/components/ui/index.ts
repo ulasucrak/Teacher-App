@@ -1,3 +1,4 @@
+export { AppFrame } from './AppFrame';
 export { Avatar } from './Avatar';
 export type { AvatarProps } from './Avatar';
 export { getAvatarColor, getInitials } from './avatarUtils';

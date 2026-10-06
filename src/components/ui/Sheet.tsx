@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { isWeb, WEB_MAX_SHEET_WIDTH } from '@/lib/platform';
 import { colors, elevation, iconSize, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
 
 import { IconButton } from './IconButton';
@@ -87,6 +88,7 @@ export function Sheet({ visible, onClose, title, children, footer, onDismissed, 
           testID={testID}
           style={[
             styles.sheet,
+            isWeb && styles.webSheet,
             { maxHeight: height * 0.85, paddingBottom: Math.max(insets.bottom, spacing.lg) },
             { opacity: reducedMotion ? progress : 1, transform: [{ translateY }] },
           ]}
@@ -123,6 +125,8 @@ export function Sheet({ visible, onClose, title, children, footer, onDismissed, 
 }
 
 const styles = StyleSheet.create({
+  /** Web'de masaüstü genişliğinde panel ortada, okunur genişlikte durur. */
+  webSheet: { width: '100%', maxWidth: WEB_MAX_SHEET_WIDTH, alignSelf: 'center' },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: colors.scrim },
   anchor: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
