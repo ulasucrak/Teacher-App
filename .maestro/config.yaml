@@ -1,0 +1,15 @@
+# Maestro çalışma düzeni (scripts/e2e/run.sh tüm akışları bu sırayla çalıştırır).
+flows:
+  - auth.yaml
+  - wizard.yaml
+  - photo-import.yaml
+  - forms.yaml
+  - students.yaml
+executionOrder:
+  continueOnFailure: false
+  flowsOrder:
+    - auth
+    - wizard
+    - photo-import
+    - forms
+    - students

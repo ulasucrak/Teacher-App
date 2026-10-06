@@ -1,0 +1,12 @@
+# Sınıflarım'dan "E2E 6/A" sınıfını açar.
+appId: com.ulas.teacherapp
+---
+- scrollUntilVisible:
+    element:
+      text: "E2E 6/A"
+    timeout: 15000
+- tapOn: "E2E 6/A"
+- extendedWaitUntil:
+    visible:
+      id: "class-students-row"
+    timeout: 20000

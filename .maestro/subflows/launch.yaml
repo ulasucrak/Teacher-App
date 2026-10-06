@@ -1,0 +1,20 @@
+# Uygulamayı yeniden başlatır ve ilk ekranı (giriş ya da Sınıflarım) bekler.
+# Geliştirme derlemesinin "Continue" / "Open in …?" pencereleri varsa kapatılır.
+appId: com.ulas.teacherapp
+---
+- launchApp:
+    stopApp: true
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn: "Open"
+- extendedWaitUntil:
+    visible:
+      id: "classes-list|login-screen"
+    timeout: 120000

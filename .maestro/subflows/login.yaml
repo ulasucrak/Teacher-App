@@ -1,0 +1,19 @@
+# Giriş ekranından ${EMAIL} / ${PASSWORD} ile giriş yapar ve Sınıflarım'ı bekler.
+appId: com.ulas.teacherapp
+---
+- tapOn:
+    id: "login-email"
+- eraseText: 60
+- inputText: ${EMAIL}
+- tapOn: "Şifreyi göster"
+- tapOn:
+    id: "login-password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "login-submit"
+- runFlow: dismiss-save-password.yaml
+- extendedWaitUntil:
+    visible:
+      id: "classes-list"
+    timeout: 30000
