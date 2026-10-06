@@ -9,6 +9,7 @@ import {
   type HistoryCursor,
   type HistoryEvent,
 } from '@/features/history';
+import { useRealtimeRefresh } from '@/lib/realtime';
 import type { FormRow } from '@/types/database';
 
 /** Geçmiş görünümleri: özet, günlük inceleme (`day`) ve zaman çizelgesi (`list`). */
@@ -65,6 +66,15 @@ export function useHistoryData(form: Pick<FormRow, 'id' | 'options'>, { active, 
 
   const formId = form.id;
   const options = form.options;
+
+  // Canlı eşitleme: bu formun yeni olayları (başka cihazdaki işaret/kayıt) görünür veriyi tazeler.
+  // Eski veri yenisi gelene kadar ekranda kalır (anahtar değişmez).
+  useRealtimeRefresh({
+    name: 'history',
+    tables: [{ table: 'form_events', event: 'INSERT', filter: `form_id=eq.${formId}` }],
+    enabled: active && view !== 'day',
+    onChange: () => setAttempt((n) => n + 1),
+  });
 
   useEffect(() => {
     if (!active || view !== 'summary') return;

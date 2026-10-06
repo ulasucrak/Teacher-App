@@ -8,6 +8,7 @@ import {
   type FormSummary,
   type HistoryEvent,
 } from '@/features/history';
+import { useRealtimeRefresh } from '@/lib/realtime';
 import type { FormRow } from '@/types/database';
 
 export interface DayChanges {
@@ -55,6 +56,14 @@ export function useDayReview(form: Pick<FormRow, 'id' | 'options' | 'mode'>, day
   const formId = form.id;
   const options = form.options;
   const daily = form.mode === 'daily';
+
+  // Canlı eşitleme: başka cihazdaki işaret/kayıt değişiklikleri incelenen günü tazeler.
+  useRealtimeRefresh({
+    name: 'day-review',
+    tables: [{ table: 'form_events', event: 'INSERT', filter: `form_id=eq.${formId}` }],
+    enabled,
+    onChange: () => setAttempt((n) => n + 1),
+  });
 
   useEffect(() => {
     if (!enabled) return;

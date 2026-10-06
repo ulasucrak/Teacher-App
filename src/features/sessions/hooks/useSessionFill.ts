@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { Alert } from 'react-native';
 
 import { useToast } from '@/components/ui';
+import { useRealtimeRefresh, type RealtimeTableSpec } from '@/lib/realtime';
 import type { FormEntryRow, FormRow, FormSessionRow, StudentRow } from '@/types/database';
 
 import {
@@ -84,13 +85,27 @@ export function useSessionFill(args: UseSessionFillArgs) {
   const [query, setQuery] = useState('');
   const [noteStudentId, setNoteStudentId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  /** Kaydedilmemiş değişikliği olan öğrenci sayısı (aşağıda güncellenir). */
+  const dirtyRef = useRef(0);
+  const savingRef = useRef(false);
+  /** Sıradaki yükleme canlı eşitlemeden: hata göstermez, taslak varsa uygulanmaz. */
+  const silentRef = useRef(false);
+  /** Taslak/kaydetme sürerken gelen uzak değişiklik: kaydedilince (ya da taslak boşalınca) yüklenir. */
+  const pendingRef = useRef(false);
 
   // --- Yükleme ---------------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
+    const silent = silentRef.current;
+    silentRef.current = false;
     loadScreen({ classId, formId, sessionId, date: dateParam, form: preloaded })
       .then(({ form, session, date, students, entries }) => {
         if (cancelled) return;
+        if (silent && (dirtyRef.current > 0 || savingRef.current)) {
+          // Yükleme sürerken kullanıcı değişiklik yaptı: taslağı ezme, kaydedince tekrar yükle.
+          pendingRef.current = true;
+          return;
+        }
         if (session && session.form_id !== formId) {
           setLoadError('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.');
           return;
@@ -99,7 +114,8 @@ export function useSessionFill(args: UseSessionFillArgs) {
         dispatch({ type: 'load', entries });
       })
       .catch((error: unknown) => {
-        if (!cancelled) setLoadError(toUserMessage(error, 'Kayıt yüklenemedi. Tekrar deneyin.'));
+        // Arka plan yenilemesi başarısızsa ekrandaki veri kalır (ön plana dönüşte yeniden denenir).
+        if (!cancelled && !silent) setLoadError(toUserMessage(error, 'Kayıt yüklenemedi. Tekrar deneyin.'));
       });
     return () => {
       cancelled = true;
@@ -121,8 +137,35 @@ export function useSessionFill(args: UseSessionFillArgs) {
   const summary = useMemo(() => countByOption(state, studentIds, options), [state, studentIds, options]);
   const uniformOption = useMemo(() => getUniformOption(state, studentIds), [state, studentIds]);
 
+  // --- Canlı eşitleme -------------------------------------------------------
+  // Başka cihazdaki kayıt değişiklikleri (form_events) ve sınıf listesi (students). Taslak varken
+  // ekran yenilenmez; değişiklikler kaydedilince ya da taslak boşalınca yüklenir.
+  const silentReload = useCallback(() => {
+    if (dirtyRef.current > 0 || savingRef.current) {
+      pendingRef.current = true;
+      return;
+    }
+    pendingRef.current = false;
+    silentRef.current = true;
+    setReloadKey((k) => k + 1);
+  }, []);
+
+  const liveTables = useMemo<RealtimeTableSpec[]>(
+    () => [
+      { table: 'form_events', event: 'INSERT', filter: `form_id=eq.${formId}` },
+      { table: 'students', filter: `class_id=eq.${classId}` },
+    ],
+    [formId, classId],
+  );
+  useRealtimeRefresh({ name: 'session', tables: liveTables, enabled: data !== null, onChange: silentReload });
+
+  useEffect(() => {
+    savingRef.current = saving;
+    dirtyRef.current = dirtyCount;
+    if (!saving && dirtyCount === 0 && pendingRef.current) silentReload();
+  }, [saving, dirtyCount, silentReload]);
+
   // --- Kaydedilmemiş değişiklik koruması (sistem Alert'i yalnızca burada) ----
-  const dirtyRef = useRef(0);
   useEffect(() => {
     dirtyRef.current = dirtyCount;
   }, [dirtyCount]);
@@ -191,6 +234,7 @@ export function useSessionFill(args: UseSessionFillArgs) {
 
   const onSave = useCallback(async () => {
     if (!data || saving) return;
+    savingRef.current = true;
     setSaving(true);
     try {
       let session = data.session;
