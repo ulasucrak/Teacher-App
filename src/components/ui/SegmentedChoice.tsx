@@ -53,6 +53,7 @@ export function SegmentedChoice<K extends string>({
               onChange(option.key);
             }}
             disabled={disabled}
+            hitSlop={{ top: spacing.xs, bottom: spacing.xs }}
             accessibilityRole="radio"
             accessibilityLabel={accessibilityLabel ? `${accessibilityLabel}: ${option.label}` : option.label}
             accessibilityState={{ checked: selected, selected, disabled }}
@@ -95,7 +96,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     gap: spacing.xs,
-    minHeight: layout.chipHeight - spacing.xs,
+    // Dokunma alanı ≥ 44 pt (+ hitSlop ile ızın içindeki 4 pt boşluk da sayılır).
+    minHeight: layout.chipHeight,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.sm - spacing.xs,

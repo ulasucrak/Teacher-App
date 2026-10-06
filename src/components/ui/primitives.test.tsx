@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { useState, type ReactElement } from 'react';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { tones } from '@/theme';
@@ -69,6 +70,12 @@ describe('SegmentedChoice', () => {
     expect(screen.getByRole('radio', { name: 'Ali: Geldi' })).toBeChecked();
     await fireEvent.press(screen.getByTestId('seg-excused'));
     expect(onChange).toHaveBeenCalledWith('excused');
+  });
+
+  it('segments are at least 44 pt tall', async () => {
+    await render(<SegmentedChoice options={attendance} value={null} onChange={jest.fn()} testIDPrefix="seg" />);
+    const style = StyleSheet.flatten(screen.getByTestId('seg-present').props.style);
+    expect(style.minHeight).toBeGreaterThanOrEqual(44);
   });
 });
 

@@ -128,7 +128,7 @@ function AddStudents({ classId, className, existing, initialMethod }: AddStudent
   const save = useCallback(async () => {
     if (saving) return;
     const drafts = flush();
-    if (drafts.length === 0) return;
+    if (!drafts || drafts.length === 0) return;
     setSaving(true);
     setError(null);
     try {
