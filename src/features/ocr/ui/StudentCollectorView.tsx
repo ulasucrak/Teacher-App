@@ -103,6 +103,7 @@ export function StudentCollectorView({ collector, disabled = false }: StudentCol
               typedRef.current?.focus();
             }}
             disabled={disabled || !collector.typedText.trim()}
+            style={styles.typeButton}
             testID="collect-type-add"
           />
         </View>
@@ -139,4 +140,6 @@ const styles = StyleSheet.create({
   panel: { gap: spacing.sm },
   typeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
   typeField: { flex: 1 },
+  // Button satır içi hizasını (flex-start) ezer: alanın tabanına hizala.
+  typeButton: { alignSelf: 'flex-end' },
 });
