@@ -131,6 +131,13 @@ export function ClassesScreen() {
         testID="classes-menu-sheet"
         actions={[
           {
+            key: 'account',
+            label: 'Hesap',
+            icon: 'person',
+            onPress: () => router.push('/account'),
+            testID: 'classes-account',
+          },
+          {
             key: 'signout',
             label: 'Çıkış yap',
             icon: 'logout',
