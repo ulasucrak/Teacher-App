@@ -3,14 +3,9 @@ import { Image, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { Text } from '@/components/ui';
 import { colors, layout, radii, spacing } from '@/theme';
 
-export interface ImportPhoto {
-  id: string;
-  uri: string;
-  width: number;
-  height: number;
-  /** Bu sayfadan okunan satır sayısı. */
-  rowCount: number;
-}
+import type { ImportPhoto } from '../ui/useStudentCollector';
+
+export type { ImportPhoto };
 
 export interface PhotoStripProps {
   photos: ImportPhoto[];
@@ -28,9 +23,10 @@ export function PhotoStrip({ photos, onOpen }: PhotoStripProps) {
       {photos.map((photo, index) => (
         <Pressable
           key={photo.id}
+          testID={`photo-page-${index}`}
           onPress={() => onOpen(photo, index)}
           accessibilityRole="imagebutton"
-          accessibilityLabel={`Sayfa ${index + 1}, ${photo.rowCount} satır okundu`}
+          accessibilityLabel={`Sayfa ${index + 1}, ${photo.rowCount} öğrenci`}
           accessibilityHint="Fotoğrafı büyük gösterir"
           style={({ pressed }) => [styles.item, pressed && styles.pressed]}
         >
