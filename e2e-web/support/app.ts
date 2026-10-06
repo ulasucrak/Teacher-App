@@ -167,3 +167,14 @@ export async function deleteCurrentClass(page: Page, name: string): Promise<void
 export function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+/**
+ * Seçenek düğmesinin (OptionChip / SegmentedChoice) seçili olup olmadığı. react-native-web 0.21
+ * `accessibilityState`'i aria-checked/aria-selected'a çevirmediği için durum DOM'da yok; seçili
+ * düğme bir onay ikonu (Material Symbols) gösterir, ona bakılır.
+ */
+export async function expectChosen(option: Locator, chosen = true): Promise<void> {
+  const check = option.locator('[style*="MaterialSymbols"]');
+  if (chosen) await expect(check).toHaveCount(1);
+  else await expect(check).toHaveCount(0);
+}
