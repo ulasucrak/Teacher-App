@@ -80,6 +80,7 @@ export function OptionsEditor({ options, onChange, errors = {}, editing = false 
           fullWidth={false}
           onPress={add}
           testID="option-add"
+          style={styles.addButton}
         />
       )}
     </View>
@@ -147,7 +148,7 @@ function OptionRow({
           <TextInput
             value={option.label}
             onChangeText={onLabel}
-            placeholder="Örneğin Geldi"
+            placeholder={PLACEHOLDERS[index] ?? 'Seçenek adı'}
             placeholderTextColor={colors.textMuted}
             accessibilityLabel={`Seçenek adı: ${name}`}
             aria-invalid={Boolean(error)}
@@ -207,6 +208,7 @@ function OptionRow({
 }
 
 const SWATCH = spacing.xxl;
+const PLACEHOLDERS = ['Örneğin Geldi', 'Örneğin Gelmedi'];
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm, alignItems: 'flex-start' },
@@ -241,6 +243,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   actions: { flexDirection: 'row', alignItems: 'center' },
+  addButton: { marginLeft: -spacing.md },
   tonePicker: { marginLeft: layout.minTouch - spacing.sm },
   error: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs, marginLeft: layout.minTouch - spacing.sm },
   errorText: { flex: 1 },

@@ -1,9 +1,11 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { ChipGroup, Text } from '@/components/ui';
-import { spacing } from '@/theme';
+import { Text } from '@/components/ui';
+import { layout, spacing } from '@/theme';
 import type { FormOption } from '@/types/database';
+
+import { isSegmented, OptionPicker } from './OptionPicker';
 
 export interface BulkApplyRowProps {
   options: readonly FormOption[];
@@ -17,12 +19,12 @@ export interface BulkApplyRowProps {
 /** İnce "Tümü" satırı: bir seçeneği tüm öğrencilere uygular; seçili olana tekrar dokunmak temizler. */
 export const BulkApplyRow = memo(function BulkApplyRow({ options, uniformOption, onApply, disabled }: BulkApplyRowProps) {
   return (
-    <View style={styles.row} testID="bulk-row">
-      <Text variant="label" style={styles.label}>
+    <View style={isSegmented(options) ? styles.row : styles.column} testID="bulk-row">
+      <Text variant="label" style={isSegmented(options) ? styles.label : undefined}>
         Tümü
       </Text>
-      <View style={styles.chips}>
-        <ChipGroup
+      <View style={isSegmented(options) ? styles.chips : undefined}>
+        <OptionPicker
           options={options}
           value={uniformOption}
           disabled={disabled}
@@ -36,7 +38,9 @@ export const BulkApplyRow = memo(function BulkApplyRow({ options, uniformOption,
 });
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  label: { paddingTop: spacing.sm + spacing.xxs },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  column: { gap: spacing.sm },
+  // Öğrenci satırlarındaki seçeneklerle aynı hizada başlar (numara sütunu + boşluk).
+  label: { width: layout.numberColumn + spacing.md },
   chips: { flex: 1 },
 });

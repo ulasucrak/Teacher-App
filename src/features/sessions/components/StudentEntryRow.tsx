@@ -1,11 +1,12 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { ChipGroup, IconButton, Text } from '@/components/ui';
+import { IconButton, Text } from '@/components/ui';
 import { colors, iconSize, layout, radii, spacing } from '@/theme';
 import type { FormOption, StudentRow } from '@/types/database';
 
 import type { EntryValue } from '../draft';
+import { isSegmented, OptionPicker } from './OptionPicker';
 
 export interface StudentEntryRowProps {
   student: Pick<StudentRow, 'id' | 'full_name' | 'number'>;
@@ -21,7 +22,8 @@ export interface StudentEntryRowProps {
 }
 
 /**
- * Kompakt doldurma satırı: numara + ad + soluk not ikonu; altında içerik genişliğinde çipler.
+ * Kompakt doldurma satırı: numara + ad + soluk not ikonu; altında seçenekler (tek satır segment
+ * ya da saran çipler).
  * 40+ satırlık listede `memo` ile yalnızca değişen satır yeniden çizilir.
  */
 export const StudentEntryRow = memo(function StudentEntryRow({
@@ -67,8 +69,8 @@ export const StudentEntryRow = memo(function StudentEntryRow({
           testID={`${testID}-note`}
         />
       </View>
-      <View style={styles.body}>
-        <ChipGroup
+      <View style={[styles.body, !isSegmented(options) && styles.bodyWide]}>
+        <OptionPicker
           options={options}
           value={entry.optionKey}
           disabled={disabled}
@@ -108,4 +110,6 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.xs,
   },
   body: { marginLeft: INDENT, paddingRight: spacing.md, gap: spacing.xs },
+  // Çok seçenekte çipler satır başından başlar: daha az satıra sarar.
+  bodyWide: { marginLeft: 0 },
 });
