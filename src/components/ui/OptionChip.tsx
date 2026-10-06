@@ -1,7 +1,7 @@
-import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { selectionHaptic } from '@/lib/haptics';
 import { colors, fontScale, iconSize, layout, motion, radii, spacing, tones, type ToneName, useReducedMotion } from '@/theme';
 
 import { Icon } from './Icon';
@@ -57,7 +57,7 @@ export function OptionChip({
   };
 
   const handlePress = () => {
-    Haptics.selectionAsync().catch(() => undefined);
+    selectionHaptic();
     onPress();
   };
 

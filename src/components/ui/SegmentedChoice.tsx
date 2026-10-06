@@ -1,6 +1,6 @@
-import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { selectionHaptic } from '@/lib/haptics';
 import { colors, fontScale, iconSize, layout, radii, spacing, tones, type ToneName } from '@/theme';
 
 import { Icon } from './Icon';
@@ -49,7 +49,7 @@ export function SegmentedChoice<K extends string>({
             key={option.key}
             testID={testIDPrefix ? `${testIDPrefix}-${option.key}` : undefined}
             onPress={() => {
-              Haptics.selectionAsync().catch(() => undefined);
+              selectionHaptic();
               onChange(option.key);
             }}
             disabled={disabled}
