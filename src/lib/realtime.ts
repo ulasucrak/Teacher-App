@@ -29,6 +29,11 @@ export interface RealtimeTableSpec {
   event?: RealtimeEvent;
   /** PostgREST biçiminde süzgeç, ör. `form_id=eq.<uuid>`. */
   filter?: string;
+  /**
+   * true → yalnızca oturumdaki öğretmenin satırları (`teacher_id=eq.<uid>`; `filter` yerine geçer).
+   * Kullanıcı bilinene kadar bu tablo dinlenmez; oturum yoksa hiç dinlenmez.
+   */
+  own?: boolean;
 }
 
 export type RealtimePayload = RealtimePostgresChangesPayload<Record<string, unknown>>;
@@ -62,15 +67,30 @@ export function nextChannelName(prefix = 'live'): string {
   return `${prefix}:${channelCounter}:${Date.now().toString(36)}`;
 }
 
-/** Süzgeci dize tablolara uygular, sırayı ve içeriği kararlı bir anahtara çevirir. */
+/**
+ * Süzgeci dize tablolara uygular, `own` tabloları öğretmen süzgecine çevirir (kullanıcı yoksa
+ * çıkarır); sırayı ve içeriği kararlı bir anahtara çevirir.
+ */
 export function normalizeSpecs(
   tables: readonly (RealtimeTable | RealtimeTableSpec)[],
   filter?: string,
+  userId?: string | null,
 ): RealtimeTableSpec[] {
-  return tables.map((t) => {
+  const out: RealtimeTableSpec[] = [];
+  for (const t of tables) {
     const spec: RealtimeTableSpec = typeof t === 'string' ? { table: t, filter } : t;
-    return { table: spec.table, event: spec.event ?? '*', ...(spec.filter ? { filter: spec.filter } : {}) };
-  });
+    if (spec.own && !userId) continue;
+    const resolved = spec.own ? `teacher_id=eq.${userId}` : spec.filter;
+    out.push({ table: spec.table, event: spec.event ?? '*', ...(resolved ? { filter: resolved } : {}) });
+  }
+  return out;
+}
+
+/** Olaydaki satır kimliği (DELETE'te eski satırın, diğerlerinde yeni satırın `id`'si). */
+export function payloadRowId(payload: RealtimePayload): string | null {
+  const row = (payload.eventType === 'DELETE' ? payload.old : payload.new) as Record<string, unknown> | undefined;
+  const id = row?.id;
+  return typeof id === 'string' || typeof id === 'number' ? String(id) : null;
 }
 
 /** Realtime kullanılabilir mi (yapılandırma tamam ve istemci gerçek). Testlerde çoğunlukla false. */
@@ -79,9 +99,16 @@ export function realtimeAvailable(): boolean {
   return !supabaseConfigError && typeof client?.channel === 'function';
 }
 
-/** Oturumdaki kullanıcı değişince artan sayaç; abonelikler yeni oturumla yeniden kurulur. */
-function useAuthEpoch(enabled: boolean): number {
+interface AuthUser {
+  /** Oturum kullanıcısı; undefined → henüz bilinmiyor, null → oturum yok. */
+  userId: string | null | undefined;
+  /** Kullanıcı değişince artar; abonelikler yeni oturumla yeniden kurulur. */
+  epoch: number;
+}
+
+function useAuthUser(enabled: boolean): AuthUser {
   const [epoch, setEpoch] = useState(0);
+  const [userId, setUserId] = useState<string | null | undefined>(undefined);
   const userRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
@@ -92,13 +119,14 @@ function useAuthEpoch(enabled: boolean): number {
       const userId = session?.user?.id ?? null;
       const previous = userRef.current;
       userRef.current = userId;
+      setUserId(userId);
       // İlk bildirim (INITIAL_SESSION) yalnızca başlangıç değerini kaydeder.
       if (previous !== undefined && previous !== userId) setEpoch((n) => n + 1);
     });
     return () => data.subscription.unsubscribe();
   }, [enabled]);
 
-  return epoch;
+  return { userId, epoch };
 }
 
 /**
@@ -117,8 +145,10 @@ export function useRealtimeRefresh(options: UseRealtimeRefreshOptions): void {
     debounceRef.current = debounceMs;
   });
 
-  const specKey = JSON.stringify(normalizeSpecs(tables, filter));
-  const epoch = useAuthEpoch(enabled);
+  const { userId, epoch } = useAuthUser(enabled);
+  // Öğretmen süzgeçli tablo varken kullanıcı bilinmeden abone olunmaz (gereksiz yeniden abonelik).
+  const waitingForUser = userId === undefined && tables.some((t) => typeof t !== 'string' && t.own);
+  const specKey = JSON.stringify(normalizeSpecs(tables, filter, userId));
 
   // Toplama zamanlayıcısı; en "güçlü" neden korunur (change < resync).
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,7 +175,7 @@ export function useRealtimeRefresh(options: UseRealtimeRefreshOptions): void {
 
   // Postgres değişiklik aboneliği.
   useEffect(() => {
-    if (!enabled || !realtimeAvailable()) return;
+    if (!enabled || waitingForUser || !realtimeAvailable()) return;
     const specs = JSON.parse(specKey) as RealtimeTableSpec[];
     if (specs.length === 0) return;
     let channel = supabase.channel(nextChannelName(name));
@@ -179,7 +209,7 @@ export function useRealtimeRefresh(options: UseRealtimeRefreshOptions): void {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [enabled, specKey, name, epoch, schedule]);
+  }, [enabled, waitingForUser, specKey, name, epoch, schedule]);
 
   // Oturum değişti: yeni oturumun verisini yükle.
   useEffect(() => {

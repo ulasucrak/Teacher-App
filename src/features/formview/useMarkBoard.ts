@@ -56,11 +56,15 @@ function tapFeedback(): void {
   }
 }
 
-/** Olay bu cihazın yazdığı bir işaretin yankısı mı (`form_events.mark_id`). */
-function markIdOf(payload: RealtimePayload): string | null {
+/**
+ * Yankı anahtarı: olay türü + işaret kimliği (`mark_added:<id>` / `mark_removed:<id>`). Türle
+ * birlikte tutulur: bu cihazın eklediği işareti başka cihaz geri alırsa o olay yankı sayılmaz.
+ */
+export function markEchoKey(payload: RealtimePayload): string | null {
   const row = payload.new as Record<string, unknown> | undefined;
   const id = row?.mark_id;
-  return typeof id === 'string' ? id : null;
+  const kind = row?.kind;
+  return typeof id === 'string' && typeof kind === 'string' ? `${kind}:${id}` : null;
 }
 
 /**
@@ -86,7 +90,8 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
   const opKeyRef = useRef(0);
   const resyncRef = useRef(false);
   const todayRef = useRef(today);
-  const ownMarkIds = useRef(new Set<string>());
+  /** Bu cihazın yazdığı işaret olayları (`markEchoKey` biçiminde). */
+  const ownEchoes = useRef(new Set<string>());
   const lastRef = useRef<LastMark | null>(null);
   const aliveRef = useRef(true);
 
@@ -198,8 +203,8 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
     name: 'marks',
     tables: liveTables,
     ignore: (payload) => {
-      const markId = markIdOf(payload);
-      return markId !== null && ownMarkIds.current.has(markId);
+      const key = markEchoKey(payload);
+      return key !== null && ownEchoes.current.has(key);
     },
     onChange: () => reloadRef.current(),
   });
@@ -213,7 +218,7 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
       const key = addOp(studentId, optionKey, 1, false);
       addMark({ formId, studentId, optionKey, markDate: day }).then(
         (saved) => {
-          ownMarkIds.current.add(saved.id);
+          ownEchoes.current.add(`mark_added:${saved.id}`);
           if (!aliveRef.current) return;
           settleOp(key);
           setLast({
@@ -240,7 +245,7 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
       setUndoingIds((ids) => new Set(ids).add(studentId));
       try {
         const removed = await undoLastMark({ formId, studentId, markDate: todayIso() });
-        if (removed) ownMarkIds.current.add(removed.id);
+        if (removed) ownEchoes.current.add(`mark_removed:${removed.id}`);
         if (!aliveRef.current) return;
         if (removed) {
           addOp(studentId, removed.option_key, -1, true);
@@ -272,6 +277,7 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
     const key = addOp(last.studentId, last.optionKey, -1, false);
     try {
       const removed = await removeMark(last.markId);
+      if (removed) ownEchoes.current.add(`mark_removed:${last.markId}`);
       if (!aliveRef.current) return;
       // İşaret çoktan silinmişse (satırdaki geri alma) sayı iki kez düşmesin.
       if (removed) settleOp(key);

@@ -14,6 +14,7 @@ import {
   getSession,
   listEntries,
   listStudents,
+  SessionNotFoundError,
   toUserMessage,
   updateSessionStatus,
   upsertEntries,
@@ -114,8 +115,11 @@ export function useSessionFill(args: UseSessionFillArgs) {
         dispatch({ type: 'load', entries });
       })
       .catch((error: unknown) => {
-        // Arka plan yenilemesi başarısızsa ekrandaki veri kalır (ön plana dönüşte yeniden denenir).
-        if (!cancelled && !silent) setLoadError(toUserMessage(error, 'Kayıt yüklenemedi. Tekrar deneyin.'));
+        if (cancelled) return;
+        // Arka plan yenilemesi başarısızsa ekrandaki veri kalır (ön plana dönüşte yeniden denenir);
+        // ama kayıt başka cihazda silindiyse kullanıcı silinmiş kaydı düzenlemeye devam etmesin.
+        if (silent && !(error instanceof SessionNotFoundError)) return;
+        setLoadError(toUserMessage(error, 'Kayıt yüklenemedi. Tekrar deneyin.'));
       });
     return () => {
       cancelled = true;
@@ -140,15 +144,44 @@ export function useSessionFill(args: UseSessionFillArgs) {
   // --- Canlı eşitleme -------------------------------------------------------
   // Başka cihazdaki kayıt değişiklikleri (form_events) ve sınıf listesi (students). Taslak varken
   // ekran yenilenmez; değişiklikler kaydedilince ya da taslak boşalınca yüklenir.
+  const sessionRef = useRef<FormSessionRow | null>(null);
+  useEffect(() => {
+    sessionRef.current = data?.session ?? null;
+  }, [data]);
+
+  /**
+   * Taslak varken yalnızca kaydın hâlâ var olduğunu denetler. Başka cihazda silindiyse: açık kayıt
+   * ekranında hata gösterilir; gün görünümünde kayıt "yok" sayılır (ilk kaydetmede yeniden oluşur,
+   * taslak korunur).
+   */
+  const checkSessionStillExists = useCallback(() => {
+    const current = sessionRef.current;
+    if (!current) return;
+    if (sessionId !== NEW_SESSION_ID) {
+      getSession(sessionId).catch((error: unknown) => {
+        if (error instanceof SessionNotFoundError) setLoadError(error.message);
+      });
+      return;
+    }
+    findSessionByDate(formId, current.session_date).then(
+      (found) => {
+        if (found?.id === current.id) return;
+        setData((d) => (d && d.session?.id === current.id ? { ...d, session: found } : d));
+      },
+      () => undefined,
+    );
+  }, [formId, sessionId]);
+
   const silentReload = useCallback(() => {
     if (dirtyRef.current > 0 || savingRef.current) {
       pendingRef.current = true;
+      if (!savingRef.current) checkSessionStillExists();
       return;
     }
     pendingRef.current = false;
     silentRef.current = true;
     setReloadKey((k) => k + 1);
-  }, []);
+  }, [checkSessionStillExists]);
 
   const liveTables = useMemo<RealtimeTableSpec[]>(
     () => [

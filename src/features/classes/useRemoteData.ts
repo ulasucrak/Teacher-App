@@ -1,7 +1,13 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState, type SetStateAction } from 'react';
+import { useCallback, useEffect, useRef, useState, type SetStateAction } from 'react';
 
-import { useRealtimeRefresh, type RealtimeTable, type RealtimeTableSpec } from '@/lib/realtime';
+import {
+  payloadRowId,
+  useRealtimeRefresh,
+  type RealtimePayload,
+  type RealtimeTable,
+  type RealtimeTableSpec,
+} from '@/lib/realtime';
 
 import { toUserMessage } from './errors';
 
@@ -31,8 +37,34 @@ export interface RemoteDataOptions {
   live?: readonly (RealtimeTable | RealtimeTableSpec)[] | false;
 }
 
-/** Sınıf, öğrenci ve form ekranlarının (sayılar dâhil) bağlı olduğu tablolar. */
-export const DEFAULT_LIVE_TABLES: readonly RealtimeTable[] = ['classes', 'students', 'forms'];
+/**
+ * Sınıf, öğrenci ve form ekranlarının (sayılar dâhil) bağlı olduğu tablolar. Ekleme/güncelleme
+ * yalnızca öğretmenin kendi satırları için dinlenir (`teacher_id` süzgeci). DELETE süzülemez ve
+ * herkesin silmesi (yalnızca kimlik) gelir: ekrandaki veride o kimlik yoksa yok sayılır.
+ */
+export const DEFAULT_LIVE_TABLES: readonly RealtimeTableSpec[] = (['classes', 'students', 'forms'] as const).flatMap(
+  (table: RealtimeTable): RealtimeTableSpec[] => [
+    { table, own: true },
+    { table, event: 'DELETE' },
+  ],
+);
+
+/** Verinin herhangi bir yerinde bu kimlik geçiyor mu (silinen satır ekranda mı). */
+export function dataMentionsId(data: unknown, id: string): boolean {
+  if (data == null) return false;
+  try {
+    return JSON.stringify(data).includes(`"${id}"`);
+  } catch {
+    return true;
+  }
+}
+
+/** DELETE olayı ekrandaki veriyle ilgisizse true (yenileme gerekmez). */
+export function isUnrelatedDelete(payload: RealtimePayload, data: unknown): boolean {
+  if (payload.eventType !== 'DELETE') return false;
+  const id = payloadRowId(payload);
+  return id === null || !dataMentionsId(data, id);
+}
 
 /**
  * Ekran odaklandığında veriyi yükler (başka ekrandan dönüldüğünde de sessizce yeniler).
@@ -89,11 +121,17 @@ export function useRemoteData<T>(
     }, [run]),
   );
 
+  const dataRef = useRef<T | null>(null);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
   const live = options.live ?? DEFAULT_LIVE_TABLES;
   useRealtimeRefresh({
     name: 'remote',
     tables: live || [],
     enabled: focused && live !== false,
+    ignore: (payload) => isUnrelatedDelete(payload, dataRef.current),
     // İlk yükleme bitmeden gelen olaylar zaten yüklemede; yalnızca veri varken yenile.
     onChange: () => {
       if (hasData.current) void run('silent');

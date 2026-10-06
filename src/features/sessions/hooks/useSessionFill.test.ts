@@ -40,6 +40,7 @@ jest.mock('../api', () => {
   return {
     ...actual,
     findSessionByDate: jest.fn(),
+    getSession: jest.fn(),
     listStudents: jest.fn(),
     listEntries: jest.fn(),
     upsertEntries: jest.fn(),
@@ -163,4 +164,43 @@ it('keeps the screen data when a background load fails', async () => {
   await advance(400);
   expect(hook.result.current.loadError).toBeNull();
   expect(hook.result.current.data).not.toBeNull();
+});
+
+it('shows an error when another device deleted the open session', async () => {
+  mocked.getSession.mockResolvedValue(session);
+  const hook = await renderHook(
+    () => useSessionFill({ classId: 'c1', formId: 'f1', sessionId: 'sess1', form: attendanceForm }),
+    { wrapper },
+  );
+  await act(async () => undefined);
+  expect(hook.result.current.loadError).toBeNull();
+  mocked.getSession.mockRejectedValue(new api.SessionNotFoundError());
+  remoteChange();
+  await advance(400);
+  expect(hook.result.current.loadError).toBe('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.');
+});
+
+it('also detects a deleted open session while the user has unsaved edits', async () => {
+  mocked.getSession.mockResolvedValue(session);
+  const hook = await renderHook(
+    () => useSessionFill({ classId: 'c1', formId: 'f1', sessionId: 'sess1', form: attendanceForm }),
+    { wrapper },
+  );
+  await act(async () => undefined);
+  await act(async () => hook.result.current.onToggle('s2', 'var'));
+  mocked.getSession.mockRejectedValue(new api.SessionNotFoundError());
+  remoteChange();
+  await advance(400);
+  expect(hook.result.current.loadError).toContain('Kayıt bulunamadı');
+});
+
+it('forgets a day record deleted elsewhere but keeps the draft (re-created on save)', async () => {
+  const hook = await renderFill();
+  await act(async () => hook.result.current.onToggle('s2', 'var'));
+  mocked.findSessionByDate.mockResolvedValue(null);
+  remoteChange();
+  await advance(400);
+  expect(hook.result.current.data?.session).toBeNull();
+  expect(hook.result.current.draft.s2?.optionKey).toBe('var');
+  expect(hook.result.current.loadError).toBeNull();
 });
