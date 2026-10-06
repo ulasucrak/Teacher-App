@@ -60,3 +60,13 @@ export function parseRecoveryUrl(url: string | null | undefined): RecoveryParams
 
   return { kind: 'none' };
 }
+
+/** Bağlantı, şifre sıfırlama parametrelerinden (token, kod ya da hata) birini taşıyor mu? */
+export function isRecoveryUrl(url: string | null | undefined): url is string {
+  return Boolean(url && url.includes(RESET_PASSWORD_PATH.slice(1)) && /[#?&](access_token|code|error)=/.test(url));
+}
+
+/** Web'de e-postadaki bağlantının döneceği adres: sitenin kökü + /reset-password. */
+export function webResetRedirectUrl(origin: string): string {
+  return `${origin.replace(/\/+$/, '')}${RESET_PASSWORD_PATH}`;
+}

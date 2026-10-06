@@ -1,7 +1,8 @@
 export { AuthProvider, getPasswordResetRedirectUrl } from './AuthProvider';
 export type { AuthContextValue, AuthResult, SignUpResult } from './AuthProvider';
 export { authMessages, classifyAuthError, getAuthErrorMessage, isNetworkError } from './errors';
-export { parseRecoveryUrl, RESET_PASSWORD_PATH } from './recovery';
+export { isRecoveryUrl, parseRecoveryUrl, RESET_PASSWORD_PATH, webResetRedirectUrl } from './recovery';
+export { clearRecoveryFromAddressBar, getInitialRecoveryUrl } from './webUrl';
 export type { RecoveryParams } from './recovery';
 export type { AuthErrorKind } from './errors';
 export { getDisplayName, useAuth } from './useAuth';
