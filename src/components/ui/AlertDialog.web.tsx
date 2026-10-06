@@ -219,7 +219,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    outlineWidth: 0,
   },
   buttonInRow: { flex: 1, flexBasis: 0 },
   buttonStacked: { borderTopWidth: layout.hairline, borderTopColor: colors.rule },
