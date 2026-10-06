@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
+import { selectionA11y } from './a11y';
 import { Icon } from './Icon';
 import { Sheet } from './Sheet';
 import { Text } from './Text';
@@ -86,7 +87,7 @@ export function SelectField<V extends string>({
                 }}
                 accessibilityRole="radio"
                 accessibilityLabel={option.label}
-                accessibilityState={{ checked: isSelected, selected: isSelected }}
+                {...selectionA11y({ checked: isSelected, selected: isSelected })}
                 style={({ pressed }) => [styles.option, pressed && styles.pressed]}
               >
                 <View style={styles.optionTexts}>

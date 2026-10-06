@@ -1,3 +1,5 @@
+export { selectionA11y } from './a11y';
+export type { SelectionA11yProps, SelectionA11yState } from './a11y';
 export { AppFrame } from './AppFrame';
 export { Avatar } from './Avatar';
 export type { AvatarProps } from './Avatar';

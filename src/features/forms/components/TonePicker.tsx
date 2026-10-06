@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Icon } from '@/components/ui';
+import { Icon, selectionA11y } from '@/components/ui';
 import { colors, iconSize, layout, radii, spacing, tones } from '@/theme';
 import type { FormOptionTone } from '@/types/database';
 
@@ -29,7 +29,7 @@ export function TonePicker({ value, onChange, contextLabel }: TonePickerProps) {
             onPress={() => onChange(tone)}
             accessibilityRole="radio"
             accessibilityLabel={`${contextLabel}: ${toneLabels[tone]}`}
-            accessibilityState={{ selected, checked: selected }}
+            {...selectionA11y({ selected, checked: selected })}
             style={({ pressed }) => [styles.hit, pressed && styles.pressed]}
           >
             <View
