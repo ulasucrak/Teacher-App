@@ -208,8 +208,9 @@ Adımlar: **Ad → Öğrenciler → Formlar**. Sınıf son adımda tek seferde o
    Sözlü, Derse katılım. Alt çubuk: "Sınıfı oluştur". Bitince sınıf ekranına gidilir, toast
    "5/B oluşturuldu".
 
-Var olan sınıfa sonradan öğrenci eklemek: Sınıf ekranı "⋯" → "Öğrenci ekle" → sihirbazın
-2. adımının aynısı (tek adım, alt çubukta "Öğrencileri ekle").
+Var olan sınıfa sonradan öğrenci eklemek: Sınıf ekranı → "Öğrenciler" → "⋯" → "Öğrenci ekle"
+→ yol (Fotoğraftan / Listeyi yapıştır / Tek tek yaz) → sihirbazın 2. adımının aynısı (tek adım,
+alt çubukta "Öğrencileri ekle").
 
 ### 9.6 "+ Form" (kompakt form ekleme)
 
@@ -332,24 +333,34 @@ Var olan sınıfa sonradan öğrenci eklemek: Sınıf ekranı "⋯" → "Öğren
 └──────────────────────────────────────┘
 ```
 
-**Sınıf** (öğrenciler + formlar; burada sarı yok — ana hedefler form satırları)
+**Sınıf** (formlar + öğrenciler satırı; burada sarı yok — ana hedefler form satırları)
 
 ```
 ┌──────────────────────────────────────┐
-│ ‹                                ⋯   │  ⋯ = Öğrenci ekle, Öğrenci seç,
-│ 5/B                                  │      Sınıfı düzenle, Sınıfı sil
-│ 28 öğrenci                           │
+│ ‹                                ⋯   │  ⋯ = Sınıfı düzenle, Arşivdeki formlar,
+│ 5/B                                  │      Sınıfı sil
 │                                      │
 │ Formlar 3                  + Form    │  SectionHeader + ghost eylem
-│ [✓] Yoklama            Bugün  ›      │  ListRow + IconTile; → bugünün kaydı
+│ [✓] Yoklama                    ⋯     │  FormListRow + IconTile; → bugünün kaydı
+│     Bugün                            │
 │ ──────────────────────────────────── │
-│ [✓] Ödev kontrolü      2 gün  ›      │
+│ [✓] Ödev kontrolü              ⋯     │
+│ ──────────────────────────────────── │
 │                                      │
-│ Öğrenciler 28                        │
-│ ( ⌕  Ad ya da numara              )  │  SearchField (≥ 15 öğrencide)
-│  12  Ayşe Yılmaz                     │  ListRow number + ad
-│ ──────────────────────────────────── │
-│  15  Mehmet Kaya                     │
+│ [◎] Öğrenciler                28  ›  │  → Öğrenciler ekranı
+└──────────────────────────────────────┘
+```
+
+**Öğrenciler** (alt ekran; ⋯ = Öğrenci ekle, Öğrenci seç)
+
+```
+┌──────────────────────────────────────┐
+│ ‹            Öğrenciler          ⋯   │
+│ ( ⌕  Ad ya da numara              )  │  SearchField
+│ 28 öğrenci                           │
+│ 1101  Ayşe Yılmaz                    │  ListRow number + ad → düzenleme paneli
+│ ──────────────────────────────────── │  (panelde "Öğrenciyi sil")
+│ 1102  Mehmet Kaya                    │
 └──────────────────────────────────────┘
 ```
 
