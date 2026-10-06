@@ -11,6 +11,7 @@
  * - fazla: listede karşılığı olmayan okunan satır sayısı (başlık/altlık sızıntısı)
  *
  * 12 fikstür, 346 öğrenci. Önce → sonra (O02): ad 70.2% → 97.4%, okul no 33.8% → 99.7%.
+ * W01: düşmüş baş "İ" yalnızca düşük güven / aday desteğiyle → ad 96.8%.
  * Katkılar (her biri kapatılınca): eğim düzeltme yoksa no 34.4%; sözlük yoksa ad 75.1%;
  * Vision adayları yoksa ad 95.4%. Kalan hatalar: bilerek sözlüğe konmamış soyadlar
  * (Çağlayık, Dağdelen, Şimşekler) ve el yazısı benzeri fontta harf karışıklıkları.
@@ -52,7 +53,9 @@ const THRESHOLDS: Record<string, { names: number; numbers: number; maxExtra: num
   'a-times-28-rot-5-title': { names: 95, numbers: 95, maxExtra: 1 },
   'b-arial-26-rot5': { names: 95, numbers: 95, maxExtra: 1 },
   'b-georgia-30-title-rot-3': { names: 95, numbers: 95, maxExtra: 1 },
-  'b-helvetica-22-blur-lowcontrast': { names: 92, numbers: 95, maxExtra: 1 },
+  // Vision "İSMAİL"/"IŞIL" baş harfini güven 1 ile atlıyor; düşmüş baş İ yalnızca düşük güvenli
+  // ya da adayların desteklediği satırda geri getirildiği için (yanlış "İpek"/"İrem" olmasın) 91.2%.
+  'b-helvetica-22-blur-lowcontrast': { names: 88, numbers: 95, maxExtra: 1 },
   'b-verdana-24-persp': { names: 95, numbers: 95, maxExtra: 1 },
   'plain-bradley-32-rot-2': { names: 76, numbers: 95, maxExtra: 1 },
   'plain-noteworthy-34': { names: 90, numbers: 95, maxExtra: 1 },

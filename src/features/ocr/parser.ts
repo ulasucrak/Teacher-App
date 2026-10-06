@@ -128,7 +128,22 @@ export function assessName(fullName: string, hadDigits = false): NameWarning[] {
 export interface RowCell {
   text: string;
   confidence?: number;
+  /** OCR'ın aynı satır için diğer aday okumaları (Vision `topCandidates`). */
+  alternates?: readonly string[];
 }
+
+/**
+ * Ayrıştırma seçenekleri. `ocr: true` (fotoğraf) OCR karışıklıklarını düzeltir: rakam → harf,
+ * "l"/"I", sözlükle Türkçe harf geri getirme, "I" → "İ" ve (düşük güvenli ya da adayların
+ * desteklediği satırlarda) düşmüş baş "İ". `ocr: false` (yapıştırılan / yazılan metin) yazılanı
+ * korur; yalnızca başlık düzenine çevirir.
+ */
+export interface ParseOptions {
+  ocr?: boolean;
+}
+
+/** Bu güvenin altındaki satırlarda düşmüş baş "İ" geri getirilir (review'daki eşikle aynı). */
+const DROPPED_I_MAX_CONFIDENCE = 0.6;
 
 interface PositionedLine {
   cell: RowCell;
@@ -248,8 +263,12 @@ export function pickCandidate(line: OcrLine): string {
 export function groupIntoCells(result: OcrResult): RowCell[][] {
   const lines = result.blocks.flatMap((b) => b.lines).filter((l) => l.text.trim().length > 0);
   if (lines.length === 0) return [];
-  const cellOf = (l: OcrLine, text: string): RowCell =>
-    l.confidence === undefined ? { text } : { text, confidence: l.confidence };
+  const cellOf = (l: OcrLine, text: string): RowCell => {
+    const cell: RowCell = l.confidence === undefined ? { text } : { text, confidence: l.confidence };
+    const alternates = [l.text, ...(l.candidates ?? []).map((c) => c.text)].filter((t, i, all) => t !== text && all.indexOf(t) === i);
+    if (alternates.length > 0) cell.alternates = alternates;
+    return cell;
+  };
 
   const allFramed = lines.every((l) => l.frame && l.frame.height > 0);
   if (!allFramed) return lines.map((l) => [cellOf(l, pickCandidate(l))]);
@@ -388,6 +407,8 @@ interface NameToken {
 
 const TR_UPPER_DOTTED_I = 'İ';
 const VOWELS_RE = /[AEIİOÖUÜ]/g;
+/** Yalnızca Türkçe klavyeden gelen harfler (yazılan metnin Türkçe olduğunu gösterir). */
+const TURKISH_LETTERS_RE = /[çğışöüÇĞİŞÖÜ]/;
 
 /** Bir kelimede denenecek en fazla "I" sayısı (2^n yazım). */
 const MAX_AMBIGUOUS_I = 6;
@@ -475,8 +496,10 @@ function inCaseOf(word: string, spelling: string): string {
  * döndürür: "Irem" → "İrem", "DOGAN" → "DOĞAN", "Ozturk" → "Öztürk", "Sahin" → "Şahin".
  * Sözlükte yoksa ya da belirsizse null (kelime okunduğu gibi kalır).
  * `dotAware`: fotoğrafta "İ" okunduysa, belirsiz "I" için "ı"lı yazım tercih edilir.
+ * `allowDroppedI`: kelime sözlükte yoksa düşmüş baş "İ" de denenir ("Brahim" → "İbrahim");
+ * yalnızca düşük güvenli ya da OCR adaylarının desteklediği satırlarda açılır.
  */
-export function restoreTurkishLetters(word: string, dotAware = false): string | null {
+export function restoreTurkishLetters(word: string, dotAware = false, allowDroppedI = false): string | null {
   const chars = Array.from(word);
   if (chars.length < 2 || !chars.every((c) => /\p{L}/u.test(c))) return null;
   const key = asciiFoldLower(chars.map((c) => (c === 'I' ? 'i' : c.toLocaleLowerCase(LOCALE))).join(''));
@@ -489,7 +512,7 @@ export function restoreTurkishLetters(word: string, dotAware = false): string | 
     matches = matches.filter((spelling) => Array.from(spelling).every((d, i) => chars[i] !== 'I' || d === 'ı'));
   }
   if (matches.length === 1) return inCaseOf(word, matches[0]);
-  if (matches.length === 0 && dictionarySpellings(key).length === 0) return restoreDroppedInitialI(word);
+  if (allowDroppedI && matches.length === 0 && dictionarySpellings(key).length === 0) return restoreDroppedInitialI(word);
   return null;
 }
 
@@ -509,14 +532,43 @@ function restoreDroppedInitialI(word: string): string | null {
   return matches.length === 1 ? inCaseOf(word, matches[0]) : null;
 }
 
+interface CleanContext {
+  /** Fotoğraf okuması mı (OCR düzeltmeleri yapılır) yoksa yazılan metin mi. */
+  ocr: boolean;
+  dotAware: boolean;
+  /** Bu kelimede düşmüş baş "İ" denensin mi. */
+  droppedI: (word: string) => boolean;
+  /** Yazılan metinde Türkçe harf yok: BÜYÜK "I" "ı" değil "i"dir ("MICHAEL" → "Michael"). */
+  asciiCaps?: boolean;
+}
+
+/**
+ * Yazılan BÜYÜK HARF kelimede baş harf dışındaki "I"ları "İ" yapar; böylece Türkçe küçültme
+ * "i" verir: "SMITH" → "SMİTH" → "Smith". Baştaki "I" büyük kalır.
+ */
+function asciiCapsToDotted(text: string): string {
+  const letters = text.replace(/[^\p{L}]/gu, '');
+  if (letters.length < 2 || letters !== letters.toLocaleUpperCase(LOCALE)) return text;
+  return text.replace(/(?<=\p{L})I/gu, TR_UPPER_DOTTED_I);
+}
+
 /** Ad kelimesindeki OCR karışıklıklarını düzeltir: "Y1LMAZ" → "YILMAZ", "lŞIK" → "IŞIK". */
-function cleanNameToken(token: string, dotAware = true): NameToken | null {
+function cleanNameToken(token: string, ctx: CleanContext): NameToken | null {
   let text = token.replace(/[^\p{L}\d'’\-.]/gu, '').replace(/^[-'.’]+|[-'’]+$/g, '');
   // Tek harf + nokta baş harftir ("M."), diğer noktalar gürültü.
   if (!/^\p{L}\.$/u.test(text)) text = text.replace(/\./g, '');
   if (!text) return null;
   const letters = text.replace(/[^\p{L}]/gu, '');
   if (letters.length === 0) return null;
+
+  if (!ctx.ocr) {
+    // Yazılan metin: rakamlar atılır (uyarı gösterilir), harflere dokunulmaz.
+    const hadDigits = /\d/.test(text);
+    if (hadDigits) text = text.replace(/\d/g, '');
+    if (ctx.asciiCaps) text = asciiCapsToDotted(text);
+    return { text, hadDigits };
+  }
+  const { dotAware } = ctx;
 
   let hadDigits = false;
   if (/\d/.test(text)) {
@@ -542,7 +594,7 @@ function cleanNameToken(token: string, dotAware = true): NameToken | null {
   // Önce sözlük (Türkçe harfleri geri getirir), bulunamazsa "I" → "İ" kuralları.
   const restored = text
     .split('-')
-    .map((part) => restoreTurkishLetters(part, dotAware) ?? restoreDottedI(part, dotAware))
+    .map((part) => restoreTurkishLetters(part, dotAware, ctx.droppedI(part)) ?? restoreDottedI(part, dotAware))
     .join('-');
   return { text: restored, hadDigits };
 }
@@ -582,7 +634,21 @@ function tokenize(cells: string[]): string[] {
   );
 }
 
-function parseRow(rowCells: RowCell[], dotAware: boolean): RawRow | null {
+/** Aday okumalardan biri kelimeyi baş "İ" ile okumuş mu ("Brahim" ↔ "İbrahim")? */
+function alternatesSupportDroppedI(word: string, rowCells: RowCell[]): boolean {
+  const target = foldTurkish(`i${word}`);
+  return rowCells.some((c) =>
+    (c.alternates ?? []).some((alt) => alt.split(/[^\p{L}]+/u).some((w) => w.length > 0 && foldTurkish(w) === target)),
+  );
+}
+
+interface RowContext {
+  ocr: boolean;
+  dotAware: boolean;
+  asciiCaps: boolean;
+}
+
+function parseRow(rowCells: RowCell[], context: RowContext): RawRow | null {
   const cells = rowCells.map((c) => c.text);
   const rowText = cells.join(' ');
   if (DATE_RE.test(rowText) || YEAR_RANGE_RE.test(rowText)) return null;
@@ -591,6 +657,15 @@ function parseRow(rowCells: RowCell[], dotAware: boolean): RawRow | null {
   const trailingNumbers: string[] = [];
   const nameTokens: NameToken[] = [];
   let punctuatedLead = false;
+
+  const rowConfidence = minConfidence(rowCells);
+  const lowConfidence = rowConfidence !== undefined && rowConfidence < DROPPED_I_MAX_CONFIDENCE;
+  const ctx: CleanContext = {
+    ocr: context.ocr,
+    dotAware: context.dotAware,
+    asciiCaps: context.asciiCaps,
+    droppedI: (word) => lowConfidence || alternatesSupportDroppedI(word, rowCells),
+  };
 
   const tokens = tokenize(cells);
   tokens.forEach((token, index) => {
@@ -604,7 +679,7 @@ function parseRow(rowCells: RowCell[], dotAware: boolean): RawRow | null {
       else trailingNumbers.push(num);
       return;
     }
-    const cleaned = cleanNameToken(token, dotAware);
+    const cleaned = cleanNameToken(token, ctx);
     if (cleaned) nameTokens.push(cleaned);
   });
 
@@ -693,15 +768,22 @@ function keyOf(student: ParsedStudent): string {
 }
 
 /** Görsel satırlardan (hücre listeleri) öğrenci listesi üretir. */
-export function parseRows(rows: string[][]): ParsedStudent[] {
-  return parseCellRows(rows.map((cells) => cells.map((text) => ({ text }))));
+export function parseRows(rows: string[][], options: ParseOptions = {}): ParsedStudent[] {
+  return parseCellRows(
+    rows.map((cells) => cells.map((text) => ({ text }))),
+    options,
+  );
 }
 
 /** parseRows'un güven bilgili sürümü: hücre güvenleri öğrencinin `confidence` alanına geçer. */
-export function parseCellRows(rows: RowCell[][]): ParsedStudent[] {
+export function parseCellRows(rows: RowCell[][], options: ParseOptions = {}): ParsedStudent[] {
+  const ocr = options.ocr ?? true;
   // Fotoğrafın herhangi bir yerinde "İ" okunduysa OCR noktaları ayırt ediyordur.
   const dotAware = rows.some((cells) => cells.some((c) => c.text.includes('İ')));
-  const raw = rows.map((cells) => parseRow(cells, dotAware)).filter((r): r is RawRow => r !== null);
+  // Yazılan metinde hiç Türkçe harf yoksa (ASCII klavye) BÜYÜK "I" = "i".
+  const asciiCaps = !ocr && !rows.some((cells) => cells.some((c) => TURKISH_LETTERS_RE.test(c.text)));
+  const context: RowContext = { ocr, dotAware, asciiCaps };
+  const raw = rows.map((cells) => parseRow(cells, context)).filter((r): r is RawRow => r !== null);
   const singlesAreOrdinals = singleNumbersAreOrdinals(raw);
 
   const seen = new Set<string>();
@@ -750,8 +832,9 @@ export function parsePlainText(text: string): ParsedStudent[] {
  * "12. Ali Veli", "12 - Ali Veli", "12) Ali Veli", "512 Ali Veli" (sıra no / okul no ayrımı
  * parseRows kurallarıyla). Ayraçtan sonra yalnızca sayı gelirse önceki adın okul numarasıdır
  * ("Ali Veli, 512"). Başlık satırları ("Adı Soyadı") ve yinelemeler atılır.
+ * Varsayılan `ocr: false`: yazılan adlar sözlükle "düzeltilmez" ("Pek Ayşe" "İpek" olmaz).
  */
-export function parsePlainNameList(text: string): ParsedStudent[] {
+export function parsePlainNameList(text: string, options: ParseOptions = {}): ParsedStudent[] {
   const items: string[] = [];
   for (const line of text.split(/\r?\n/)) {
     line.split(/[;,]/).forEach((segment, index) => {
@@ -761,5 +844,8 @@ export function parsePlainNameList(text: string): ParsedStudent[] {
       else items.push(item);
     });
   }
-  return parseRows(items.map((item) => [item]));
+  return parseRows(
+    items.map((item) => [item]),
+    { ocr: options.ocr ?? false },
+  );
 }
