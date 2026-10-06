@@ -21,6 +21,9 @@ export interface StudentFormSheetProps {
   onDelete?: () => void;
   /** Silme sürüyor: "Öğrenciyi sil" yükleniyor gösterir, diğer eylemler kapanır. */
   deleting?: boolean;
+  /** Panel ekrandan kalkınca (ör. ardından silme onayı açmak için). */
+  onDismissed?: () => void;
+  testID?: string;
 }
 
 /**
@@ -36,6 +39,8 @@ export function StudentFormSheet({
   onSubmit,
   onDelete,
   deleting = false,
+  onDismissed,
+  testID,
 }: StudentFormSheetProps) {
   const editing = Boolean(student);
   const nameRef = useRef<TextInput>(null);
@@ -82,6 +87,8 @@ export function StudentFormSheet({
       visible={visible}
       onClose={onClose}
       title={editing ? 'Öğrenciyi düzenle' : 'Öğrenci ekle'}
+      onDismissed={onDismissed}
+      testID={testID}
       footer={
         <>
           <Button
@@ -89,6 +96,7 @@ export function StudentFormSheet({
             onPress={() => submit('close')}
             loading={saving === 'close'}
             disabled={saving === 'next' || deleting}
+            testID={testID ? `${testID}-save` : undefined}
           />
           {editing ? (
             onDelete ? (
@@ -99,6 +107,7 @@ export function StudentFormSheet({
                 onPress={onDelete}
                 loading={deleting}
                 disabled={Boolean(saving)}
+                testID={testID ? `${testID}-delete` : undefined}
               />
             ) : null
           ) : (
@@ -132,6 +141,7 @@ export function StudentFormSheet({
           returnKeyType="next"
           submitBehavior="submit"
           onSubmitEditing={() => numberRef.current?.focus()}
+          testID={testID ? `${testID}-name` : undefined}
         />
         <TextField
           ref={numberRef}
@@ -147,6 +157,7 @@ export function StudentFormSheet({
           autoCorrect={false}
           returnKeyType="done"
           onSubmitEditing={() => submit('close')}
+          testID={testID ? `${testID}-number` : undefined}
         />
       </View>
     </KeyboardSheet>

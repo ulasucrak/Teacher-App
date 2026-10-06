@@ -15,3 +15,5 @@ export { SearchField } from './components/SearchField';
 export { SelectBox } from './components/SelectBox';
 export { StudentFormSheet } from './components/StudentFormSheet';
 export type { StudentSubmitResult } from './components/StudentFormSheet';
+export { StudentsScreen } from './screens/StudentsScreen';
+export type { StudentsScreenProps } from './screens/StudentsScreen';
