@@ -37,12 +37,10 @@ describe('Vision fikstürleri → parser', () => {
   it.each([
     ['BÜYÜK HARF, 30 px', upper30],
     ['Başlık düzeni, 30 px', title30],
-  ])('%s: başlık/altlık atılır, tüm okul numaraları doğru, adların çoğu doğru', (_name, raw) => {
-    const students = parse(raw);
-    expect(students.map((s) => s.number)).toEqual(expected.map((s) => s.number));
-    const correct = students.filter((s, i) => s.fullName === expected[i].fullName).length;
-    // Bilinen Vision hataları: kelime başındaki "İ" noktası (Ibrahim, Irem) ve "Ğ" → "G".
-    expect(correct).toBeGreaterThanOrEqual(7);
+  ])('%s: başlık/altlık atılır, okul numaraları ve adlar eksiksiz', (_name, raw) => {
+    // Vision'ın bilinen hataları (kelime başındaki "İ" noktası: "Ibrahim", "Irem"; "Ğ" → "G")
+    // sözlükle düzeltilir (önceden 10 addan 7'si doğruydu).
+    expect(parse(raw).map(({ number, fullName }) => ({ number, fullName }))).toEqual(expected);
   });
 
   it('S.No "1" okunmasa da ilk satırın okul numarası korunur (30 px)', () => {

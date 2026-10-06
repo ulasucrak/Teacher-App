@@ -1,5 +1,5 @@
 import type { ParsedStudent } from './parser';
-import { appendParsed, computeIssues, createManualRow, toDrafts, type ReviewRow } from './review';
+import { appendParsed, computeIssues, createManualRow, isLowConfidence, issueLabels, toDrafts, type ReviewRow } from './review';
 
 function idMaker() {
   let n = 0;
@@ -129,5 +129,39 @@ describe('toDrafts', () => {
       { fullName: 'Zeynep Çelik', number: '389' },
       { fullName: 'Can Er', number: null },
     ]);
+  });
+});
+
+describe('düşük okuma güveni', () => {
+  const low = (fullName: string, number: string | null, confidence?: number): ParsedStudent => ({
+    ...p(fullName, number),
+    ...(confidence === undefined ? {} : { confidence }),
+  });
+
+  it('eşik altındaki satırı işaretler; güven bilinmiyorsa işaretlemez', () => {
+    expect(isLowConfidence({ confidence: 0.5 })).toBe(true);
+    expect(isLowConfidence({ confidence: 1 })).toBe(false);
+    expect(isLowConfidence({})).toBe(false);
+    const rows = appendParsed([], [low('Ali Veli', '12', 0.5), low('Can Su', '13', 1), low('Ece Ak', '14')], 'a', [], idMaker());
+    const issues = computeIssues(rows, []);
+    expect(rows.map((r) => issues.get(r.id))).toEqual([['lowConfidence'], [], []]);
+    expect(issueLabels.lowConfidence).toBe('Okuma belirsiz, kontrol edin');
+  });
+
+  it('öğretmen adı ya da numarayı düzeltince uyarı kalkar', () => {
+    const [row] = appendParsed([], [low('Ali Veli', '12', 0.3)], 'a', [], idMaker());
+    expect(computeIssues([{ ...row, fullName: 'Ali Velioğlu' }], []).get(row.id)).toEqual([]);
+    expect(computeIssues([{ ...row, number: '21' }], []).get(row.id)).toEqual([]);
+    expect(computeIssues([row], []).get(row.id)).toEqual(['lowConfidence']);
+  });
+
+  it('yineleme uyarıları önce gelir', () => {
+    const rows = appendParsed([], [low('Ali Veli', '12', 0.3)], 'a', [{ full_name: 'Ali Veli', number: '12' }], idMaker());
+    expect(computeIssues(rows, [{ full_name: 'Ali Veli', number: '12' }]).get(rows[0].id)).toEqual(['existing', 'lowConfidence']);
+  });
+
+  it('elle eklenen satırda uyarı yok', () => {
+    const row = createManualRow(idMaker());
+    expect(row.lowConfidenceRead).toBeUndefined();
   });
 });

@@ -99,7 +99,7 @@ aygün aykaç ayhan başar başaran başer baş baştürk batur bayrak baysal be
 boztepe cankurt cömert çakar çakmak çam çamur çay çelebi çelik çetinkaya çevik çiftçi çolak
 demirci demirel demirtaş doğru doğruer dönmez durmaz duman dumlu durak
 ekinci ekşi elmas er eraslan erbaş erçelik erkoç eroğlu ersoy ertaş ertürk eser esen eşsiz evren gedik genç gezer
-gök gökalp gökdemir göktaş güleç gültekin gümüş gündoğdu gündüz güngör günay gür gürbüz gürel gürsoy güzel harmancı
+gök gökalp gökdemir göktaş güleç gültekin gümüş gündoğdu gündüz güneş güngör günay gür gürbüz gürel gürsoy güzel harmancı
 işcan inan ince ışık işler kahraman kalkan kandemir kaplan kara karabulut karaca karadağ
 karadeniz karagöz karahan karakaya karakoç karakuş karaman karataş kartal kavak kaya kayabaşı kaymaz keleş keskin
 kınık kıratlı kocaman kocabaş kocaer koç korkmaz korkut koyuncu kozan kurt kurtuluş

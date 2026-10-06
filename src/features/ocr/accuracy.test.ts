@@ -9,11 +9,18 @@
  * - ad: doğru listedeki adların kaçı birebir (büyük/küçük harf ve Türkçe karakter dahil) okundu
  * - no: doğru listedeki öğrencilerin kaçının okul numarası doğru (öğrenci ad benzerliğiyle eşlenir)
  * - fazla: listede karşılığı olmayan okunan satır sayısı (başlık/altlık sızıntısı)
+ *
+ * 12 fikstür, 346 öğrenci. Önce → sonra (O02): ad 70.2% → 97.4%, okul no 33.8% → 99.7%.
+ * Katkılar (her biri kapatılınca): eğim düzeltme yoksa no 34.4%; sözlük yoksa ad 75.1%;
+ * Vision adayları yoksa ad 95.4%. Kalan hatalar: bilerek sözlüğe konmamış soyadlar
+ * (Çağlayık, Dağdelen, Şimşekler) ve el yazısı benzeri fontta harf karışıklıkları.
+ * Ayrıntı: OCR_ACCURACY_DETAIL=1 (yanlışlar), OCR_ACCURACY_ROWS=<fikstür> (görsel satırlar).
  */
 import fs from 'fs';
 import path from 'path';
 
 import { foldTurkish, groupIntoRows, parseOcrResult, type ParsedStudent } from './parser';
+import { isLowConfidence } from './review';
 import { visionToOcrResult } from './vision';
 
 interface Truth {
@@ -27,6 +34,9 @@ interface Score {
   names: number;
   numbers: number;
   extra: number;
+  /** review.ts'in "düşük güven" diye işaretleyeceği satır sayısı (doğru / yanlış okunmuş). */
+  lowRight: number;
+  lowWrong: number;
 }
 
 /**
@@ -34,22 +44,22 @@ interface Score {
  * tutulur; parser değişikliği doğruluğu düşürürse test kırılır.
  */
 const THRESHOLDS: Record<string, { names: number; numbers: number; maxExtra: number }> = {
-  'a-helvetica-26-clean': { names: 0, numbers: 0, maxExtra: 99 },
-  'a-arial-24-rot3': { names: 0, numbers: 0, maxExtra: 99 },
-  'a-times-28-rot-5-title': { names: 0, numbers: 0, maxExtra: 99 },
-  'b-verdana-24-persp': { names: 0, numbers: 0, maxExtra: 99 },
-  'b-helvetica-22-blur-lowcontrast': { names: 0, numbers: 0, maxExtra: 99 },
-  'a-courier-26-noise-jpeg': { names: 0, numbers: 0, maxExtra: 99 },
-  'a-arial-20-35rows-rot4': { names: 0, numbers: 0, maxExtra: 99 },
-  'b-georgia-30-title-rot-3': { names: 0, numbers: 0, maxExtra: 99 },
-  'plain-noteworthy-34': { names: 0, numbers: 0, maxExtra: 99 },
-  'plain-bradley-32-rot-2': { names: 0, numbers: 0, maxExtra: 99 },
-  'a-helveticaneue-24-photo': { names: 0, numbers: 0, maxExtra: 99 },
-  'b-arial-26-rot5': { names: 0, numbers: 0, maxExtra: 99 },
+  'a-arial-20-35rows-rot4': { names: 95, numbers: 92, maxExtra: 1 },
+  'a-arial-24-rot3': { names: 95, numbers: 95, maxExtra: 1 },
+  'a-courier-26-noise-jpeg': { names: 91, numbers: 95, maxExtra: 1 },
+  'a-helvetica-26-clean': { names: 88, numbers: 95, maxExtra: 1 },
+  'a-helveticaneue-24-photo': { names: 95, numbers: 95, maxExtra: 1 },
+  'a-times-28-rot-5-title': { names: 95, numbers: 95, maxExtra: 1 },
+  'b-arial-26-rot5': { names: 95, numbers: 95, maxExtra: 1 },
+  'b-georgia-30-title-rot-3': { names: 95, numbers: 95, maxExtra: 1 },
+  'b-helvetica-22-blur-lowcontrast': { names: 92, numbers: 95, maxExtra: 1 },
+  'b-verdana-24-persp': { names: 95, numbers: 95, maxExtra: 1 },
+  'plain-bradley-32-rot-2': { names: 76, numbers: 95, maxExtra: 1 },
+  'plain-noteworthy-34': { names: 90, numbers: 95, maxExtra: 1 },
 };
 
 /** Tüm fikstürler üzerinden en düşük toplam oranlar (%). */
-const TOTAL_THRESHOLDS = { names: 0, numbers: 0 };
+const TOTAL_THRESHOLDS = { names: 95, numbers: 97 };
 
 const DIR = path.join(__dirname, '__fixtures__', 'accuracy');
 
@@ -74,6 +84,8 @@ function score(name: string, truth: Truth, parsed: ParsedStudent[]): Score {
   let names = 0;
   let numbers = 0;
   let matched = 0;
+  let lowRight = 0;
+  let lowWrong = 0;
   for (const expected of truth.students) {
     let best = -1;
     let bestDistance = Infinity;
@@ -94,6 +106,10 @@ function score(name: string, truth: Truth, parsed: ParsedStudent[]): Score {
     const got = parsed[best];
     if (got.fullName === expected.fullName) names += 1;
     if (got.number === expected.number) numbers += 1;
+    if (isLowConfidence(got)) {
+      if (got.fullName === expected.fullName && got.number === expected.number) lowRight += 1;
+      else lowWrong += 1;
+    }
     if (got.fullName !== expected.fullName || got.number !== expected.number) {
       misses.push(`  ${expected.number ?? '-'} ${expected.fullName}  ←  ${got.number ?? '-'} ${got.fullName} (${got.confidence ?? '?'})`);
     }
@@ -103,7 +119,7 @@ function score(name: string, truth: Truth, parsed: ParsedStudent[]): Score {
   });
   // Ayrıntı: OCR_ACCURACY_DETAIL=1 npx jest accuracy
   if (process.env.OCR_ACCURACY_DETAIL && misses.length > 0) console.log(`${name}\n${misses.join('\n')}`);
-  return { name, total: truth.students.length, names, numbers, extra: parsed.length - matched };
+  return { name, total: truth.students.length, names, numbers, extra: parsed.length - matched, lowRight, lowWrong };
 }
 
 const fixtureNames = fs
@@ -133,7 +149,7 @@ describe('OCR doğruluğu (Vision fikstürleri)', () => {
     const rows = scores.map(
       (s) =>
         `${s.name.padEnd(34)} ${String(s.total).padStart(3)}  ad ${String(pct(s.names, s.total)).padStart(5)}%  ` +
-        `no ${String(pct(s.numbers, s.total)).padStart(5)}%  fazla ${s.extra}`,
+        `no ${String(pct(s.numbers, s.total)).padStart(5)}%  fazla ${s.extra}  düşük güven ${s.lowWrong} yanlış / ${s.lowRight} doğru`,
     );
     const total = scores.reduce((n, s) => n + s.total, 0);
     const names = scores.reduce((n, s) => n + s.names, 0);

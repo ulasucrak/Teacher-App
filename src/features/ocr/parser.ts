@@ -451,6 +451,8 @@ function restoreDottedI(text: string, dotAware: boolean): string {
 function compatibleLetter(read: string, dict: string): boolean {
   // Büyük "I": noktası düşmüş "İ" ya da gerçek "ı" olabilir.
   if (read === 'I') return dict === 'i' || dict === 'ı';
+  // Noktası okunmuş "İ" kesindir.
+  if (read === 'İ') return dict === 'i';
   const lower = read.toLocaleLowerCase(LOCALE);
   // OCR "i" ile "ı"yı iki yönde de karıştırır ("Smaıl").
   if (lower === 'ı') return dict === 'ı' || dict === 'i';

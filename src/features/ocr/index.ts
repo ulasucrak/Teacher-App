@@ -5,8 +5,10 @@ export {
   foldTurkish,
   groupIntoRows,
   parseOcrResult,
+  parsePlainNameList,
   parsePlainText,
   parseRows,
+  restoreTurkishLetters,
   toTurkishTitleCase,
 } from './parser';
 export type { NameWarning, OcrResult, ParsedStudent } from './parser';
@@ -18,7 +20,9 @@ export {
   appendParsed,
   computeIssues,
   createManualRow,
+  isLowConfidence,
   issueLabels,
+  LOW_CONFIDENCE_THRESHOLD,
   toDrafts,
 } from './review';
 export type { ExistingStudent, ReviewRow, RowIssue, StudentDraft } from './review';
