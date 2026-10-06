@@ -12,7 +12,7 @@
 
 import { normalizeStudentName } from '@/features/students/name';
 
-import { isKnownDotlessName } from './trNames';
+import { asciiFoldLower, dictionarySpellings, isKnownDotlessName } from './trNames';
 
 // ---------------------------------------------------------------------------
 // Girdi tipleri (ML Kit `TextRecognitionResult` ile yapısal olarak uyumlu)
@@ -25,9 +25,27 @@ export interface OcrFrame {
   height: number;
 }
 
+export interface OcrPoint {
+  x: number;
+  y: number;
+}
+
+/** Aynı satırın başka bir okuması (Vision `topCandidates`). */
+export interface OcrCandidate {
+  text: string;
+  /** 0...1 */
+  confidence: number;
+}
+
 export interface OcrLine {
   text: string;
   frame?: OcrFrame;
+  /** Satırın dörtgeni (piksel, sol-üst orijin): sol-üst, sağ-üst, sağ-alt, sol-alt (ML Kit ile aynı). */
+  cornerPoints?: readonly OcrPoint[];
+  /** Okuma güveni 0...1 (Vision verir; ML Kit vermez). */
+  confidence?: number;
+  /** En iyi ilk okumalar (ilki `text`); parser sözlüğe en uyanı seçer. */
+  candidates?: readonly OcrCandidate[];
 }
 
 export interface OcrBlock {
@@ -53,6 +71,11 @@ export interface ParsedStudent {
   /** Türkçe başlık düzeninde ad soyad: "Selin Bayezit". */
   fullName: string;
   warnings: NameWarning[];
+  /**
+   * Satırın ad (ve okul no) hücrelerinin en düşük okuma güveni, 0...1. Yalnızca OCR güven
+   * bildirdiğinde (Vision) vardır; review.ts düşük güvenli satırı işaretler.
+   */
+  confidence?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -101,11 +124,19 @@ export function assessName(fullName: string, hadDigits = false): NameWarning[] {
 // Satır gruplama
 // ---------------------------------------------------------------------------
 
+/** Görsel satırın bir hücresi: okunan metin ve (varsa) okuma güveni. */
+export interface RowCell {
+  text: string;
+  confidence?: number;
+}
+
 interface PositionedLine {
   text: string;
-  top: number;
+  confidence?: number;
   left: number;
+  width: number;
   height: number;
+  centerX: number;
   centerY: number;
 }
 
@@ -115,37 +146,152 @@ function median(values: number[]): number {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+function quantile(values: number[], q: number): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.max(0, Math.floor(q * (sorted.length - 1))))];
+}
+
+/** Denenecek en büyük eğim (dy/dx): tan(7°) ≈ 0.123. */
+const MAX_SKEW_SLOPE = 0.123;
+const SKEW_STEP = 0.002;
+
 /**
- * Satırları dikey merkezlerine göre görsel satırlara toplar; her satırın hücreleri
- * soldan sağa sıralanır. Konum bilgisi yoksa ML Kit sırası korunur.
+ * Fotoğrafın baskın satır eğimini (dy/dx, piksel; sol-üst orijin) bulur. Her eğim için satır
+ * merkezleri o eğime göre "düzeltilir" (y' = y − eğim·x) ve yatayda ayrık satır parçalarının
+ * (tablo sütunları, ad ile numara) y' değerlerinin ne kadar çakıştığı puanlanır; en iyi eğim
+ * seçilir. Dik fotoğrafta 0 döner (belirgin bir iyileşme yoksa 0 tercih edilir).
  */
-export function groupIntoRows(result: OcrResult): string[][] {
-  const lines = result.blocks.flatMap((b) => b.lines).filter((l) => l.text.trim().length > 0);
-  if (lines.length === 0) return [];
-
-  const allFramed = lines.every((l) => l.frame && l.frame.height > 0);
-  if (!allFramed) return lines.map((l) => [l.text]);
-
-  const positioned: PositionedLine[] = lines.map((l) => {
-    const f = l.frame as OcrFrame;
-    return { text: l.text, top: f.top, left: f.left, height: f.height, centerY: f.top + f.height / 2 };
-  });
-  // Aynı satırdaki sütunlar: merkezler yarım satır yüksekliğinden yakınsa birleşir.
-  const tolerance = Math.max(median(positioned.map((p) => p.height)) * 0.5, 2);
-
-  positioned.sort((a, b) => a.centerY - b.centerY || a.left - b.left);
-
-  const rows: { centerY: number; members: PositionedLine[] }[] = [];
-  for (const line of positioned) {
-    const current = rows[rows.length - 1];
-    if (current && Math.abs(line.centerY - current.centerY) <= tolerance) {
-      current.members.push(line);
-      current.centerY = current.members.reduce((sum, m) => sum + m.centerY, 0) / current.members.length;
-    } else {
-      rows.push({ centerY: line.centerY, members: [line] });
+export function estimateSkew(lines: { centerX: number; centerY: number; width: number; height: number }[]): number {
+  if (lines.length < 4) return 0;
+  const sigma = Math.max(quantile(lines.map((l) => l.height), 0.25) * 0.3, 1);
+  // Yalnızca yatayda ayrık ve eğimle aynı satıra düşebilecek çiftler puanlanır.
+  const pairs: [number, number][] = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    for (let j = i + 1; j < lines.length; j += 1) {
+      const dx = lines[j].centerX - lines[i].centerX;
+      const gap = Math.abs(dx) - (lines[i].width + lines[j].width) / 2;
+      if (gap < 0) continue;
+      if (Math.abs(lines[j].centerY - lines[i].centerY) > Math.abs(dx) * MAX_SKEW_SLOPE + 3 * sigma) continue;
+      pairs.push([i, j]);
     }
   }
-  return rows.map((r) => [...r.members].sort((a, b) => a.left - b.left).map((m) => m.text));
+  if (pairs.length === 0) return 0;
+
+  const score = (slope: number) => {
+    let total = 0;
+    for (const [i, j] of pairs) {
+      const d = lines[j].centerY - lines[i].centerY - slope * (lines[j].centerX - lines[i].centerX);
+      total += Math.exp(-(d * d) / (2 * sigma * sigma));
+    }
+    return total;
+  };
+
+  const flat = score(0);
+  let best = 0;
+  let bestScore = flat;
+  const steps = Math.round(MAX_SKEW_SLOPE / SKEW_STEP);
+  for (let k = 1; k <= steps; k += 1) {
+    for (const slope of [k * SKEW_STEP, -k * SKEW_STEP]) {
+      const value = score(slope);
+      if (value > bestScore) {
+        best = slope;
+        bestScore = value;
+      }
+    }
+  }
+  // Küçük farklar gürültüdür: dik fotoğrafta gruplama eskisi gibi kalsın.
+  return bestScore > flat * 1.1 + 0.5 ? best : 0;
+}
+
+/** Kelimenin sözlük puanı: aynen sözlükte 2, yalnızca aksansız biçimi sözlükte 1. */
+function dictionaryScore(text: string): number {
+  let total = 0;
+  for (const word of text.split(/[^\p{L}]+/u)) {
+    if (word.length < 2) continue;
+    const lower = Array.from(word)
+      .map((c) => (c === 'I' ? 'ı' : c.toLocaleLowerCase(LOCALE)))
+      .join('');
+    const spellings = dictionarySpellings(asciiFoldLower(lower));
+    if (spellings.includes(lower) || spellings.includes(lower.replace(/ı/g, 'i'))) total += 2;
+    else if (spellings.length > 0) total += 1;
+  }
+  return total;
+}
+
+const digitsOf = (text: string) => text.replace(/\D/g, '');
+
+/**
+ * OCR'ın aday okumalarından sözlüğe en uyanını seçer. Aday yalnızca rakamları birebir
+ * aynıysa (numaralar asla değişmez) ve daha çok kelimesi sözlükte bulunuyorsa seçilir.
+ */
+export function pickCandidate(line: OcrLine): string {
+  const candidates = line.candidates ?? [];
+  if (candidates.length < 2) return line.text;
+  const digits = digitsOf(line.text);
+  let best = line.text;
+  let bestScore = dictionaryScore(line.text);
+  for (const candidate of candidates) {
+    if (candidate.text === line.text || digitsOf(candidate.text) !== digits) continue;
+    const value = dictionaryScore(candidate.text);
+    if (value > bestScore) {
+      best = candidate.text;
+      bestScore = value;
+    }
+  }
+  return best;
+}
+
+/**
+ * Satırları görsel satırlara toplar; her satırın hücreleri soldan sağa sıralanır. Eğik
+ * fotoğrafta önce satır eğimi bulunur (estimateSkew) ve gruplama düzeltilmiş konumla yapılır.
+ * Konum bilgisi yoksa OCR sırası korunur.
+ */
+export function groupIntoCells(result: OcrResult): RowCell[][] {
+  const lines = result.blocks.flatMap((b) => b.lines).filter((l) => l.text.trim().length > 0);
+  if (lines.length === 0) return [];
+  const cellOf = (l: OcrLine, text: string): RowCell =>
+    l.confidence === undefined ? { text } : { text, confidence: l.confidence };
+
+  const allFramed = lines.every((l) => l.frame && l.frame.height > 0);
+  if (!allFramed) return lines.map((l) => [cellOf(l, pickCandidate(l))]);
+
+  const positioned: (PositionedLine & { cell: RowCell })[] = lines.map((l) => {
+    const f = l.frame as OcrFrame;
+    return {
+      text: l.text,
+      cell: cellOf(l, pickCandidate(l)),
+      left: f.left,
+      width: f.width,
+      height: f.height,
+      centerX: f.left + f.width / 2,
+      centerY: f.top + f.height / 2,
+    };
+  });
+
+  const slope = estimateSkew(positioned);
+  // Eğik satırın eksene hizalı kutusu, eğim × genişlik kadar yüksektir; asıl yazı yüksekliği:
+  const trueHeights = positioned.map((p) => Math.max(p.height - p.width * Math.abs(slope), p.height * 0.3));
+  // Aynı satırdaki sütunlar: düzeltilmiş merkezler yarım satır yüksekliğinden yakınsa birleşir.
+  const tolerance = Math.max(median(trueHeights) * 0.5, 2);
+  const rowY = (p: PositionedLine) => p.centerY - slope * p.centerX;
+
+  const sorted = [...positioned].sort((a, b) => rowY(a) - rowY(b) || a.left - b.left);
+  const rows: { y: number; members: typeof positioned }[] = [];
+  for (const line of sorted) {
+    const current = rows[rows.length - 1];
+    if (current && Math.abs(rowY(line) - current.y) <= tolerance) {
+      current.members.push(line);
+      current.y = current.members.reduce((sum, m) => sum + rowY(m), 0) / current.members.length;
+    } else {
+      rows.push({ y: rowY(line), members: [line] });
+    }
+  }
+  return rows.map((r) => [...r.members].sort((a, b) => a.left - b.left).map((m) => m.cell));
+}
+
+/** groupIntoCells'in yalnızca metinleri (eski imza). */
+export function groupIntoRows(result: OcrResult): string[][] {
+  return groupIntoCells(result).map((cells) => cells.map((c) => c.text));
 }
 
 // ---------------------------------------------------------------------------
@@ -301,6 +447,45 @@ function restoreDottedI(text: string, dotAware: boolean): string {
   return text.split('-').map(restoreDottedIPart).join('-');
 }
 
+/** Okunan harf `read`, sözlükteki `dict` harfiyle çelişmiyor mu (OCR yalnızca işaret düşürür)? */
+function compatibleLetter(read: string, dict: string): boolean {
+  // Büyük "I": noktası düşmüş "İ" ya da gerçek "ı" olabilir.
+  if (read === 'I') return dict === 'i' || dict === 'ı';
+  const lower = read.toLocaleLowerCase(LOCALE);
+  return lower === dict || lower === asciiFoldLower(dict);
+}
+
+/**
+ * Türkçe harf geri getirme: kelimenin aksansız biçimi sözlükte (trNames) okunan harflerle
+ * çelişmeyen TEK bir yazımla eşleşiyorsa o yazımı, okunan kelimenin büyük/küçük düzeniyle
+ * döndürür: "Irem" → "İrem", "DOGAN" → "DOĞAN", "Ozturk" → "Öztürk", "Sahin" → "Şahin".
+ * Sözlükte yoksa ya da belirsizse null (kelime okunduğu gibi kalır).
+ * `dotAware`: fotoğrafta "İ" okunduysa, belirsiz "I" için "ı"lı yazım tercih edilir.
+ */
+export function restoreTurkishLetters(word: string, dotAware = false): string | null {
+  const chars = Array.from(word);
+  if (chars.length < 2 || !chars.every((c) => /\p{L}/u.test(c))) return null;
+  const key = asciiFoldLower(chars.map((c) => (c === 'I' ? 'i' : c.toLocaleLowerCase(LOCALE))).join(''));
+  if (Array.from(key).length !== chars.length) return null;
+  let matches = dictionarySpellings(key).filter((spelling) => {
+    const letters = Array.from(spelling);
+    return letters.length === chars.length && letters.every((d, i) => compatibleLetter(chars[i], d));
+  });
+  if (matches.length > 1 && dotAware) {
+    matches = matches.filter((spelling) => Array.from(spelling).every((d, i) => chars[i] !== 'I' || d === 'ı'));
+  }
+  if (matches.length !== 1) return null;
+  const [spelling] = matches;
+  const upper = word === word.toLocaleUpperCase(LOCALE) && word !== word.toLocaleLowerCase(LOCALE);
+  if (upper) return spelling.toLocaleUpperCase(LOCALE);
+  const first = chars[0];
+  if (first !== first.toLocaleLowerCase(LOCALE)) {
+    const [head, ...rest] = Array.from(spelling);
+    return head.toLocaleUpperCase(LOCALE) + rest.join('');
+  }
+  return spelling;
+}
+
 /** Ad kelimesindeki OCR karışıklıklarını düzeltir: "Y1LMAZ" → "YILMAZ", "lŞIK" → "IŞIK". */
 function cleanNameToken(token: string, dotAware = true): NameToken | null {
   let text = token.replace(/[^\p{L}\d'’\-.]/gu, '').replace(/^[-'.’]+|[-'’]+$/g, '');
@@ -331,7 +516,12 @@ function cleanNameToken(token: string, dotAware = true): NameToken | null {
     // Küçük harf kelimenin ortasındaki "I" aslında "l": "SeIin" → "Selin".
     text = text.replace(/(?<=\p{Ll})I|I(?=\p{Ll}{2})(?<!^I)/gu, 'l');
   }
-  return { text: restoreDottedI(text, dotAware), hadDigits };
+  // Önce sözlük (Türkçe harfleri geri getirir), bulunamazsa "I" → "İ" kuralları.
+  const restored = text
+    .split('-')
+    .map((part) => restoreTurkishLetters(part, dotAware) ?? restoreDottedI(part, dotAware))
+    .join('-');
+  return { text: restored, hadDigits };
 }
 
 interface RawRow {
@@ -342,6 +532,15 @@ interface RawRow {
   /** İlk sayının ardından "." ")" "-" geldi mi (düz listede sıra numarası işareti). */
   punctuatedLead: boolean;
   nameTokens: NameToken[];
+  /** Harf içeren hücrelerin en düşük okuma güveni. */
+  nameConfidence?: number;
+  /** Rakam içeren hücreler (okul numarasının güvenini bulmak için). */
+  numberCells: RowCell[];
+}
+
+function minConfidence(cells: RowCell[]): number | undefined {
+  const values = cells.map((c) => c.confidence).filter((c): c is number => c !== undefined);
+  return values.length > 0 ? Math.min(...values) : undefined;
 }
 
 function tokenize(cells: string[]): string[] {
@@ -360,7 +559,8 @@ function tokenize(cells: string[]): string[] {
   );
 }
 
-function parseRow(cells: string[], dotAware: boolean): RawRow | null {
+function parseRow(rowCells: RowCell[], dotAware: boolean): RawRow | null {
+  const cells = rowCells.map((c) => c.text);
   const rowText = cells.join(' ');
   if (DATE_RE.test(rowText) || YEAR_RANGE_RE.test(rowText)) return null;
 
@@ -396,7 +596,14 @@ function parseRow(cells: string[], dotAware: boolean): RawRow | null {
 
   const letterCount = nameTokens.reduce((n, t) => n + t.text.replace(/[^\p{L}]/gu, '').length, 0);
   if (letterCount < 2) return null;
-  return { numbers, trailingNumbers, punctuatedLead, nameTokens };
+  return {
+    numbers,
+    trailingNumbers,
+    punctuatedLead,
+    nameTokens,
+    nameConfidence: minConfidence(rowCells.filter((c) => (c.text.match(/\p{L}/gu) ?? []).length >= 2)),
+    numberCells: rowCells.filter((c) => /\d/.test(c.text)),
+  };
 }
 
 /**
@@ -425,16 +632,25 @@ function singleNumbersAreOrdinals(rows: RawRow[]): boolean {
  * İki sayılı (S.No + Okul No) tabloda tek sayılı satır: sıra numarası okunmamış olabilir.
  * Komşu satırın sıra numarasından beklenen değer tutmuyor ve sayı komşunun okul numarasıyla
  * aynı uzunluktaysa sayı okul numarasıdır ("1 | 112 | SELİN" satırında "1" kaçırılmış).
+ * Kısa sayılar (1–2 basamak) sıra numarası da olabilir (ör. arada okunmamış satır varken
+ * "7"): onlar ancak her iki komşu da iki sayılıysa ve hiçbirinin sırasına uymuyorsa okul no sayılır.
  */
 function isMissedOrdinalRow(rows: RawRow[], index: number): boolean {
   const value = rows[index].numbers[0];
+  const isDouble = (row: RawRow | undefined): row is RawRow => !!row && row.numbers.length >= 2;
   const prev = rows[index - 1];
   const next = rows[index + 1];
-  const neighbor = prev && prev.numbers.length >= 2 ? prev : next && next.numbers.length >= 2 ? next : null;
-  if (!neighbor) return false;
-  const expected = Number(neighbor.numbers[0]) + (neighbor === prev ? 1 : -1);
-  const school = neighbor.numbers[neighbor.numbers.length - 1];
-  return Number(value) !== expected && value.length === school.length;
+  const neighbors = [
+    ...(isDouble(prev) ? [{ row: prev, step: 1 }] : []),
+    ...(isDouble(next) ? [{ row: next, step: -1 }] : []),
+  ];
+  if (neighbors.length === 0) return false;
+  if (value.length < 3 && neighbors.length < 2) return false;
+  return neighbors.every(({ row, step }) => {
+    const expected = Number(row.numbers[0]) + step;
+    const school = row.numbers[row.numbers.length - 1];
+    return Number(value) !== expected && value.length === school.length;
+  });
 }
 
 /** Satırın okul numarası (yoksa null). */
@@ -452,8 +668,13 @@ function keyOf(student: ParsedStudent): string {
 
 /** Görsel satırlardan (hücre listeleri) öğrenci listesi üretir. */
 export function parseRows(rows: string[][]): ParsedStudent[] {
+  return parseCellRows(rows.map((cells) => cells.map((text) => ({ text }))));
+}
+
+/** parseRows'un güven bilgili sürümü: hücre güvenleri öğrencinin `confidence` alanına geçer. */
+export function parseCellRows(rows: RowCell[][]): ParsedStudent[] {
   // Fotoğrafın herhangi bir yerinde "İ" okunduysa OCR noktaları ayırt ediyordur.
-  const dotAware = rows.some((cells) => cells.some((c) => c.includes('İ')));
+  const dotAware = rows.some((cells) => cells.some((c) => c.text.includes('İ')));
   const raw = rows.map((cells) => parseRow(cells, dotAware)).filter((r): r is RawRow => r !== null);
   const singlesAreOrdinals = singleNumbersAreOrdinals(raw);
 
@@ -466,6 +687,12 @@ export function parseRows(rows: string[][]): ParsedStudent[] {
     const fullName = toTurkishTitleCase(row.nameTokens.map((t) => t.text).join(' '));
     const hadDigits = row.nameTokens.some((t) => t.hadDigits);
     const student: ParsedStudent = { number, fullName, warnings: assessName(fullName, hadDigits) };
+    const numberCell = number ? row.numberCells.filter((c) => digitsOf(c.text).includes(number)) : [];
+    const confidence = minConfidence([
+      ...(row.nameConfidence === undefined ? [] : [{ text: '', confidence: row.nameConfidence }]),
+      ...numberCell,
+    ]);
+    if (confidence !== undefined) student.confidence = confidence;
 
     const key = keyOf(student);
     if (seen.has(key)) continue;
@@ -475,9 +702,9 @@ export function parseRows(rows: string[][]): ParsedStudent[] {
   return students;
 }
 
-/** ML Kit sonucunu öğrenci listesine çevirir. */
+/** ML Kit / Vision sonucunu öğrenci listesine çevirir. */
 export function parseOcrResult(result: OcrResult): ParsedStudent[] {
-  return parseRows(groupIntoRows(result));
+  return parseCellRows(groupIntoCells(result));
 }
 
 /** Konum bilgisi olmayan düz metin (satır başına bir öğrenci). */
@@ -489,4 +716,24 @@ export function parsePlainText(text: string): ParsedStudent[] {
       .filter(Boolean)
       .map((l) => [l]),
   );
+}
+
+/**
+ * Yapıştırılan / yazılan düz liste ("Listeyi yapıştır"): satır başına bir öğrenci; virgül ve
+ * noktalı virgül de ayraçtır ("Ali Veli, Ayşe Kaya; Can Su"). İsteğe bağlı baştaki numaralar:
+ * "12. Ali Veli", "12 - Ali Veli", "12) Ali Veli", "512 Ali Veli" (sıra no / okul no ayrımı
+ * parseRows kurallarıyla). Ayraçtan sonra yalnızca sayı gelirse önceki adın okul numarasıdır
+ * ("Ali Veli, 512"). Başlık satırları ("Adı Soyadı") ve yinelemeler atılır.
+ */
+export function parsePlainNameList(text: string): ParsedStudent[] {
+  const items: string[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    line.split(/[;,]/).forEach((segment, index) => {
+      const item = segment.replace(/\s+/g, ' ').trim();
+      if (!item) return;
+      if (index > 0 && /^\d+$/.test(item) && items.length > 0) items[items.length - 1] += ` ${item}`;
+      else items.push(item);
+    });
+  }
+  return parseRows(items.map((item) => [item]));
 }
