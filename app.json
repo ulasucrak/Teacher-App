@@ -31,7 +31,6 @@
     },
     "plugins": [
       "expo-router",
-      "./plugins/withIosSceneLifecycle",
       [
         "expo-splash-screen",
         {
