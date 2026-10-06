@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
+import { colors } from '@/theme';
+
 import { Button } from './Button';
 
 describe('Button', () => {
@@ -38,5 +40,10 @@ describe('Button', () => {
       await render(<Button label={`Eylem ${variant}`} variant={variant} onPress={() => undefined} />);
       expect(screen.getByRole('button', { name: `Eylem ${variant}` })).toBeOnTheScreen();
     }
+  });
+
+  it('uses the yellow pencil fill for the primary action and passes testID', async () => {
+    await render(<Button label="Devam" onPress={() => undefined} testID="next" />);
+    expect(screen.getByTestId('next')).toHaveStyle({ backgroundColor: colors.accent });
   });
 });

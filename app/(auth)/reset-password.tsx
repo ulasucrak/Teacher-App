@@ -81,8 +81,8 @@ export default function ResetPasswordScreen() {
     return (
       <AuthPage title="Bağlantı kullanılamıyor" description="Şifrenizi sıfırlamak için yeni bir bağlantı isteyin." back={false}>
         <Banner kind="error" message={phase.message} />
-        <Button label="Yeni bağlantı iste" onPress={() => router.replace('/forgot-password')} />
-        <Button label="Giriş ekranına dön" variant="ghost" onPress={() => router.replace('/login')} />
+        <Button label="Yeni bağlantı iste" onPress={() => router.replace('/forgot-password')} testID="reset-request-new" />
+        <Button label="Giriş ekranına dön" variant="ghost" onPress={() => router.replace('/login')} testID="reset-to-login" />
       </AuthPage>
     );
   }
@@ -103,6 +103,7 @@ export default function ResetPasswordScreen() {
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"
+        testID="reset-password"
         returnKeyType="next"
         onSubmitEditing={() => confirmRef.current?.focus()}
         submitBehavior="submit"
@@ -120,10 +121,11 @@ export default function ResetPasswordScreen() {
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"
+        testID="reset-confirm"
         returnKeyType="go"
         onSubmitEditing={submit}
       />
-      <Button label="Şifreyi kaydet" onPress={submit} loading={submitting} />
+      <Button label="Şifreyi kaydet" onPress={submit} loading={submitting} testID="reset-submit" />
     </AuthPage>
   );
 }
