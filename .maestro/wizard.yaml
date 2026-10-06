@@ -30,7 +30,9 @@ env:
     id: "collect-paste-input"
 # Virgül de ayraçtır; satır sonu yazmak klavyede güvenilir değil.
 - inputText: "Ayşe Yılmaz, İlker Doğan, Şule Ağaoğlu, Gökhan Çelik, İpek Öztürk"
-- hideKeyboard
+# hideKeyboard yerine (iOS 27'de güvenilir değil, bkz. auth.yaml) alanın ipucu metnine dokunulur;
+# çok satırlı alanda Enter satır sonu ekler.
+- tapOn: "Her satıra bir öğrenci.*"
 - tapOn:
     id: "collect-paste-add"
 - assertVisible: "Ayşe Yılmaz.*"

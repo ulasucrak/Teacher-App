@@ -9,7 +9,8 @@ appId: com.ulas.teacherapp
 - tapOn:
     id: "login-password"
 - inputText: ${PASSWORD}
-- hideKeyboard
+# hideKeyboard yerine (iOS 27'de güvenilir değil, bkz. auth.yaml) açıklama metnine dokunulur.
+- tapOn: "Yoklama ve ödev kontrolü, ders arasında birkaç dokunuşla."
 - tapOn:
     id: "login-submit"
 - runFlow: dismiss-save-password.yaml
