@@ -5,7 +5,7 @@ import { toWebSymbol } from './iconMap';
 import type { SymbolIconProps } from './SymbolIcon';
 
 /** Web'de SymbolView Material Symbols yazı tipini kullanır; ağırlık `android` anahtarından okunur. */
-const symbolWeight = { android: androidMedium } as const;
+const symbolWeight = { ios: 'medium', android: androidMedium } as const;
 
 /** Web sürümü: SF Symbols yok; aynı ikonun Material Symbols karşılığı çizilir. */
 export function SymbolIcon({ symbol, size, color, style }: SymbolIconProps) {

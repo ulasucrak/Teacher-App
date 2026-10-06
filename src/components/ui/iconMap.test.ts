@@ -37,7 +37,7 @@ describe('web icon mapping', () => {
   });
 
   it('maps every SF Symbol name used in src', () => {
-    const mapped = new Set(Object.values(allMaps).map((s) => s.ios));
+    const mapped = new Set<string>(Object.values(allMaps).map((s) => String(s.ios)));
     const used = new Set<string>();
     for (const file of sourceFiles(SRC)) {
       for (const match of fs.readFileSync(file, 'utf8').matchAll(/\{\s*ios:\s*'([^']+)',\s*android:\s*'/g)) used.add(match[1]);
