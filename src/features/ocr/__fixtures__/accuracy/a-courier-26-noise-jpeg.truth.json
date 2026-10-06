@@ -1,0 +1,33 @@
+{
+  "description": "e-Okul A, Courier 26, gren + yoğun JPEG",
+  "students": [
+    {"number": "111", "fullName": "Görkem Ateş"},
+    {"number": "131", "fullName": "İsmet Asya Aydın"},
+    {"number": "134", "fullName": "İbrahim Güneş"},
+    {"number": "276", "fullName": "Pınar İpek"},
+    {"number": "534", "fullName": "Hülya Çınar Aydın"},
+    {"number": "703", "fullName": "Tuğrul Ünal"},
+    {"number": "974", "fullName": "Zümra Kara"},
+    {"number": "984", "fullName": "Işıl Şimşek"},
+    {"number": "985", "fullName": "Efe Yıldız"},
+    {"number": "993", "fullName": "Aslı Çiftçi"},
+    {"number": "1051", "fullName": "Merve Üçışık"},
+    {"number": "1159", "fullName": "Çınar Kurt"},
+    {"number": "1215", "fullName": "Deniz Yalçın"},
+    {"number": "1258", "fullName": "Çınar Yılmaz"},
+    {"number": "1299", "fullName": "İsmail İpek"},
+    {"number": "1587", "fullName": "Taha Türkmen"},
+    {"number": "1753", "fullName": "Selim Özer"},
+    {"number": "1772", "fullName": "Asya Kara"},
+    {"number": "1850", "fullName": "Zeynep Tekin"},
+    {"number": "1932", "fullName": "Duru Taha Ünal"},
+    {"number": "2050", "fullName": "Gülşen Çağlayık"},
+    {"number": "2058", "fullName": "Ceren Ekinci"},
+    {"number": "2124", "fullName": "Burak Ateş"},
+    {"number": "2127", "fullName": "Tuğrul Kılıç"},
+    {"number": "2202", "fullName": "Oğuzhan Gökçeoğlu"},
+    {"number": "2213", "fullName": "Kerem Aktaş"},
+    {"number": "2301", "fullName": "Selin Çağrı Öztürk"},
+    {"number": "2331", "fullName": "Öykü Coşkun"}
+  ]
+}

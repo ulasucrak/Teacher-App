@@ -1,0 +1,29 @@
+{
+  "description": "Düz sıra numaralı liste, Noteworthy 34 (el yazısı benzeri)",
+  "students": [
+    {"number": null, "fullName": "Gökçe Yıldırım"},
+    {"number": null, "fullName": "Miraç Koç"},
+    {"number": null, "fullName": "Nazlı Öğüt"},
+    {"number": null, "fullName": "Tarık Uçar"},
+    {"number": null, "fullName": "Rümeysa Yalçın"},
+    {"number": null, "fullName": "Dilşad Uğurlu"},
+    {"number": null, "fullName": "Berk Güzel"},
+    {"number": null, "fullName": "Melis Sarı"},
+    {"number": null, "fullName": "İpek Dönmez"},
+    {"number": null, "fullName": "Taha Toprak Ateş"},
+    {"number": null, "fullName": "Miraç Özer"},
+    {"number": null, "fullName": "Mehmet Yıldız"},
+    {"number": null, "fullName": "Ece Karaağaç"},
+    {"number": null, "fullName": "Mehmet Kaya"},
+    {"number": null, "fullName": "Enes Erdoğan"},
+    {"number": null, "fullName": "Emre İlhan"},
+    {"number": null, "fullName": "Ahmet Uğurlu"},
+    {"number": null, "fullName": "İlker Koç"},
+    {"number": null, "fullName": "Çağrı Erdoğan"},
+    {"number": null, "fullName": "Özlem Nehir Çınar"},
+    {"number": null, "fullName": "Furkan Gökçeoğlu"},
+    {"number": null, "fullName": "Öykü Kılıç"},
+    {"number": null, "fullName": "Serkan Efe Üçışık"},
+    {"number": null, "fullName": "Yağız Çağlayık"}
+  ]
+}

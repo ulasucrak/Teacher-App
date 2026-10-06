@@ -1,15 +1,21 @@
 import {
   assessName,
+  estimateSkew,
   foldTurkish,
+  groupIntoCells,
   groupIntoRows,
+  parseCellRows,
   parseOcrResult,
+  parsePlainNameList,
   parsePlainText,
   parseRows,
+  pickCandidate,
+  restoreTurkishLetters,
   toTurkishTitleCase,
   type OcrBlock,
   type OcrResult,
 } from './parser';
-import { isKnownDotlessName, KNOWN_DOTLESS_COUNT } from './trNames';
+import { dictionarySpellings, isKnownDotlessName, KNOWN_DOTLESS_COUNT, TR_NAME_WORDS } from './trNames';
 
 // ---------------------------------------------------------------------------
 // Fixture yardımcıları: ML Kit'in tablo sütunlarını ayrı bloklar olarak okumasını taklit eder.
@@ -420,5 +426,247 @@ describe('groupIntoRows', () => {
 
   it('boş sonuçta boş liste döner', () => {
     expect(parseOcrResult({ blocks: [] })).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Eğik fotoğraf (deskew)
+// ---------------------------------------------------------------------------
+
+/** Eğimi `slope` (dy/dx) olan tabloyu taklit eder: her hücre x konumuna göre kayar. */
+function skewedTable(slope: number, rows: string[][], columns = [60, 200, 480, 1200]): OcrResult {
+  const lines = rows.flatMap((cells, r) =>
+    cells.map((text, c) => {
+      const left = columns[c];
+      const width = 14 * text.length;
+      const centerY = 200 + r * 40 + slope * (left + width / 2);
+      // Eğik satırın eksene hizalı kutusu genişlik × eğim kadar yüksektir.
+      const height = LINE_HEIGHT + width * Math.abs(slope);
+      return { text, frame: { left, top: centerY - height / 2, width, height } };
+    }),
+  );
+  return { blocks: lines.map((l) => ({ lines: [l] })) };
+}
+
+const SKEW_ROWS = [
+  ['1', '112', 'SELİN AK', 'Kız'],
+  ['2', '245', 'CAN ER', 'Erkek'],
+  ['3', '318', 'DENİZ UÇAR', 'Kız'],
+  ['4', '402', 'EMRE TAŞ', 'Erkek'],
+  ['5', '517', 'ECE SU', 'Kız'],
+  ['6', '623', 'AYŞE NUR', 'Kız'],
+];
+
+describe('eğik fotoğraf', () => {
+  it.each([0.07, -0.0875, 0.035])('eğim %p: satırları doğru birleştirir', (slope) => {
+    const result = skewedTable(slope, SKEW_ROWS);
+    expect(groupIntoRows(result)).toEqual(SKEW_ROWS);
+    expect(parseOcrResult(result).map((s) => s.number)).toEqual(['112', '245', '318', '402', '517', '623']);
+  });
+
+  it('eğimi bulur; dik tabloda 0 döner', () => {
+    const lines = (slope: number) =>
+      skewedTable(slope, SKEW_ROWS).blocks.map((b) => {
+        const f = b.lines[0].frame!;
+        return { centerX: f.left + f.width / 2, centerY: f.top + f.height / 2, width: f.width, height: f.height };
+      });
+    expect(estimateSkew(lines(0))).toBe(0);
+    expect(estimateSkew(lines(0.07))).toBeCloseTo(0.07, 2);
+    expect(estimateSkew(lines(-0.06))).toBeCloseTo(-0.06, 2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Türkçe harf geri getirme (sözlük)
+// ---------------------------------------------------------------------------
+
+describe('restoreTurkishLetters', () => {
+  it.each([
+    ['Irem', 'İrem'],
+    ['Ibrahim', 'İbrahim'],
+    ['Dogan', 'Doğan'],
+    ['DOGAN', 'DOĞAN'],
+    ['Ozturk', 'Öztürk'],
+    ['Sahin', 'Şahin'],
+    ['CAGRI', 'ÇAĞRI'],
+    ['SELIN', 'SELİN'],
+    ['YILMAZ', 'YILMAZ'],
+    ['gunes', 'güneş'],
+    ['Smaıl', 'İsmail'],
+    ['Brahim', 'İbrahim'],
+    ['Rem', 'İrem'],
+  ])('%s → %s', (read, expected) => {
+    expect(restoreTurkishLetters(read)).toBe(expected);
+  });
+
+  it('sözlükte olmayan kelimeye dokunmaz', () => {
+    expect(restoreTurkishLetters('Dagdelenoglu')).toBeNull();
+    expect(restoreTurkishLetters('Xyz')).toBeNull();
+  });
+
+  it('okunan Türkçe harfle çelişen yazımı seçmez', () => {
+    // "Şen" sözlükte; "Sen" okunsa da "Şen" seçilir, ama "Çen" okunduysa değil.
+    expect(restoreTurkishLetters('Sen')).toBe('Şen');
+    expect(restoreTurkishLetters('Çen')).toBeNull();
+  });
+
+  it('iki yazımı da yaygın kelimede belirsiz kalır; fotoğrafta İ okunduysa ı seçilir', () => {
+    expect(restoreTurkishLetters('IRMAK')).toBeNull();
+    expect(restoreTurkishLetters('IRMAK', true)).toBe('IRMAK');
+    expect(restoreTurkishLetters('İRMAK')).toBe('İRMAK');
+  });
+
+  it('parser adları sözlükle düzeltir, bilinmeyenleri okunduğu gibi bırakır', () => {
+    expect(names(parseRows([['1', '12', 'IREM OZTURK'], ['2', '13', 'Mert Dagdelen'], ['3', '14', 'Cagri Sahin']]))).toEqual([
+      'İrem Öztürk',
+      'Mert Dagdelen',
+      'Çağrı Şahin',
+    ]);
+  });
+
+  it('sözlük ~900 kelime; belirsiz aksansız biçimler bilinçli olarak az', () => {
+    expect(TR_NAME_WORDS.length).toBeGreaterThanOrEqual(800);
+    expect(new Set(TR_NAME_WORDS).size).toBe(TR_NAME_WORDS.length);
+    expect(dictionarySpellings('irmak')).toEqual(expect.arrayContaining(['irmak', 'ırmak']));
+    for (const word of TR_NAME_WORDS) expect(word).toBe(word.toLocaleLowerCase('tr-TR'));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// OCR aday okumaları ve güven
+// ---------------------------------------------------------------------------
+
+describe('pickCandidate', () => {
+  it('sözlüğe daha çok uyan adayı seçer', () => {
+    const picked = pickCandidate({
+      text: 'Ozkanù',
+      candidates: [
+        { text: 'Ozkanù', confidence: 0.5 },
+        { text: 'Özkan', confidence: 0.3 },
+      ],
+    });
+    expect(picked).toBe('Özkan');
+  });
+
+  it('rakamları farklı adayı asla seçmez', () => {
+    expect(
+      pickCandidate({
+        text: '313 SELIN',
+        candidates: [
+          { text: '313 SELIN', confidence: 1 },
+          { text: '31 SELİN', confidence: 0.3 },
+        ],
+      }),
+    ).toBe('313 SELIN');
+  });
+
+  it('aday yoksa metni döndürür', () => {
+    expect(pickCandidate({ text: 'Ali Veli' })).toBe('Ali Veli');
+  });
+});
+
+describe('satır güveni', () => {
+  it('ad ve okul no hücrelerinin en düşük güvenini taşır; sıra no hücresini saymaz', () => {
+    const students = parseCellRows([
+      [{ text: '1', confidence: 0.3 }, { text: '112', confidence: 1 }, { text: 'SELİN AK', confidence: 1 }],
+      [{ text: '2', confidence: 1 }, { text: '245', confidence: 0.5 }, { text: 'CAN ER', confidence: 1 }],
+      [{ text: '3', confidence: 1 }, { text: '318', confidence: 1 }, { text: 'DENİZ UÇAR', confidence: 0.3 }],
+    ]);
+    expect(students.map((s) => s.confidence)).toEqual([1, 0.5, 0.3]);
+  });
+
+  it('güven bilinmiyorsa alan yoktur (ML Kit)', () => {
+    expect(parseRows([['1', '112', 'SELİN AK']])[0]).not.toHaveProperty('confidence');
+  });
+
+  it('groupIntoCells güveni hücreye taşır', () => {
+    const cells = groupIntoCells({
+      blocks: [{ lines: [{ ...line('112', 100, 20), confidence: 0.5 }, line('SELİN AK', 100, 120)] }],
+    });
+    expect(cells).toEqual([[{ text: '112', confidence: 0.5 }, { text: 'SELİN AK' }]]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Kaçırılmış sıra numarası
+// ---------------------------------------------------------------------------
+
+describe('kaçırılmış sıra numarası', () => {
+  it('arka arkaya birkaç satırda S.No okunmasa da okul numaraları korunur', () => {
+    const result = parseRows([
+      ['107', 'GÖKHAN AK'],
+      ['174', 'CAN ER'],
+      ['325', 'DENİZ UÇAR'],
+      ['4', '434', 'EMRE TAŞ'],
+      ['5', '441', 'ECE SU'],
+      ['6', '460', 'ALİ KAYA'],
+    ]);
+    expect(result.map((s) => s.number)).toEqual(['107', '174', '325', '434', '441', '460']);
+  });
+
+  it('aradan satır kaçınca gelen tek kısa sıra numarasını okul no sanmaz', () => {
+    // 6. satır hiç okunmadı; "7" sıra numarasıdır, okul no "71" ile aynı uzunlukta olsa bile.
+    const result = parseRows([
+      ['4', '45', 'EMRE TAŞ'],
+      ['5', '52', 'ECE SU'],
+      ['7', 'ALİ KAYA'],
+      ['8', '71', 'CAN ER'],
+      ['9', '84', 'DENİZ UÇAR'],
+    ]);
+    expect(result.map((s) => s.number)).toEqual(['45', '52', null, '71', '84']);
+  });
+
+  it('tek komşulu kısa sayı okul no sayılmaz', () => {
+    const result = parseRows([
+      ['3', 'ALİ KAYA'],
+      ['2', '45', 'EMRE TAŞ'],
+      ['3', '52', 'ECE SU'],
+    ]);
+    expect(result[0].number).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Yapıştırılan düz liste
+// ---------------------------------------------------------------------------
+
+describe('parsePlainNameList', () => {
+  it('satır başına bir ad; sıra numaralarını atar', () => {
+    expect(parsePlainNameList('1. Ali Veli\n2 - Ayşe Kaya\n3) Can Su\n\n4 Deniz Ak')).toEqual([
+      { number: null, fullName: 'Ali Veli', warnings: [] },
+      { number: null, fullName: 'Ayşe Kaya', warnings: [] },
+      { number: null, fullName: 'Can Su', warnings: [] },
+      { number: null, fullName: 'Deniz Ak', warnings: [] },
+    ]);
+  });
+
+  it('virgül ve noktalı virgül ayraçtır', () => {
+    expect(names(parsePlainNameList('ali veli, AYŞE KAYA; Can Su'))).toEqual(['Ali Veli', 'Ayşe Kaya', 'Can Su']);
+  });
+
+  it('sıralı olmayan baştaki numaralar okul numarasıdır', () => {
+    expect(parsePlainNameList('512 Ali Veli\r\n318 Ayşe Kaya\r\n1043 Can Su').map((s) => s.number)).toEqual([
+      '512',
+      '318',
+      '1043',
+    ]);
+  });
+
+  it('ayraçtan sonra gelen tek sayı önceki adın okul numarasıdır', () => {
+    expect(parsePlainNameList('Ali Veli, 512\nAyşe Kaya, 318')).toEqual([
+      { number: '512', fullName: 'Ali Veli', warnings: [] },
+      { number: '318', fullName: 'Ayşe Kaya', warnings: [] },
+    ]);
+  });
+
+  it('başlık satırlarını, boş satırları ve yinelemeleri atar; Türkçe harfleri düzeltir', () => {
+    expect(names(parsePlainNameList('Adı Soyadı\n\nIrem Ozturk\nİrem Öztürk\n'))).toEqual(['İrem Öztürk']);
+  });
+
+  it('sekmeyle ayrılmış (tablodan kopyalanan) satırları okur', () => {
+    expect(parsePlainNameList('512\tAli Veli\n318\tAyşe Kaya').map((s) => [s.number, s.fullName])).toEqual([
+      ['512', 'Ali Veli'],
+      ['318', 'Ayşe Kaya'],
+    ]);
   });
 });

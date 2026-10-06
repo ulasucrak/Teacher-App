@@ -12,6 +12,16 @@ struct VisionTextObservation {
   let y: Double
   let width: Double
   let height: Double
+  /// En iyi ilk `maxCandidates` okuma (ilki `text` ile aynı); parser sözlüğe en uyanı seçer.
+  let candidates: [VisionTextCandidate]
+  /// Satırın döndürülmüş dörtgeni (normalize, SOL-ALT orijinli): sol-üst, sağ-üst, sağ-alt,
+  /// sol-alt. Eğik fotoğrafta satır eğimini bulmak için kullanılır.
+  let corners: [(x: Double, y: Double)]
+}
+
+struct VisionTextCandidate {
+  let text: String
+  let confidence: Float
 }
 
 struct VisionTextResult {
@@ -30,6 +40,9 @@ enum VisionTextReaderError: Error {
 /// Yalnızca Foundation/ImageIO/Vision kullanır (UIKit ya da Expo yok): hem iOS modülü
 /// hem de macOS'ta bağımsız kalite ölçümü aynı kodu derler.
 enum VisionTextReader {
+  /// Gözlem başına döndürülen aday okuma sayısı (Vision en fazla 10 verir).
+  static let maxCandidates = 3
+
   static func recognize(
     uri: String,
     languages: [String],
@@ -83,15 +96,19 @@ enum VisionTextReader {
     }
 
     let observations: [VisionTextObservation] = (request.results ?? []).compactMap { observation in
-      guard let candidate = observation.topCandidates(1).first else { return nil }
+      let top = observation.topCandidates(maxCandidates)
+      guard let candidate = top.first else { return nil }
       let box = observation.boundingBox
+      let corners = [observation.topLeft, observation.topRight, observation.bottomRight, observation.bottomLeft]
       return VisionTextObservation(
         text: candidate.string,
         confidence: candidate.confidence,
         x: Double(box.origin.x),
         y: Double(box.origin.y),
         width: Double(box.size.width),
-        height: Double(box.size.height)
+        height: Double(box.size.height),
+        candidates: top.map { VisionTextCandidate(text: $0.string, confidence: $0.confidence) },
+        corners: corners.map { (x: Double($0.x), y: Double($0.y)) }
       )
     }
 

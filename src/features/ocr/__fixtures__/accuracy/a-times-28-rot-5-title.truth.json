@@ -1,0 +1,31 @@
+{
+  "description": "e-Okul A, Times 28 başlık düzeni, −5° eğik",
+  "students": [
+    {"number": "118", "fullName": "Süleyman Gökçeoğlu"},
+    {"number": "123", "fullName": "Oğuzhan Polat"},
+    {"number": "679", "fullName": "Fırat Karataş"},
+    {"number": "831", "fullName": "Efe Sönmez"},
+    {"number": "957", "fullName": "Süleyman Çağlayık"},
+    {"number": "1056", "fullName": "Öykü Yıldız"},
+    {"number": "1098", "fullName": "Öykü Coşkun"},
+    {"number": "1130", "fullName": "Fatma Keskin"},
+    {"number": "1244", "fullName": "Furkan Çakır"},
+    {"number": "1400", "fullName": "Ecrin Tunç"},
+    {"number": "1495", "fullName": "Göktuğ Demir"},
+    {"number": "1498", "fullName": "Eren Uğurlu"},
+    {"number": "1519", "fullName": "İlayda Çelik"},
+    {"number": "1544", "fullName": "Nazlı Işık"},
+    {"number": "1547", "fullName": "Damla Şen"},
+    {"number": "1549", "fullName": "Rümeysa İlhan"},
+    {"number": "1579", "fullName": "İlayda Işık"},
+    {"number": "1594", "fullName": "Yağız Zeynep Özgür"},
+    {"number": "1696", "fullName": "Ece Duman"},
+    {"number": "1841", "fullName": "Rümeysa Sönmez"},
+    {"number": "1864", "fullName": "Can Akgül"},
+    {"number": "1946", "fullName": "Selin Gökçe"},
+    {"number": "2004", "fullName": "Tolga Karaağaç"},
+    {"number": "2039", "fullName": "Barış Eroğlu"},
+    {"number": "2046", "fullName": "Mert Yılmaz"},
+    {"number": "2253", "fullName": "Mehmet Karaağaç"}
+  ]
+}

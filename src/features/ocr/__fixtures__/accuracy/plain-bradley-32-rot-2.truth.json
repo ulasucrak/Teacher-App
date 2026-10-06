@@ -1,0 +1,27 @@
+{
+  "description": "Okul numaralı düz liste, Bradley Hand 32 (el yazısı benzeri), −2°",
+  "students": [
+    {"number": "335", "fullName": "Elif Taşdemir"},
+    {"number": "452", "fullName": "Doğukan Bağcı"},
+    {"number": "567", "fullName": "Merve İlker Şahin"},
+    {"number": "647", "fullName": "Berk Bağcı"},
+    {"number": "911", "fullName": "Mustafa Taşdemir"},
+    {"number": "939", "fullName": "Göktuğ İnce"},
+    {"number": "1077", "fullName": "Mert Özdemir"},
+    {"number": "1078", "fullName": "Halil Şen"},
+    {"number": "1080", "fullName": "Ece Aktaş"},
+    {"number": "1110", "fullName": "Gözde Güzel"},
+    {"number": "1118", "fullName": "Eylül Yıldırım"},
+    {"number": "1235", "fullName": "Fırat Erdoğan"},
+    {"number": "1291", "fullName": "Eren Bulut"},
+    {"number": "1381", "fullName": "Taha Eroğlu"},
+    {"number": "1457", "fullName": "İsmail Yılmaz"},
+    {"number": "1493", "fullName": "Dilşad Çiftçi"},
+    {"number": "1655", "fullName": "Efe Çakır"},
+    {"number": "1721", "fullName": "Şükrü Kara"},
+    {"number": "2011", "fullName": "Tolga Çalışkan"},
+    {"number": "2053", "fullName": "Şükrü Rümeysa Şimşek"},
+    {"number": "2350", "fullName": "Ilgın Çiftçi"},
+    {"number": "2360", "fullName": "Ünal Arslan"}
+  ]
+}

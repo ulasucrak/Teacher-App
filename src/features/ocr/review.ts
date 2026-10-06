@@ -13,6 +13,11 @@ export interface ReviewRow {
   photoId: string | null;
   /** Okuma sırasında rakam düzeltildiyse kalıcı uyarı. */
   ocrDigits: boolean;
+  /**
+   * OCR satırı düşük güvenle okuduysa okunan ad soyad (ve numara); satır bu değerlerden biri
+   * değiştirilene kadar "Okuma belirsiz" uyarısı alır. Güvenli satırda ve elle eklenen satırda yok.
+   */
+  lowConfidenceRead?: { fullName: string; number: string };
 }
 
 /** Var olan öğrencinin karşılaştırma için gereken alanları. */
@@ -21,7 +26,14 @@ export interface ExistingStudent {
   number: string | null;
 }
 
-export type RowIssue = NameWarning | 'existing' | 'existingNumber' | 'existingName' | 'repeated' | 'emptyName';
+export type RowIssue =
+  | NameWarning
+  | 'existing'
+  | 'existingNumber'
+  | 'existingName'
+  | 'repeated'
+  | 'emptyName'
+  | 'lowConfidence';
 
 export const issueLabels: Record<RowIssue, string> = {
   existing: 'Bu sınıfta zaten var',
@@ -32,10 +44,32 @@ export const issueLabels: Record<RowIssue, string> = {
   digits: 'Adda rakam okundu, kontrol edin',
   short: 'Ad çok kısa, kontrol edin',
   singleWord: 'Soyadı eksik olabilir',
+  lowConfidence: 'Okuma belirsiz, kontrol edin',
 };
 
 /** Uyarılar arasında yinelemeler daha önemlidir; önce onlar gösterilir. */
-const ISSUE_ORDER: RowIssue[] = ['existing', 'existingNumber', 'existingName', 'repeated', 'emptyName', 'digits', 'short', 'singleWord'];
+const ISSUE_ORDER: RowIssue[] = [
+  'existing',
+  'existingNumber',
+  'existingName',
+  'repeated',
+  'emptyName',
+  'digits',
+  'lowConfidence',
+  'short',
+  'singleWord',
+];
+
+/**
+ * Bu güvenin altındaki satırlar işaretlenir. Vision .accurate güveni pratikte 1 / 0.5 / 0.3
+ * basamaklarıyla gelir: 1 kesin okuma, 0.5 ve altı belirsiz.
+ */
+export const LOW_CONFIDENCE_THRESHOLD = 0.6;
+
+/** OCR satırı düşük güvenle mi okudu? (Güven bildirmeyen OCR'da — ML Kit — her zaman false.) */
+export function isLowConfidence(student: Pick<ParsedStudent, 'confidence'>): boolean {
+  return student.confidence !== undefined && student.confidence < LOW_CONFIDENCE_THRESHOLD;
+}
 
 export function nameKey(name: string): string {
   return foldTurkish(name);
@@ -101,14 +135,16 @@ export function appendParsed(
     const key = { name: nameKey(p.fullName), number: numberKey(p.number) };
     const duplicate = known.some((k) => sameStudent(k, key));
     known.push(key);
-    added.push({
+    const row: ReviewRow = {
       id: makeId(),
       number: p.number ?? '',
       fullName: p.fullName,
       include: !duplicate,
       photoId,
       ocrDigits: p.warnings.includes('digits'),
-    });
+    };
+    if (isLowConfidence(p)) row.lowConfidenceRead = { fullName: row.fullName, number: row.number };
+    added.push(row);
   }
   return [...rows, ...added];
 }
@@ -135,6 +171,8 @@ export function computeIssues(rows: ReviewRow[], existing: ExistingStudent[]): M
     } else {
       for (const w of assessName(row.fullName, row.ocrDigits)) issues.add(w);
     }
+    const read = row.lowConfidenceRead;
+    if (read && read.fullName === row.fullName && read.number === row.number) issues.add('lowConfidence');
     const match = matchExisting(key, existingKeys);
     if (match === 'same') issues.add('existing');
     else if (match === 'number') issues.add('existingNumber');

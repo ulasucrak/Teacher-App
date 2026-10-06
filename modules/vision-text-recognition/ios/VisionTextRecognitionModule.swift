@@ -22,7 +22,8 @@ public class VisionTextRecognitionModule: Module {
   public func definition() -> ModuleDefinition {
     Name("VisionTextRecognition")
 
-    // Dönüş: { width, height, observations: [{ text, confidence, x, y, width, height }] }
+    // Dönüş: { width, height, observations: [{ text, confidence, x, y, width, height,
+    //   candidates: [{ text, confidence }], corners: [{ x, y }] (sol-üst, sağ-üst, sağ-alt, sol-alt) }] }
     // Kutular normalize ve sol-alt orijinlidir; JS tarafı ML Kit biçimine çevirir.
     AsyncFunction("recognize") { (uri: String, languages: [String], usesLanguageCorrection: Bool) -> [String: Any] in
       do {
@@ -42,6 +43,12 @@ public class VisionTextRecognitionModule: Module {
               "y": observation.y,
               "width": observation.width,
               "height": observation.height,
+              "candidates": observation.candidates.map { candidate -> [String: Any] in
+                ["text": candidate.text, "confidence": Double(candidate.confidence)]
+              },
+              "corners": observation.corners.map { corner -> [String: Any] in
+                ["x": corner.x, "y": corner.y]
+              },
             ]
           },
         ]
