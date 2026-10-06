@@ -8,6 +8,7 @@ import {
   type FormSummary,
   type HistoryEvent,
 } from '@/features/history';
+import { useRealtimeRefresh } from '@/lib/realtime';
 import type { FormRow } from '@/types/database';
 
 export interface DayChanges {
@@ -52,12 +53,31 @@ export function useDayReview(form: Pick<FormRow, 'id' | 'options' | 'mode'>, day
   const [failure, setFailure] = useState<{ day: string; message: string } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const request = useRef(0);
+  /** Sıradaki yükleme canlı yenileme: başarısızsa ekrandaki gün verisi kalır, hata gösterilmez. */
+  const silentRef = useRef(false);
+  const shownDay = useRef<string | null>(null);
+  useEffect(() => {
+    shownDay.current = state?.day ?? null;
+  }, [state]);
   const formId = form.id;
   const options = form.options;
   const daily = form.mode === 'daily';
 
+  // Canlı eşitleme: başka cihazdaki işaret/kayıt değişiklikleri incelenen günü tazeler.
+  useRealtimeRefresh({
+    name: 'day-review',
+    tables: [{ table: 'form_events', event: 'INSERT', filter: `form_id=eq.${formId}` }],
+    enabled,
+    onChange: () => {
+      silentRef.current = true;
+      setAttempt((n) => n + 1);
+    },
+  });
+
   useEffect(() => {
     if (!enabled) return;
+    const silent = silentRef.current;
+    silentRef.current = false;
     const id = ++request.current;
     const range = { from: day, to: day };
     Promise.all([
@@ -75,7 +95,9 @@ export function useDayReview(form: Pick<FormRow, 'id' | 'options' | 'mode'>, day
         setFailure(null);
       },
       (error: unknown) => {
-        if (id === request.current) setFailure({ day, message: historyErrorMessage(error, 'summary') });
+        if (id !== request.current) return;
+        if (silent && shownDay.current === day) return;
+        setFailure({ day, message: historyErrorMessage(error, 'summary') });
       },
     );
   }, [enabled, formId, options, daily, day, attempt]);

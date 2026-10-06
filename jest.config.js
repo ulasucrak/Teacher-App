@@ -7,6 +7,6 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/ios/', '<rootDir>/android/', '<rootDir>/supabase/', '<rootDir>/\\.claude/'],
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/ios/', '<rootDir>/android/', '<rootDir>/supabase/', '<rootDir>/e2e-web/', '<rootDir>/\\.claude/'],
   modulePathIgnorePatterns: ['<rootDir>/\\.claude/'],
 };

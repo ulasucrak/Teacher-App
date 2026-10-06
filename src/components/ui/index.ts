@@ -1,3 +1,6 @@
+export { selectionA11y } from './a11y';
+export type { SelectionA11yProps, SelectionA11yState } from './a11y';
+export { AppFrame } from './AppFrame';
 export { Avatar } from './Avatar';
 export type { AvatarProps } from './Avatar';
 export { getAvatarColor, getInitials } from './avatarUtils';
@@ -21,6 +24,9 @@ export { Fab } from './Fab';
 export type { FabProps } from './Fab';
 export { Icon } from './Icon';
 export type { IconName } from './Icon';
+export { icons, toWebSymbol } from './iconMap';
+export type { SymbolName } from './iconMap';
+export { SymbolIcon } from './SymbolIcon';
 export { IconButton } from './IconButton';
 export { IconTile } from './IconTile';
 export { ListRow } from './ListRow';

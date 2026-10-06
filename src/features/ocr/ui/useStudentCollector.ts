@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { permissionMessages, pickPhoto, type PhotoSource } from '../photos';
-import { isExpoGo, recognizePhoto } from '../recognize';
+import { photoImportUnavailableMessage } from '../availability';
+import { recognizePhoto } from '../recognize';
 import { computeIssues, nextRowId, toDrafts, type ExistingStudent, type ReviewRow, type RowIssue, type StudentDraft } from '../review';
 import { mergeParsed, parsePastedList, parseTypedLine, PASTE_SOURCE } from './rows';
 
@@ -51,6 +52,8 @@ export interface StudentCollector {
   notice: CollectNotice | null;
   dismissNotice: () => void;
   photoAvailable: boolean;
+  /** Fotoğraf yolu kapalıysa nedeni (Expo Go, web); açıksa null. */
+  photoUnavailableMessage: string | null;
   pasteText: string;
   setPasteText: (text: string) => void;
   typedText: string;
@@ -83,7 +86,8 @@ export function useStudentCollector(
   existing: readonly ExistingStudent[] = NO_STUDENTS,
   initialMethod?: CollectMethod,
 ): StudentCollector {
-  const photoAvailable = useMemo(() => !isExpoGo(), []);
+  const photoUnavailableMessage = useMemo(() => photoImportUnavailableMessage(), []);
+  const photoAvailable = photoUnavailableMessage === null;
   const [method, setMethod] = useState<CollectMethod>(
     initialMethod ?? (photoAvailable ? 'photo' : 'paste'),
   );
@@ -221,6 +225,7 @@ export function useStudentCollector(
     notice,
     dismissNotice: () => setNotice(null),
     photoAvailable,
+    photoUnavailableMessage,
     pasteText,
     setPasteText,
     typedText,

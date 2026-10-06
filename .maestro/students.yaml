@@ -20,7 +20,11 @@ env:
 - tapOn:
     id: "students-search"
 - inputText: "ayse"
-- hideKeyboard
+# hideKeyboard yerine (iOS 27'de güvenilir değil, bkz. auth.yaml) sayaç metnine dokunulur.
+- tapOn:
+    id: "students-count"
+# Klavye kapanırken düzen kayar; eski konuma dokunmamak için animasyon beklenir.
+- waitForAnimationToEnd
 - assertVisible:
     id: "student-row-0"
     text: ".*Ayşe Yılmaz.*"
@@ -39,7 +43,7 @@ env:
     id: "student-sheet-name"
 - eraseText: 40
 - inputText: "Ayşe Yılmaz Kaya"
-# (hideKeyboard iOS'ta "return" gönderip formu kaydedebilir; doğrudan Kaydet'e dokunulur.)
+# (Klavye kapatılmaz: "return" formu kaydedebilir; doğrudan Kaydet'e dokunulur.)
 - takeScreenshot: students-02-edit
 - tapOn:
     id: "student-sheet-save"

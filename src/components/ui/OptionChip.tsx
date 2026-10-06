@@ -1,9 +1,10 @@
-import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { selectionHaptic } from '@/lib/haptics';
 import { colors, fontScale, iconSize, layout, motion, radii, spacing, tones, type ToneName, useReducedMotion } from '@/theme';
 
+import { selectionA11y } from './a11y';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -57,7 +58,7 @@ export function OptionChip({
   };
 
   const handlePress = () => {
-    Haptics.selectionAsync().catch(() => undefined);
+    selectionHaptic();
     onPress();
   };
 
@@ -72,7 +73,7 @@ export function OptionChip({
         hitSlop={compact ? spacing.xs : 0}
         accessibilityRole={selectionMode}
         accessibilityLabel={accessibilityLabel ?? label}
-        accessibilityState={{ checked: selected, selected, disabled }}
+        {...selectionA11y({ checked: selected, selected, disabled })}
         style={({ pressed }) => [
           styles.chip,
           compact ? styles.compact : styles.regular,

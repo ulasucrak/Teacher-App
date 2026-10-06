@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Banner, Button, Icon, LoadingState, Sheet, Text } from '@/components/ui';
+import { Banner, Button, Icon, LoadingState, selectionA11y, Sheet, Text } from '@/components/ui';
 import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
 import { classLabel, type ClassSummary } from '../format';
@@ -134,7 +134,7 @@ function CheckRow({
       onPress={onPress}
       accessibilityRole="checkbox"
       accessibilityLabel={label}
-      accessibilityState={{ checked }}
+      {...selectionA11y({ checked })}
       style={({ pressed }) => [styles.row, strong && styles.rowStrong, pressed && styles.pressed]}
     >
       <View style={[styles.box, checked && styles.boxChecked]}>

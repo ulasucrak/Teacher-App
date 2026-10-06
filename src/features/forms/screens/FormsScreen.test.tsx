@@ -1,10 +1,29 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+
+import type { UseRealtimeRefreshOptions } from '@/lib/realtime';
 
 import * as api from '../api';
 import { Providers, makeForm } from '../test-utils';
 import FormsScreen from './FormsScreen';
 
 const mockPush = jest.fn();
+
+// Canlı eşitleme: abonelik yerine son seçenekler tutulur; testler onChange'i elle tetikler.
+const mockRealtime: { last: UseRealtimeRefreshOptions | null } = { last: null };
+jest.mock('@/lib/realtime', () => ({
+  ...jest.requireActual<typeof import('@/lib/realtime')>('@/lib/realtime'),
+  useRealtimeRefresh: (options: UseRealtimeRefreshOptions) => {
+    mockRealtime.last = options;
+  },
+}));
+
+async function fireRealtimeChange() {
+  const options = mockRealtime.last;
+  if (!options) throw new Error('useRealtimeRefresh çağrılmadı');
+  await act(async () => {
+    options.onChange('change');
+  });
+}
 
 jest.mock('expo-router', () => {
   const React = jest.requireActual<typeof import('react')>('react');
@@ -33,6 +52,7 @@ const mocked = jest.mocked(api);
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockRealtime.last = null;
 });
 
 async function renderScreen() {
@@ -142,5 +162,36 @@ describe('FormsScreen (arşiv)', () => {
     await fireEvent.press(screen.getByTestId('form-delete-confirm-confirm'));
     await waitFor(() => expect(mocked.deleteForm).toHaveBeenCalledWith('form-1'));
     expect(await screen.findByText('Yoklama silindi')).toBeOnTheScreen();
+  });
+
+  it('refreshes live when forms change on another device', async () => {
+    mocked.listForms.mockResolvedValue([makeForm({ archived: true })]);
+    await renderScreen();
+    expect(await screen.findByText('Yoklama')).toBeOnTheScreen();
+
+    expect(mockRealtime.last?.enabled).toBe(true);
+    expect(mockRealtime.last?.tables).toEqual(expect.arrayContaining([{ table: 'forms', own: true }]));
+
+    mocked.listForms.mockResolvedValue([
+      makeForm({ archived: true }),
+      makeForm({ id: 'form-2', title: 'Sözlü', archived: true }),
+    ]);
+    await fireRealtimeChange();
+
+    expect(await screen.findByText('Sözlü')).toBeOnTheScreen();
+    expect(screen.queryByTestId('archive-retry')).toBeNull();
+  });
+
+  it('keeps the list and shows a toast when a live refresh fails', async () => {
+    mocked.listForms.mockResolvedValue([makeForm({ archived: true })]);
+    await renderScreen();
+    expect(await screen.findByText('Yoklama')).toBeOnTheScreen();
+
+    mocked.listForms.mockRejectedValueOnce(new Error('Network request failed'));
+    await fireRealtimeChange();
+
+    expect(await screen.findByText(/İnternet bağlantınızı kontrol edip/)).toBeOnTheScreen();
+    expect(screen.getByText('Yoklama')).toBeOnTheScreen();
+    expect(screen.queryByText('Formlar yüklenemedi')).toBeNull();
   });
 });

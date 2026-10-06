@@ -5,12 +5,15 @@ import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Banner, Text, ToastProvider } from '@/components/ui';
+import { AppFrame, Banner, Text, ToastProvider } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/features/auth';
+import { installWebAlert } from '@/lib/platformAlert';
 import { supabaseConfigError } from '@/lib/supabase';
 import { colors, fontAssets, layout, spacing } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+// Web'de Alert.alert boştur; onaylar tarayıcı iletişim kutusuyla sorulur (mobilde etkisiz).
+installWebAlert();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontAssets);
@@ -19,11 +22,13 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <RootNavigator fontsReady={fontsReady} />
-        </ToastProvider>
-      </AuthProvider>
+      <AppFrame>
+        <AuthProvider>
+          <ToastProvider>
+            <RootNavigator fontsReady={fontsReady} />
+          </ToastProvider>
+        </AuthProvider>
+      </AppFrame>
     </SafeAreaProvider>
   );
 }

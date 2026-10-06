@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, Text } from '@/components/ui';
+import { isWeb, WEB_MAX_SHEET_WIDTH } from '@/lib/platform';
 import { colors, elevation, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
 
 export interface KeyboardSheetProps {
@@ -88,6 +89,7 @@ export function KeyboardSheet({ visible, onClose, title, children, footer, onDis
           testID={testID}
           style={[
             styles.sheet,
+            isWeb && styles.webSheet,
             { maxHeight: height * 0.9, paddingBottom: Math.max(insets.bottom, spacing.lg) },
             { opacity: reducedMotion ? progress : 1, transform: [{ translateY }] },
           ]}
@@ -115,6 +117,8 @@ export function KeyboardSheet({ visible, onClose, title, children, footer, onDis
 }
 
 const styles = StyleSheet.create({
+  /** Web'de masaüstü genişliğinde panel ortada, okunur genişlikte durur. */
+  webSheet: { width: '100%', maxWidth: WEB_MAX_SHEET_WIDTH, alignSelf: 'center' },
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: colors.scrim },
   anchor: { flex: 1, justifyContent: 'flex-end' },
   sheet: {

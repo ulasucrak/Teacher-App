@@ -47,3 +47,9 @@ yarn-error.*
 
 # Reference screenshot (local only)
 /5A4CA7E9-5C0B-46E4-B556-18353D42120F.jpeg
+
+# Playwright (web E2E)
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/

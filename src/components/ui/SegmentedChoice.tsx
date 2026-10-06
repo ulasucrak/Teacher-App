@@ -1,8 +1,9 @@
-import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { selectionHaptic } from '@/lib/haptics';
 import { colors, fontScale, iconSize, layout, radii, spacing, tones, type ToneName } from '@/theme';
 
+import { selectionA11y } from './a11y';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -49,14 +50,14 @@ export function SegmentedChoice<K extends string>({
             key={option.key}
             testID={testIDPrefix ? `${testIDPrefix}-${option.key}` : undefined}
             onPress={() => {
-              Haptics.selectionAsync().catch(() => undefined);
+              selectionHaptic();
               onChange(option.key);
             }}
             disabled={disabled}
             hitSlop={{ top: spacing.xs, bottom: spacing.xs }}
             accessibilityRole="radio"
             accessibilityLabel={accessibilityLabel ? `${accessibilityLabel}: ${option.label}` : option.label}
-            accessibilityState={{ checked: selected, selected, disabled }}
+            {...selectionA11y({ checked: selected, selected, disabled })}
             style={({ pressed }) => [
               styles.segment,
               { backgroundColor: bg },

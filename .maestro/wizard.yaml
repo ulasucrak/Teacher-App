@@ -30,7 +30,18 @@ env:
     id: "collect-paste-input"
 # Virgül de ayraçtır; satır sonu yazmak klavyede güvenilir değil.
 - inputText: "Ayşe Yılmaz, İlker Doğan, Şule Ağaoğlu, Gökhan Çelik, İpek Öztürk"
-- hideKeyboard
+# hideKeyboard yerine (iOS 27'de güvenilir değil, bkz. auth.yaml) kaydırılan içerikteki "Liste"
+# etiketine dokunulur (alanın üstündeki, sekme değil). Başlık kaydırma alanının dışında olduğu için
+# klavyeyi kapatmaz; alanın ipucu klavye açıkken alt çubuğun altında kalır, ona dokunmak "Devam"a
+# basar; çok satırlı alanda Enter satır sonu ekler.
+- tapOn:
+    text: "Liste"
+    above:
+      id: "collect-paste-input"
+    below:
+      id: "collect-method-paste"
+# Klavye kapanırken düzen kayar; eski konuma dokunmamak için animasyon beklenir.
+- waitForAnimationToEnd
 - tapOn:
     id: "collect-paste-add"
 - assertVisible: "Ayşe Yılmaz.*"
