@@ -1,0 +1,56 @@
+# Günlük form (Yoklama): işaretle, kaydet (hata vermemeli), değiştir, Geçmiş'te değişiklikler.
+appId: com.ulas.teacherapp
+name: form-modes-daily
+env:
+  EMAIL: test+formmodes@ornek.com
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/ensure-login.yaml
+- tapOn: "7/F,.*"
+- extendedWaitUntil:
+    visible:
+      id: "class-students-row"
+    timeout: 20000
+- takeScreenshot: fm-04-class
+- tapOn: "Yoklama,.*"
+- extendedWaitUntil:
+    visible:
+      id: "bulk-geldi"
+    timeout: 20000
+- tapOn:
+    id: "bulk-geldi"
+- tapOn:
+    id: "student-row-1-gelmedi"
+- takeScreenshot: fm-05-daily-fill
+- tapOn:
+    id: "save-button"
+- extendedWaitUntil:
+    visible: "Kaydedildi"
+    timeout: 15000
+- takeScreenshot: fm-06-daily-saved
+- tapOn:
+    id: "student-row-1-izinli"
+- tapOn:
+    id: "save-button"
+- extendedWaitUntil:
+    visible: "Kaydedildi"
+    timeout: 15000
+- tapOn:
+    id: "fill-more"
+- tapOn: "Geçmiş"
+- extendedWaitUntil:
+    visible:
+      id: "history-pane"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "summary-totals"
+    timeout: 15000
+- takeScreenshot: fm-07-daily-summary
+- tapOn:
+    id: "history-view-timeline"
+- extendedWaitUntil:
+    visible:
+      id: "timeline-list"
+    timeout: 15000
+- takeScreenshot: fm-08-daily-timeline

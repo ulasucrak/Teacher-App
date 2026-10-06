@@ -1,0 +1,46 @@
+# Form türleri 2/2: "7/F" sınıfı (6 öğrenci) + Yoklama (günlük) + Artı / eksi (birikimli).
+appId: com.ulas.teacherapp
+name: form-modes-class
+env:
+  EMAIL: test+formmodes@ornek.com
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/ensure-login.yaml
+- tapOn:
+    id: "classes-fab|classes-empty-new"
+- extendedWaitUntil:
+    visible:
+      id: "wizard-step-1"
+    timeout: 10000
+- tapOn:
+    id: "wizard-name-input"
+- inputText: "7/F"
+- tapOn:
+    id: "wizard-next"
+- extendedWaitUntil:
+    visible:
+      id: "wizard-step-2"
+    timeout: 10000
+- tapOn:
+    id: "collect-method-paste"
+- tapOn:
+    id: "collect-paste-input"
+- inputText: "3 Can Demir, 12 Ali Yılmaz, 15 Ayşe Kaya, 20 İlker Doğan, 21 Şule Ağaoğlu, 24 Gökhan Çelik"
+- tapOn:
+    id: "collect-paste-add"
+- tapOn:
+    id: "wizard-next"
+- extendedWaitUntil:
+    visible:
+      id: "wizard-step-3"
+    timeout: 10000
+- tapOn:
+    id: "wizard-form-artieksi"
+- takeScreenshot: fm-02-wizard-forms
+- tapOn:
+    id: "wizard-create"
+- extendedWaitUntil:
+    visible:
+      id: "class-students-row"
+    timeout: 30000
+- takeScreenshot: fm-03-class

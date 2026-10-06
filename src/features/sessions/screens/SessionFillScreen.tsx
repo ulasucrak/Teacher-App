@@ -17,6 +17,7 @@ import {
   useToast,
   type OverflowAction,
 } from '@/components/ui';
+import { formsRoutes } from '@/features/forms/params';
 import { colors, layout, spacing } from '@/theme';
 import type { FormEntryRow, FormRow, FormSessionRow, StudentRow } from '@/types/database';
 
@@ -293,6 +294,12 @@ export function SessionFillScreen() {
   const canFill = options.length > 0 && students.length > 0;
 
   const menuActions: OverflowAction[] = [
+    {
+      key: 'history',
+      label: 'Geçmiş',
+      icon: 'calendar',
+      onPress: () => router.push(formsRoutes.open(classId, formId, 'history')),
+    },
     {
       key: 'edit',
       label: 'Formu düzenle',

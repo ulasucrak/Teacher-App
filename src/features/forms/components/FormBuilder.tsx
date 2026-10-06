@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Banner, BottomActionBar, Button, ConfirmSheet, Screen, SectionHeader, TextField } from '@/components/ui';
+import { Banner, BottomActionBar, Button, ConfirmSheet, Screen, SectionHeader, SegmentedChoice, Text, TextField } from '@/components/ui';
 import { spacing } from '@/theme';
 import type { FormMode, FormOption } from '@/types/database';
 
 import type { FormInput } from '../api';
 import { errorMessage } from '../errors';
+import { FORM_MODES, formModeDescriptions, formModeLabels } from '../mode';
 import {
   createDraftOption,
   finalizeOptions,
@@ -37,6 +38,11 @@ export interface FormBuilderProps {
   /** Üst çubuk başlığı ("Yeni form", "Formu düzenle"). */
   screenTitle: string;
   submitLabel: string;
+  /**
+   * Türü değiştirilemez (formda kayıt ya da işaret var; veritabanı da reddeder): seçici kilitli,
+   * nedeni yazılı.
+   */
+  modeLocked?: boolean;
   onSubmit: (input: FormInput) => Promise<void>;
 }
 
@@ -64,10 +70,19 @@ function quoteList(labels: string[]): string {
  * Yeni form ve düzenleme ekranlarının ortak gövdesi: ad + seçenekler (renkli).
  * Ders/açıklama "Ayrıntı ekle" ile, sıralama/kaldırma "Düzenle" ile açılır.
  */
-export function FormBuilder({ initial, originalOptions, screenTitle, submitLabel, onSubmit }: FormBuilderProps) {
+export function FormBuilder({
+  initial,
+  originalOptions,
+  screenTitle,
+  submitLabel,
+  modeLocked = false,
+  onSubmit,
+}: FormBuilderProps) {
   const [values, setValues] = useState<FormBuilderValues>(initial);
   const [showDetails, setShowDetails] = useState(Boolean(initial.subject || initial.description));
   const [editingOptions, setEditingOptions] = useState(false);
+  // Puan alanı isteğe bağlı: puanlı seçenek varsa ya da "Puan ver" ile açılır.
+  const [scoresOpen, setScoresOpen] = useState(() => initial.options.some((o) => o.score !== null));
   const [attempted, setAttempted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -79,6 +94,7 @@ export function FormBuilder({ initial, originalOptions, screenTitle, submitLabel
     [originalOptions, values.options],
   );
 
+  const mode: FormMode = values.mode ?? 'daily';
   const patch = (next: Partial<FormBuilderValues>) => setValues((v) => ({ ...v, ...next }));
 
   const save = async () => {
@@ -171,6 +187,23 @@ export function FormBuilder({ initial, originalOptions, screenTitle, submitLabel
           )}
         </View>
 
+        <View style={styles.modeSection}>
+          <Text variant="label">Form türü</Text>
+          <SegmentedChoice
+            options={FORM_MODES.map((key) => ({ key, label: formModeLabels[key] }))}
+            value={mode}
+            onChange={(next) => patch({ mode: next })}
+            disabled={modeLocked}
+            accessibilityLabel="Form türü"
+            testIDPrefix="form-mode"
+          />
+          <Text variant="caption" tone="muted" testID="form-mode-description">
+            {modeLocked
+              ? 'Bu formda kayıt olduğu için türü değiştirilemez. Farklı türde yeni bir form oluşturabilirsiniz.'
+              : formModeDescriptions[mode]}
+          </Text>
+        </View>
+
         <View style={styles.section}>
           <SectionHeader
             title="Seçenekler"
@@ -193,7 +226,25 @@ export function FormBuilder({ initial, originalOptions, screenTitle, submitLabel
             onChange={(options) => patch({ options })}
             errors={show.optionErrors}
             editing={editingOptions}
+            showScores={scoresOpen}
           />
+          {scoresOpen ? (
+            <Text variant="caption" tone="muted" testID="form-scores-hint">
+              Puan verirseniz özette net puan görünür; boş bırakılan seçenek hesaba girmez.
+            </Text>
+          ) : (
+            <Button
+              label="Puan ver"
+              icon="plus"
+              variant="ghost"
+              size="sm"
+              fullWidth={false}
+              onPress={() => setScoresOpen(true)}
+              accessibilityHint="Seçeneklere isteğe bağlı puan alanı ekler"
+              testID="form-scores-toggle"
+              style={styles.ghostStart}
+            />
+          )}
         </View>
       </View>
 
@@ -214,6 +265,7 @@ export function FormBuilder({ initial, originalOptions, screenTitle, submitLabel
 const styles = StyleSheet.create({
   body: { gap: spacing.xxl, paddingTop: spacing.lg, paddingBottom: spacing.xxl },
   section: { gap: spacing.sm },
+  modeSection: { gap: spacing.sm },
   fields: { gap: spacing.md },
   ghostStart: { alignSelf: 'flex-start', marginLeft: -spacing.md },
 });

@@ -99,4 +99,64 @@ describe('NewFormScreen', () => {
     expect(await screen.findByText(/Sunucuya ulaşılamadı/)).toBeOnTheScreen();
     expect(mockBack).not.toHaveBeenCalled();
   });
+
+  it('defaults to a once-a-day form and can switch to a cumulative one', async () => {
+    await renderScreen();
+
+    expect(screen.getByTestId('form-mode-daily')).toBeSelected();
+    expect(screen.getByTestId('form-mode-description')).toHaveTextContent(/yerine geçer/);
+    await fireEvent.press(screen.getByTestId('form-mode-repeatable'));
+    expect(screen.getByTestId('form-mode-repeatable')).toBeSelected();
+    expect(screen.getByTestId('form-mode-description')).toHaveTextContent(/birikir/);
+
+    await fireEvent.changeText(screen.getByLabelText('Form adı'), 'Katılım puanı');
+    const inputs = screen.getAllByLabelText('Seçenek adı: Adsız seçenek');
+    await fireEvent.changeText(inputs[0]!, 'Artı');
+    await fireEvent.changeText(inputs[1]!, 'Eksi');
+    await fireEvent.press(screen.getByRole('button', { name: 'Formu oluştur' }));
+
+    await waitFor(() => expect(mocked.createForm).toHaveBeenCalled());
+    expect(mocked.createForm.mock.calls[0]![1].mode).toBe('repeatable');
+  });
+
+  it('starts the plus / minus preset as cumulative with scores', async () => {
+    mockParams = { classId: 'class-1', preset: 'artieksi' };
+    await renderScreen();
+
+    expect(screen.getByTestId('form-mode-repeatable')).toBeSelected();
+    expect(screen.getByLabelText('Artı puanı, isteğe bağlı')).toHaveDisplayValue('1');
+    expect(screen.getByLabelText('Eksi puanı, isteğe bağlı')).toHaveDisplayValue('-1');
+    expect(screen.getByTestId('form-scores-hint')).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Formu oluştur' }));
+    await waitFor(() => expect(mocked.createForm).toHaveBeenCalled());
+    const input = mocked.createForm.mock.calls[0]![1];
+    expect(input.mode).toBe('repeatable');
+    expect(input.options).toEqual([
+      { key: 'arti', label: 'Artı', tone: 'positive', score: 1 },
+      { key: 'eksi', label: 'Eksi', tone: 'negative', score: -1 },
+    ]);
+  });
+
+  it('adds an optional score on request, treats an empty score as unscored and flags a bad one', async () => {
+    mockParams = { classId: 'class-1', preset: 'yoklama' };
+    await renderScreen();
+
+    expect(screen.queryByLabelText('Geldi puanı, isteğe bağlı')).toBeNull();
+    await fireEvent.press(screen.getByTestId('form-scores-toggle'));
+    const geldi = screen.getByLabelText('Geldi puanı, isteğe bağlı');
+    expect(geldi).toHaveDisplayValue('');
+
+    await fireEvent.changeText(geldi, '-');
+    await fireEvent.press(screen.getByRole('button', { name: 'Formu oluştur' }));
+    expect(mocked.createForm).not.toHaveBeenCalled();
+    expect(screen.getByText(/Puan −1000 ile 1000 arasında/)).toBeOnTheScreen();
+
+    await fireEvent.changeText(geldi, '2,5');
+    await fireEvent.press(screen.getByRole('button', { name: 'Formu oluştur' }));
+    await waitFor(() => expect(mocked.createForm).toHaveBeenCalled());
+    const options = mocked.createForm.mock.calls[0]![1].options;
+    expect(options[0]).toEqual({ key: 'geldi', label: 'Geldi', tone: 'positive', score: 2.5 });
+    expect(options[1]).not.toHaveProperty('score');
+  });
 });

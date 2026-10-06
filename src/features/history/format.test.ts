@@ -1,6 +1,6 @@
 import type { FormOption } from '@/types/database';
 
-import { describeEvent, eventLocalDay, formatEventTime, groupEventsByDay, optionLabel } from './format';
+import { describeEvent, eventLocalDay, formatEventClock, formatEventTime, groupEventsByDay, optionLabel } from './format';
 import type { HistoryEvent } from './types';
 
 const options: FormOption[] = [
@@ -144,5 +144,13 @@ describe('groupEventsByDay', () => {
       ['2026-10-06', [3, 2]],
       ['2026-10-05', [1]],
     ]);
+  });
+});
+
+describe('formatEventClock', () => {
+  it('writes the local clock time with leading zeros', () => {
+    expect(formatEventClock(local(2026, 10, 6, 10, 32))).toBe('10:32');
+    expect(formatEventClock(local(2026, 10, 6, 8, 5))).toBe('08:05');
+    expect(formatEventClock('not a date')).toBe('');
   });
 });

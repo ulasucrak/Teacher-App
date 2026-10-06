@@ -4,10 +4,12 @@ import {
   MAX_OPTIONS,
   createDraftOption,
   finalizeOptions,
+  formatScoreText,
   hasScores,
   moveOption,
   normalizeLabel,
   parseOptions,
+  parseScoreText,
   removedOptions,
   slugify,
   toDraftOptions,
@@ -239,5 +241,30 @@ describe('form mode', () => {
 
   it('explains a blocked mode change', () => {
     expect(getFormsErrorMessage({ code: 'TA001', message: 'x' }, 'save')).toMatch(/türü değiştirilemez/);
+  });
+});
+
+describe('parseScoreText / formatScoreText', () => {
+  it('reads empty as unscored and common spellings as numbers', () => {
+    expect(parseScoreText('')).toBeNull();
+    expect(parseScoreText('  ')).toBeNull();
+    expect(parseScoreText('1')).toBe(1);
+    expect(parseScoreText('+1')).toBe(1);
+    expect(parseScoreText('-1')).toBe(-1);
+    expect(parseScoreText('−1')).toBe(-1);
+    expect(parseScoreText('0,5')).toBe(0.5);
+    expect(parseScoreText('0.5')).toBe(0.5);
+  });
+
+  it('marks unfinished or invalid text as NaN so validation can flag it', () => {
+    expect(parseScoreText('-')).toBeNaN();
+    expect(parseScoreText('abc')).toBeNaN();
+    expect(parseScoreText('1,2,3')).toBeNaN();
+  });
+
+  it('formats scores for the field', () => {
+    expect(formatScoreText(null)).toBe('');
+    expect(formatScoreText(-1)).toBe('-1');
+    expect(formatScoreText(0.5)).toBe('0,5');
   });
 });

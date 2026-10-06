@@ -1,40 +1,38 @@
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { FlatList, StyleSheet, View, type ListRenderItem } from 'react-native';
 
-import {
-  Banner,
-  BottomActionBar,
-  Button,
-  EmptyState,
-  IconButton,
-  ListRow,
-  LoadingState,
-  OverflowMenu,
-  Screen,
-  Text,
-} from '@/components/ui';
+import { Banner, BottomActionBar, Button, EmptyState, ListRow, LoadingState, OverflowMenu, Text } from '@/components/ui';
+import { countStudents, listSessions, toUserMessage, type SessionSummary } from '@/features/sessions/api';
+import { DaySheet } from '@/features/sessions/components/DaySheet';
+import { formatDayLabel, todayIso } from '@/features/sessions/date';
+import { sessionsRoutes } from '@/features/sessions/routes';
 import { layout, spacing } from '@/theme';
 import type { FormRow } from '@/types/database';
 
-import { countStudents, getForm, listSessions, toUserMessage, type SessionSummary } from '../api';
-import { DaySheet } from '../components/DaySheet';
-import { formatDayLabel, todayIso } from '../date';
-import { sessionsRoutes } from '../routes';
+import { FormShell, type FormTab } from './FormShell';
+import { HistoryPane } from './HistoryPane';
 
 interface Loaded {
-  form: FormRow;
   sessions: SessionSummary[];
   studentCount: number;
 }
 
-type Params = { classId: string; formId: string };
+export interface FormViewProps {
+  classId: string;
+  form: FormRow;
+  initialTab: FormTab;
+}
 
-/** Bir formun geçmiş kayıtları: tarih + doluluk listesi; tek ana eylem "Bugünün kaydını başlat". */
-export function FormSessionsScreen() {
-  const { classId, formId } = useLocalSearchParams<Params>();
+/**
+ * Günlük form (günde bir kez): "İşaretle" günlük kayıtların listesi (bugünün kaydını aç/başlat,
+ * başka gün seç); kaydı doldurma ekranı ayrı sayfadır. "Geçmiş" tüm değişiklikleri gösterir.
+ */
+export function DailyFormView({ classId, form, initialTab }: FormViewProps) {
   const router = useRouter();
+  const formId = form.id;
 
+  const [tab, setTab] = useState<FormTab>(initialTab);
   const [data, setData] = useState<Loaded | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -45,9 +43,9 @@ export function FormSessionsScreen() {
   const load = useCallback(() => {
     const request = ++requestRef.current;
     setLoadError(null);
-    Promise.all([getForm(formId), listSessions(formId), countStudents(classId)])
-      .then(([form, sessions, studentCount]) => {
-        if (request === requestRef.current) setData({ form, sessions, studentCount });
+    Promise.all([listSessions(formId), countStudents(classId)])
+      .then(([sessions, studentCount]) => {
+        if (request === requestRef.current) setData({ sessions, studentCount });
       })
       .catch((error: unknown) => {
         if (request === requestRef.current) setLoadError(toUserMessage(error, 'Kayıtlar yüklenemedi. Tekrar deneyin.'));
@@ -59,6 +57,7 @@ export function FormSessionsScreen() {
 
   const today = todayIso();
   const studentCount = data?.studentCount ?? 0;
+  const hasToday = data?.sessions.some((s) => s.session.session_date === today) ?? false;
 
   const renderItem: ListRenderItem<SessionSummary> = ({ item, index }) => {
     const { session, filled } = item;
@@ -80,77 +79,73 @@ export function FormSessionsScreen() {
     );
   };
 
+  let marking;
   if (loadError && !data) {
-    return (
-      <Screen title="Kayıtlar" testID="history-screen">
-        <View style={styles.stateWrap}>
-          <Banner kind="error" message={loadError} />
-          <Button label="Tekrar dene" variant="secondary" onPress={load} testID="history-retry" />
-        </View>
-      </Screen>
+    marking = (
+      <View style={styles.stateWrap}>
+        <Banner kind="error" message={loadError} />
+        <Button label="Tekrar dene" variant="secondary" onPress={load} testID="sessions-retry" />
+      </View>
     );
-  }
-
-  if (!data) {
-    return (
-      <Screen title="Kayıtlar" scroll={false} testID="history-screen">
-        <LoadingState label="Kayıtlar yükleniyor" />
-      </Screen>
-    );
-  }
-
-  const { form, sessions } = data;
-  const hasToday = sessions.some((s) => s.session.session_date === today);
-
-  return (
-    <Screen
-      title={form.title}
-      scroll={false}
-      padded={false}
-      headerDivider
-      testID="history-screen"
-      headerRight={
-        <IconButton
-          icon="more"
-          accessibilityLabel="Diğer seçenekler"
-          onPress={() => setMenuOpen(true)}
-          testID="history-more"
-        />
-      }
-      footer={
-        <BottomActionBar
-          secondary={{ label: 'Başka gün', onPress: () => setDayOpen(true), testID: 'history-other-day' }}
-          primary={{
-            label: hasToday ? 'Bugünün kaydını aç' : 'Bugünün kaydını başlat',
-            onPress: () => router.push(sessionsRoutes.day(classId, formId, today)),
-            testID: 'history-today',
-          }}
-        />
-      }
-    >
+  } else if (!data) {
+    marking = <LoadingState label="Kayıtlar yükleniyor" />;
+  } else {
+    marking = (
       <FlatList
-        data={sessions}
+        data={data.sessions}
         keyExtractor={(s) => s.session.id}
         renderItem={renderItem}
-        ListHeaderComponent={loadError ? <View style={styles.banner}><Banner kind="error" message={loadError} /></View> : null}
+        ListHeaderComponent={
+          loadError ? (
+            <View style={styles.banner}>
+              <Banner kind="error" message={loadError} />
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.padded}>
             <EmptyState
               icon="calendar"
               title="Henüz kayıt yok"
               description="İlk kaydı aşağıdan başlatın."
-              testID="history-empty"
+              testID="sessions-empty"
             />
           </View>
         }
         contentContainerStyle={styles.listContent}
-        testID="history-list"
+        testID="sessions-list"
       />
+    );
+  }
+
+  const footer =
+    tab === 'mark' && data ? (
+      <BottomActionBar
+        secondary={{ label: 'Başka gün', onPress: () => setDayOpen(true), testID: 'sessions-other-day' }}
+        primary={{
+          label: hasToday ? 'Bugünün kaydını aç' : 'Bugünün kaydını başlat',
+          onPress: () => router.push(sessionsRoutes.day(classId, formId, today)),
+          testID: 'sessions-today',
+        }}
+      />
+    ) : undefined;
+
+  return (
+    <FormShell
+      title={form.title}
+      tab={tab}
+      onTab={setTab}
+      onMore={() => setMenuOpen(true)}
+      footer={footer}
+      testID="form-screen"
+    >
+      {tab === 'mark' ? marking : null}
+      <HistoryPane form={form} active={tab === 'history'} />
       <OverflowMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         title={form.title}
-        testID="history-menu"
+        testID="form-menu"
         actions={[
           {
             key: 'edit',
@@ -173,12 +168,12 @@ export function FormSessionsScreen() {
           if (date) router.push(sessionsRoutes.day(classId, formId, date));
         }}
       />
-    </Screen>
+    </FormShell>
   );
 }
 
 const styles = StyleSheet.create({
-  stateWrap: { gap: spacing.md, paddingTop: spacing.sm },
+  stateWrap: { gap: spacing.md, paddingTop: spacing.sm, paddingHorizontal: layout.pageX },
   banner: { paddingHorizontal: layout.pageX, paddingVertical: spacing.sm },
   padded: { paddingHorizontal: layout.pageX },
   listContent: { flexGrow: 1, paddingBottom: spacing.xxl },

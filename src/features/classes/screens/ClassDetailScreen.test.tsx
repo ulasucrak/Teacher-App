@@ -127,6 +127,33 @@ describe('ClassDetailScreen', () => {
     expect(mockPush).toHaveBeenCalledWith(`/class/c1/form/f2/session/new?date=${todayIso()}`);
   });
 
+  it('sends a cumulative form to its marking screen and labels its type', async () => {
+    forms.listForms.mockResolvedValue([
+      form('f1', 'Yoklama'),
+      form('f4', 'Artı / eksi', { mode: 'repeatable', lastSessionDate: todayIso() }),
+    ]);
+    await renderScreen();
+
+    expect(await screen.findByTestId('form-row-1-mode')).toHaveTextContent('Birikimli');
+    expect(screen.queryByTestId('form-row-0-mode')).toBeNull();
+    expect(screen.getByText('Son işaret: Bugün')).toBeOnTheScreen();
+
+    // Birikimli formun günlük kaydı olamaz: işaretleme ekranı açılır.
+    await fireEvent.press(screen.getByTestId('form-row-1'));
+    expect(mockPush).toHaveBeenCalledWith('/class/c1/form/f4');
+    // Günlük form: bugünün kaydı.
+    await fireEvent.press(screen.getByTestId('form-row-0'));
+    expect(mockPush).toHaveBeenCalledWith(`/class/c1/form/f1/session/new?date=${todayIso()}`);
+  });
+
+  it('opens the history of a form from its row menu', async () => {
+    await renderScreen();
+
+    await fireEvent.press(await screen.findByTestId('form-row-0-more'));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Geçmiş' }));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/class/c1/form/f1?tab=history'));
+  });
+
   it('confirms a photo import once and clears the route param', async () => {
     mockParams = { classId: 'c1', imported: '7' };
     await renderScreen();

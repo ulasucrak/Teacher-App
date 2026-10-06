@@ -1,0 +1,70 @@
+# Form türleri: oluşturma ekranı (tür + puan), kilitli düzenleme, dönem paneli, öğrenci süzgeci.
+appId: com.ulas.teacherapp
+name: form-modes-screens
+env:
+  EMAIL: test+formmodes@ornek.com
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/ensure-login.yaml
+- tapOn: "7/F,.*"
+- extendedWaitUntil:
+    visible:
+      id: "class-students-row"
+    timeout: 20000
+- tapOn:
+    id: "class-add-form"
+- tapOn:
+    id: "add-form-blank"
+- extendedWaitUntil:
+    visible:
+      id: "form-mode-daily"
+    timeout: 10000
+- tapOn:
+    id: "form-mode-repeatable"
+- tapOn:
+    id: "form-scores-toggle"
+- takeScreenshot: fm-15-new-form
+- tapOn:
+    id: "screen-back"
+- tapOn: "Artı / eksi,.*"
+- extendedWaitUntil:
+    visible:
+      id: "mark-row-0"
+    timeout: 20000
+- tapOn:
+    id: "form-more"
+- tapOn: "Formu düzenle"
+- extendedWaitUntil:
+    visible:
+      id: "form-mode-repeatable"
+    timeout: 15000
+- takeScreenshot: fm-16-edit-locked
+- tapOn:
+    id: "screen-back"
+- tapOn:
+    id: "form-tab-history"
+- tapOn:
+    id: "range-custom"
+- extendedWaitUntil:
+    visible:
+      id: "range-apply"
+    timeout: 10000
+- tapOn:
+    id: "range-from-prev"
+- takeScreenshot: fm-17-range-sheet
+- tapOn:
+    id: "range-apply"
+- extendedWaitUntil:
+    visible:
+      id: "summary-totals"
+    timeout: 15000
+- takeScreenshot: fm-18-custom-range
+- tapOn:
+    id: "range-week"
+- tapOn:
+    id: "summary-row-1"
+- extendedWaitUntil:
+    visible:
+      id: "timeline-clear-student"
+    timeout: 15000
+- takeScreenshot: fm-19-student-timeline

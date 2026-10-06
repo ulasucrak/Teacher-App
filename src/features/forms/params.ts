@@ -8,5 +8,8 @@ export const formsRoutes = {
   create: (classId: string, preset?: string) =>
     preset ? (`/class/${classId}/form/new?preset=${preset}` as const) : (`/class/${classId}/form/new` as const),
   sessions: (classId: string, formId: string) => `/class/${classId}/form/${formId}` as const,
+  /** Form ekranı: "İşaretle" ve "Geçmiş" sekmeleri; `tab` ile sekme seçilir (varsayılan İşaretle). */
+  open: (classId: string, formId: string, tab?: 'mark' | 'history') =>
+    tab ? (`/class/${classId}/form/${formId}?tab=${tab}` as const) : (`/class/${classId}/form/${formId}` as const),
   edit: (classId: string, formId: string) => `/class/${classId}/form/${formId}/edit` as const,
 };

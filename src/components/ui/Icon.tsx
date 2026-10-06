@@ -43,6 +43,7 @@ const icons = {
   list: { ios: 'list.bullet', android: 'format_list_bulleted' },
   settings: { ios: 'gearshape', android: 'settings' },
   pencil: { ios: 'pencil.line', android: 'stylus' },
+  undo: { ios: 'arrow.uturn.backward', android: 'undo' },
 } satisfies Record<string, SymbolName>;
 
 export type IconName = keyof typeof icons;

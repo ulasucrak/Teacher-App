@@ -11,7 +11,7 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ classId: 'class-1', formId: 'form-1' }),
 }));
 
-jest.mock('../api', () => ({ getForm: jest.fn(), updateForm: jest.fn() }));
+jest.mock('../api', () => ({ getForm: jest.fn(), updateForm: jest.fn(), formHasRecords: jest.fn() }));
 
 jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
 
@@ -20,6 +20,7 @@ const mocked = jest.mocked(api);
 beforeEach(() => {
   jest.clearAllMocks();
   mocked.updateForm.mockResolvedValue(makeForm());
+  mocked.formHasRecords.mockResolvedValue(false);
 });
 
 async function renderScreen() {
@@ -80,5 +81,52 @@ describe('EditFormScreen', () => {
 
     expect(await screen.findByText(/Form bulunamadı/)).toBeOnTheScreen();
     expect(screen.queryByLabelText('Form adı')).toBeNull();
+  });
+
+  it('lets you change the form type while the form has no records', async () => {
+    mocked.getForm.mockResolvedValue(makeForm());
+    await renderScreen();
+
+    expect(await screen.findByTestId('form-mode-daily')).toBeSelected();
+    await fireEvent.press(screen.getByTestId('form-mode-repeatable'));
+    expect(screen.getByTestId('form-mode-description')).toHaveTextContent(/birden çok işaret/);
+
+    await fireEvent.press(screen.getByTestId('form-save'));
+    await waitFor(() => expect(mocked.updateForm).toHaveBeenCalled());
+    expect(mocked.updateForm.mock.calls[0]![1].mode).toBe('repeatable');
+  });
+
+  it('locks the form type and says why once the form has records', async () => {
+    mocked.getForm.mockResolvedValue(makeForm({ mode: 'repeatable' }));
+    mocked.formHasRecords.mockResolvedValue(true);
+    await renderScreen();
+
+    expect(await screen.findByTestId('form-mode-repeatable')).toBeSelected();
+    expect(screen.getByTestId('form-mode-daily')).toBeDisabled();
+    expect(screen.getByTestId('form-mode-description')).toHaveTextContent(/kayıt olduğu için türü değiştirilemez/);
+
+    await fireEvent.press(screen.getByTestId('form-mode-daily'));
+    expect(screen.getByTestId('form-mode-repeatable')).toBeSelected();
+  });
+
+  it('shows saved scores and keeps them on save', async () => {
+    mocked.getForm.mockResolvedValue(
+      makeForm({
+        mode: 'repeatable',
+        options: [
+          { key: 'arti', label: 'Artı', tone: 'positive', score: 1 },
+          { key: 'eksi', label: 'Eksi', tone: 'negative', score: -1 },
+        ],
+      }),
+    );
+    await renderScreen();
+
+    expect(await screen.findByLabelText('Artı puanı, isteğe bağlı')).toHaveDisplayValue('1');
+    expect(screen.getByLabelText('Eksi puanı, isteğe bağlı')).toHaveDisplayValue('-1');
+    await fireEvent.changeText(screen.getByLabelText('Eksi puanı, isteğe bağlı'), '-2');
+    await fireEvent.press(screen.getByTestId('form-save'));
+
+    await waitFor(() => expect(mocked.updateForm).toHaveBeenCalled());
+    expect(mocked.updateForm.mock.calls[0]![1].options.map((o) => o.score)).toEqual([1, -2]);
   });
 });

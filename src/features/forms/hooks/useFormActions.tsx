@@ -24,7 +24,7 @@ export interface UseFormActions {
 }
 
 /**
- * Form satırının ikincil eylemleri: Geçmiş kayıtlar, Düzenle, Diğer sınıflara kopyala,
+ * Form satırının ikincil eylemleri: Geçmiş, Düzenle, Diğer sınıflara kopyala,
  * Arşivle (geri alınabilir, onay yok), Sil (ConfirmSheet).
  */
 export function useFormActions({ classId, onChanged }: UseFormActionsOptions): UseFormActions {
@@ -115,9 +115,9 @@ export function useFormActions({ classId, onChanged }: UseFormActionsOptions): U
     ? [
         {
           key: 'history',
-          label: 'Geçmiş kayıtlar',
+          label: 'Geçmiş',
           icon: 'calendar',
-          onPress: () => router.push(formsRoutes.sessions(classId, menuForm.id)),
+          onPress: () => router.push(formsRoutes.open(classId, menuForm.id, 'history')),
         },
         {
           key: 'edit',

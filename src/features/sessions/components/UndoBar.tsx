@@ -11,13 +11,15 @@ export interface UndoBarProps {
   message: string | null;
   onUndo: () => void;
   onDismiss: () => void;
+  /** Alttan uzaklık; alt çubuğu olmayan ekranlarda güvenli alan eklenir. */
+  bottom?: number;
 }
 
 /**
  * Toplu işlem sonrası geri alma bandı (Toast eylem desteklemediği için yerel).
  * Liste alanının altında, alt çubuğun hemen üstünde durur.
  */
-export function UndoBar({ message, onUndo, onDismiss }: UndoBarProps) {
+export function UndoBar({ message, onUndo, onDismiss, bottom = spacing.md }: UndoBarProps) {
   const [opacity] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function UndoBar({ message, onUndo, onDismiss }: UndoBarProps) {
   if (!message) return null;
 
   return (
-    <Animated.View style={[styles.bar, { opacity }]} accessibilityLiveRegion="polite">
+    <Animated.View style={[styles.bar, { opacity, bottom }]} accessibilityLiveRegion="polite">
       <Text variant="label" tone="inverse" style={styles.text}>
         {message}
       </Text>
@@ -57,7 +59,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: layout.pageX,
     right: layout.pageX,
-    bottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,

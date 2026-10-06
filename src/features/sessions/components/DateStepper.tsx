@@ -11,33 +11,44 @@ export interface DateStepperProps {
   /** İleri tarih seçilebilsin mi (varsayılan: bugünden sonrası kapalı). */
   allowFuture?: boolean;
   today?: string;
+  /** Ekran okuyucu adı ve alt satır; varsayılan "Kayıt tarihi" (dönem seçicide "Başlangıç" / "Bitiş"). */
+  label?: string;
+  /** Verilirse düğmeler `${prefix}-prev` / `-next`, değer `${prefix}-value` olur (varsayılan `date`). */
+  testIDPrefix?: string;
 }
 
 /** Önceki / sonraki gün düğmeli basit tarih seçici (yeni bağımlılık gerektirmez). */
-export function DateStepper({ value, onChange, allowFuture = false, today = todayIso() }: DateStepperProps) {
+export function DateStepper({
+  value,
+  onChange,
+  allowFuture = false,
+  today = todayIso(),
+  label = 'Kayıt tarihi',
+  testIDPrefix = 'date',
+}: DateStepperProps) {
   const canGoNext = allowFuture || value < today;
   const relative = relativeDayLabel(value, today);
   return (
     <View style={styles.wrap}>
       <IconButton
         icon="back"
-        accessibilityLabel="Önceki gün"
-        testID="date-prev"
+        accessibilityLabel={`${label}: önceki gün`}
+        testID={`${testIDPrefix}-prev`}
         onPress={() => onChange(addDays(value, -1))}
         color={colors.primary}
       />
-      <View style={styles.center} testID="date-value" accessible accessibilityLabel={`Kayıt tarihi: ${formatSessionDate(value)}`}>
+      <View style={styles.center} testID={`${testIDPrefix}-value`} accessible accessibilityLabel={`${label}: ${formatSessionDate(value)}`}>
         <Text variant="label" align="center" numberOfLines={1}>
           {formatSessionDate(value)}
         </Text>
         <Text variant="caption" tone="muted" align="center">
-          {relative ?? 'Kayıt tarihi'}
+          {relative ?? label}
         </Text>
       </View>
       <IconButton
         icon="chevronRight"
-        accessibilityLabel="Sonraki gün"
-        testID="date-next"
+        accessibilityLabel={`${label}: sonraki gün`}
+        testID={`${testIDPrefix}-next`}
         onPress={() => onChange(addDays(value, 1))}
         disabled={!canGoNext}
         color={colors.primary}

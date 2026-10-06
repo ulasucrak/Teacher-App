@@ -12,7 +12,7 @@ export {
 export type { FormInput, FormListItem } from './api';
 export { ToneDots } from './components/ToneDots';
 export { FORM_MODES, formModeDescriptions, formModeLabels, parseFormMode } from './mode';
-export { MAX_SCORE, hasScores, isScore, parseOptions, slugify, toneLabels } from './options';
+export { MAX_SCORE, formatScoreText, hasScores, isScore, parseOptions, parseScoreText, slugify, toneLabels } from './options';
 export { PRESETS, getPreset } from './presets';
 export type { FormPreset, PresetId } from './presets';
 export { formsRoutes } from './params';

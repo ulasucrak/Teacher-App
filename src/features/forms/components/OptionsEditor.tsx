@@ -5,7 +5,16 @@ import { Button, Icon, Text } from '@/components/ui';
 import { colors, fontScale, iconSize, layout, radii, spacing, tones, typography } from '@/theme';
 import type { FormOptionTone } from '@/types/database';
 
-import { MAX_LABEL_LENGTH, MAX_OPTIONS, createDraftOption, moveOption, toneLabels, type DraftOption } from '../options';
+import {
+  MAX_LABEL_LENGTH,
+  MAX_OPTIONS,
+  createDraftOption,
+  formatScoreText,
+  moveOption,
+  parseScoreText,
+  toneLabels,
+  type DraftOption,
+} from '../options';
 import { FormIconButton } from './FormIcon';
 import { TonePicker } from './TonePicker';
 
@@ -16,18 +25,26 @@ interface OptionsEditorProps {
   errors?: Record<string, string>;
   /** Sıralama ve kaldırma düğmeleri ("Düzenle" açıkken). */
   editing?: boolean;
+  /** Her seçeneğin yanında isteğe bağlı "Puan" alanı (düzenleme modunda yer açmak için gizlenir). */
+  showScores?: boolean;
 }
 
 /**
  * Kompakt seçenek listesi: renk noktası + ad. Noktaya dokununca renk seçici açılır.
  * Sıralama ve kaldırma yalnızca `editing` açıkken görünür.
  */
-export function OptionsEditor({ options, onChange, errors = {}, editing = false }: OptionsEditorProps) {
+export function OptionsEditor({
+  options,
+  onChange,
+  errors = {},
+  editing = false,
+  showScores = false,
+}: OptionsEditorProps) {
   const [focusId, setFocusId] = useState<string | null>(null);
   const [toneOpenId, setToneOpenId] = useState<string | null>(null);
   const atMax = options.length >= MAX_OPTIONS;
 
-  const update = (id: string, patch: Partial<Pick<DraftOption, 'label' | 'tone'>>) => {
+  const update = (id: string, patch: Partial<Pick<DraftOption, 'label' | 'tone' | 'score'>>) => {
     onChange(options.map((o) => (o.id === id ? { ...o, ...patch } : o)));
   };
 
@@ -52,11 +69,13 @@ export function OptionsEditor({ options, onChange, errors = {}, editing = false 
               error={errors[option.id]}
               autoFocus={option.id === focusId}
               editing={editing}
+              showScore={showScores && !editing}
               toneOpen={toneOpenId === option.id}
               canMoveUp={index > 0}
               canMoveDown={index < options.length - 1}
               onToggleTone={() => setToneOpenId((cur) => (cur === option.id ? null : option.id))}
               onLabel={(label) => update(option.id, { label })}
+              onScore={(score) => update(option.id, { score })}
               onTone={(tone) => {
                 update(option.id, { tone });
                 setToneOpenId(null);
@@ -94,11 +113,14 @@ interface OptionRowProps {
   error?: string;
   autoFocus: boolean;
   editing: boolean;
+  showScore: boolean;
   toneOpen: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
   onToggleTone: () => void;
   onLabel: (label: string) => void;
+  /** Boş → `null`; geçersiz metin → `NaN` (doğrulama hata verir). */
+  onScore: (score: number | null) => void;
   onTone: (tone: FormOptionTone) => void;
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
@@ -111,16 +133,21 @@ function OptionRow({
   error,
   autoFocus,
   editing,
+  showScore,
   toneOpen,
   canMoveUp,
   canMoveDown,
   onToggleTone,
   onLabel,
+  onScore,
   onTone,
   onMove,
   onRemove,
 }: OptionRowProps) {
   const [focused, setFocused] = useState(false);
+  const [scoreText, setScoreText] = useState(() => formatScoreText(option.score));
+  const [scoreFocused, setScoreFocused] = useState(false);
+  const scoreInvalid = option.score !== null && Number.isNaN(option.score);
   const t = tones[option.tone];
   const testID = `option-row-${index}`;
 
@@ -164,6 +191,36 @@ function OptionRow({
             testID={`${testID}-input`}
           />
         </View>
+        {showScore ? (
+          <View
+            style={[
+              styles.scoreWrap,
+              scoreFocused && styles.inputFocused,
+              Boolean(error) && scoreInvalid && styles.inputError,
+            ]}
+          >
+            <TextInput
+              value={scoreText}
+              onChangeText={(text) => {
+                setScoreText(text);
+                onScore(parseScoreText(text));
+              }}
+              placeholder="Puan"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel={`${name} puanı, isteğe bağlı`}
+              keyboardType="numbers-and-punctuation"
+              returnKeyType="done"
+              maxLength={8}
+              selectionColor={colors.primary}
+              cursorColor={colors.primary}
+              maxFontSizeMultiplier={fontScale.max}
+              onFocus={() => setScoreFocused(true)}
+              onBlur={() => setScoreFocused(false)}
+              style={[styles.input, styles.scoreInput]}
+              testID={`${testID}-score`}
+            />
+          </View>
+        ) : null}
         {editing ? (
           <View style={styles.actions}>
             <FormIconButton
@@ -208,6 +265,7 @@ function OptionRow({
 }
 
 const SWATCH = spacing.xxl;
+const SCORE_WIDTH = spacing.huge + spacing.xl;
 const PLACEHOLDERS = ['Örneğin Geldi', 'Örneğin Gelmedi'];
 
 const styles = StyleSheet.create({
@@ -234,6 +292,16 @@ const styles = StyleSheet.create({
     borderColor: colors.surfaceMuted,
     justifyContent: 'center',
   },
+  scoreWrap: {
+    width: SCORE_WIDTH,
+    minHeight: layout.minTouch,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: layout.inputBorderFocus,
+    borderColor: colors.surfaceMuted,
+    justifyContent: 'center',
+  },
+  scoreInput: { textAlign: 'center', paddingHorizontal: spacing.xs },
   inputFocused: { backgroundColor: colors.surface, borderColor: colors.primary },
   inputError: { borderColor: colors.danger },
   input: {

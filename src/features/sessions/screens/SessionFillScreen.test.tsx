@@ -308,6 +308,14 @@ describe('SessionFillScreen', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/class/c1/students');
   });
 
+  it('opens the form history from the menu', async () => {
+    await renderScreen();
+
+    await fireEvent.press(screen.getByTestId('fill-more'));
+    await fireEvent.press(await screen.findByTestId('fill-menu-history'));
+    await waitFor(() => expect(mockRouter.push).toHaveBeenCalledWith('/class/c1/form/f1?tab=history'));
+  });
+
   it('deletes the session from the menu after confirmation', async () => {
     mocked.deleteSession.mockResolvedValue(undefined);
     await renderScreen();

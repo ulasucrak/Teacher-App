@@ -1,3 +1,3 @@
-import { FormSessionsScreen } from '@/features/sessions';
+import { FormScreen } from '@/features/formview';
 
-export default FormSessionsScreen;
+export default FormScreen;

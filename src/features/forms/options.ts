@@ -105,6 +105,23 @@ export function isScore(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+/**
+ * Puan alanına yazılan metni sayıya çevirir: boş → `null` (puansız); "+1", "-1", "−1", "0,5",
+ * "0.5" geçerli; diğer her şey `NaN` (doğrulama "geçerli bir sayı olmalı" der).
+ */
+export function parseScoreText(text: string): number | null {
+  const trimmed = text.trim().replace(/\u2212/g, '-').replace(',', '.');
+  if (trimmed === '') return null;
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(trimmed)) return Number.NaN;
+  return Number(trimmed);
+}
+
+/** Puanı alana yazılacak metne çevirir ("-1", "0,5"); puansız → "". */
+export function formatScoreText(score: number | null): string {
+  if (score === null || Number.isNaN(score)) return '';
+  return String(score).replace('.', ',');
+}
+
 /** Puanı olan seçenek nesnesi; puansızda `score` alanı hiç yazılmaz. */
 function withScore(option: Omit<FormOption, 'score'>, score: number | null | undefined): FormOption {
   return isScore(score) ? { ...option, score } : option;

@@ -218,3 +218,9 @@ export function groupEventsByDay(events: readonly HistoryEvent[]): HistoryDayGro
   }
   return groups;
 }
+
+/** Olay anının yerel saati: "10:32". Geçersiz girdide boş metin. */
+export function formatEventClock(occurredAt: string): string {
+  const date = parseInstant(occurredAt);
+  return date ? `${pad(date.getHours())}:${pad(date.getMinutes())}` : '';
+}

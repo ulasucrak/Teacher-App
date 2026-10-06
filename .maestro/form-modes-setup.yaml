@@ -1,0 +1,38 @@
+# Form türleri 1/2: test hesabı (yoksa açılır), "7/F" sınıfı, Yoklama + Artı / eksi formları.
+appId: com.ulas.teacherapp
+name: form-modes-setup
+env:
+  EMAIL: test+formmodes@ornek.com
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    when:
+      visible:
+        id: "classes-list"
+    file: subflows/sign-out.yaml
+- tapOn:
+    id: "login-register"
+- extendedWaitUntil:
+    visible:
+      id: "register-screen"
+    timeout: 10000
+- tapOn:
+    id: "register-name"
+- inputText: "Form Deneme"
+- tapOn:
+    id: "register-email"
+- inputText: ${EMAIL}
+- tapOn: "Şifreyi göster"
+- tapOn:
+    id: "register-password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "register-submit"
+- extendedWaitUntil:
+    visible:
+      id: "classes-list|register-done"
+    timeout: 30000
+- runFlow: subflows/dismiss-save-password.yaml
+- takeScreenshot: fm-01-after-register

@@ -18,6 +18,7 @@ export {
   describeChange,
   describeEvent,
   eventLocalDay,
+  formatEventClock,
   formatEventTime,
   groupEventsByDay,
   optionLabel,

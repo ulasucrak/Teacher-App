@@ -1,10 +1,12 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { IconButton, IconTile, ListRow } from '@/components/ui';
+import { Badge, IconButton, IconTile, ListRow } from '@/components/ui';
 import { formatCompactDate } from '@/features/sessions/date';
-import { colors, iconSize, layout } from '@/theme';
+import { colors, iconSize, layout, spacing } from '@/theme';
+import type { FormMode } from '@/types/database';
 
 import type { FormListItem } from '../api';
+import { formModeLabels } from '../mode';
 import { presetIcon } from '../presets';
 
 interface FormListRowProps {
@@ -19,15 +21,23 @@ interface FormListRowProps {
   openHint?: string;
 }
 
-/** Son kayıt tarihinin kısa metni: "Son kayıt: Bugün" ya da "Henüz kayıt yok". */
-export function lastSessionLabel(date: string | null): string {
+/**
+ * Son kayıt tarihinin kısa metni: "Son kayıt: Bugün" ya da "Henüz kayıt yok".
+ * Birikimli formda kayıt değil işaret verilir: "Son işaret: Dün" / "Henüz işaret yok".
+ */
+export function lastSessionLabel(date: string | null, mode: FormMode = 'daily'): string {
   const compact = date ? formatCompactDate(date) : null;
-  return compact ? `Son kayıt: ${compact}` : 'Henüz kayıt yok';
+  const noun = mode === 'repeatable' ? 'işaret' : 'kayıt';
+  return compact ? `Son ${noun}: ${compact}` : `Henüz ${noun} yok`;
 }
 
-/** Kompakt form satırı: ikon, ad, son kayıt; sağda "⋯". Uzun basış da menüyü açar. */
+/**
+ * Kompakt form satırı: ikon, ad, son kayıt; sağda "⋯". Birikimli formda "Birikimli" rozeti
+ * (günde bir kez olan olağan türdür, rozetsiz). Uzun basış da menüyü açar.
+ */
 export function FormListRow({ form, index, onOpen, onMore, busy = false, openHint }: FormListRowProps) {
-  const subtitle = lastSessionLabel(form.lastSessionDate);
+  const subtitle = lastSessionLabel(form.lastSessionDate, form.mode);
+  const repeatable = form.mode === 'repeatable';
   const testID = `form-row-${index}`;
   return (
     <ListRow
@@ -37,11 +47,17 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
       showChevron={false}
       onPress={busy ? undefined : onOpen}
       onLongPress={onMore}
-      accessibilityLabel={`${form.title}, ${subtitle}`}
+      accessibilityLabel={`${form.title}, ${repeatable ? `${formModeLabels.repeatable}, ` : ''}${subtitle}`}
       accessibilityHint={openHint}
       testID={testID}
       trailing={
-        <View style={styles.trailing}>
+        <View style={styles.trailingRow}>
+          {repeatable ? (
+            <View style={styles.badge}>
+              <Badge label={formModeLabels.repeatable} testID={`${testID}-mode`} />
+            </View>
+          ) : null}
+          <View style={styles.trailing}>
           {busy ? (
             <ActivityIndicator color={colors.primary} testID={`${testID}-busy`} />
           ) : (
@@ -54,6 +70,7 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
               testID={`${testID}-more`}
             />
           )}
+          </View>
         </View>
       }
     />
@@ -61,5 +78,7 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
 }
 
 const styles = StyleSheet.create({
+  badge: { alignSelf: 'center' },
+  trailingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   trailing: { width: layout.minTouch, alignItems: 'center', justifyContent: 'center', marginRight: -layout.pageX / 2 },
 });

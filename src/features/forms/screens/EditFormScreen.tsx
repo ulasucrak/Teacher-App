@@ -6,13 +6,16 @@ import { Banner, Button, LoadingState, Screen, useToast } from '@/components/ui'
 import { spacing } from '@/theme';
 import type { FormRow } from '@/types/database';
 
-import { getForm, updateForm, type FormInput } from '../api';
+import { formHasRecords, getForm, updateForm, type FormInput } from '../api';
 import { FormBuilder } from '../components/FormBuilder';
 import { errorMessage, getFormsErrorMessage } from '../errors';
 import { toDraftOptions } from '../options';
 import { firstParam } from '../params';
 
-type LoadState = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; form: FormRow };
+type LoadState =
+  | { kind: 'loading' }
+  | { kind: 'error'; message: string }
+  | { kind: 'ready'; form: FormRow; hasRecords: boolean };
 
 /** /class/[classId]/form/[formId]/edit — formun adını, açıklamasını ve seçeneklerini düzenleme. */
 export default function EditFormScreen() {
@@ -27,14 +30,14 @@ export default function EditFormScreen() {
 
   useEffect(() => {
     let alive = true;
-    getForm(formId).then(
-      (form) => {
+    Promise.all([getForm(formId), formHasRecords(formId)]).then(
+      ([form, hasRecords]) => {
         if (!alive) return;
         // Adres başka bir sınıfı gösteriyorsa form bu sınıfta yok sayılır.
         if (classId && form.class_id !== classId) {
           setState({ kind: 'error', message: getFormsErrorMessage({ code: 'PGRST116' }, 'load') });
         } else {
-          setState({ kind: 'ready', form });
+          setState({ kind: 'ready', form, hasRecords });
         }
       },
       (error: unknown) => {
@@ -66,7 +69,7 @@ export default function EditFormScreen() {
     );
   }
 
-  const { form } = state;
+  const { form, hasRecords } = state;
 
   const onSubmit = async (input: FormInput) => {
     await updateForm(form.id, input);
@@ -84,7 +87,9 @@ export default function EditFormScreen() {
         subject: form.subject ?? '',
         description: form.description ?? '',
         options: toDraftOptions(form.options),
+        mode: form.mode,
       }}
+      modeLocked={hasRecords}
       originalOptions={form.options}
       submitLabel="Kaydet"
       onSubmit={onSubmit}
