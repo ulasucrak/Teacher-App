@@ -31,7 +31,13 @@ env:
 - tapOn:
     id: "register-password"
 - inputText: ${PASSWORD}
-- hideKeyboard
+# iOS 27 simülatöründe hideKeyboard güvenilir değil (donanım klavyesi bağlıyken yazılım klavyesi
+# görünmese de XCUITest "Keyboard" öğesini var sayar, Maestro "Couldn't hide the keyboard" der).
+# Bunun yerine dokunulamayan açıklama metnine dokunulur: Screen'in ScrollView'ı
+# (keyboardShouldPersistTaps="handled") klavyeyi kapatır, klavye yoksa etkisizdir.
+- tapOn: "Sınıflarınız ve kayıtlarınız bu hesapta saklanır."
+# Klavye kapanırken düzen kayar; eski konuma dokunmamak için animasyon beklenir.
+- waitForAnimationToEnd
 - takeScreenshot: auth-02-register-filled
 - tapOn:
     id: "register-submit"
