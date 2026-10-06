@@ -65,8 +65,11 @@ export interface StudentCollector {
   removeRow: (id: string) => void;
   /** Alanlarda eklenmemiş metin var mı (yapıştırılan liste ya da yazılan ad). */
   hasPending: boolean;
-  /** Bekleyen metni listeye ekler ve kaydedilecek öğrencileri döner (Devam / Kaydet öncesi). */
-  flush: () => StudentDraft[];
+  /**
+   * Bekleyen metni listeye ekler ve kaydedilecek öğrencileri döner (Devam / Kaydet öncesi).
+   * Yapıştırılan metinden hiç öğrenci eklenemediyse null döner (uyarı gösterilir; ekran ilerlemez).
+   */
+  flush: () => StudentDraft[] | null;
   /** Kullanıcı bir şey girdi mi (çıkış onayı için). */
   dirty: boolean;
 }
@@ -194,8 +197,12 @@ export function useStudentCollector(
     [commit],
   );
 
-  const flush = useCallback((): StudentDraft[] => {
-    if (pasteText.trim()) addPastedText(pasteText);
+  const flush = useCallback((): StudentDraft[] | null => {
+    if (pasteText.trim() && addPastedText(pasteText) === 0) {
+      // Metin yoksayılıp ilerlenmesin: öğretmen listenin neden eklenmediğini görsün.
+      setNotice((current) => current ?? { kind: 'warning', message: collectMessages.nothingPasted });
+      return null;
+    }
     if (typedText.trim()) addTypedText(typedText);
     return toDrafts(rowsRef.current);
   }, [addPastedText, addTypedText, pasteText, typedText]);

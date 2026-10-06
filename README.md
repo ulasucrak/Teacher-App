@@ -13,20 +13,31 @@ yoklama, ödev kontrolü, sözlü, derse katılım gibi formları hızlıca dold
 
 - **Hesap:** e-posta ve şifreyle kayıt, giriş, çıkış; e-postayla şifre sıfırlama
   (bağlantı uygulamadaki "Yeni şifre belirleyin" ekranını açar). Oturum cihazda saklanır.
-- **Sınıflar:** sınıf ekleme, düzenleme, silme; listede öğrenci ve form sayıları.
-- **Öğrenciler:** elle ekleme ve düzenleme (ad Türkçe kurallarla düzenlenir, okul numarası
-  isteğe bağlı), Türkçe karakterleri yok sayan arama, toplu seçip silme.
+- **Sınıflarım:** sınıf listesi (öğrenci ve form sayısıyla), tek ana eylem "+ Yeni sınıf".
+- **Yeni sınıf sihirbazı (3 adım):** Ad → Öğrenciler → Formlar. Öğrenciler fotoğraftan,
+  yapıştırılan listeden (satır başına ya da virgülle ayrılmış adlar, baştaki numara okul no) ya da
+  tek tek yazılarak eklenir ve tek listede gözden geçirilir; son adımda hazır formlar (Yoklama,
+  Ödev kontrolü, Sözlü, Derse katılım) seçilir. Sınıf son adımda tek seferde oluşturulur.
+- **Sınıf ekranı:** formlar üstte (satıra dokununca bugünün kaydı açılır), küçük "+ Form"
+  (hazır form, başka sınıftan kopyalama ya da boş form), altta "Öğrenciler" satırı. Sınıfı
+  düzenleme/silme ve arşivdeki formlar "⋯" menüsünde.
+- **Öğrenciler:** Türkçe karakterleri yok sayan arama, düzenleme ve silme (düzenleme panelinden),
+  toplu seçip silme ve "Öğrenci ekle" (fotoğraf / liste / elle) "⋯" menüsünde.
 - **Fotoğraftan öğrenci ekleme:** e-Okul sınıf listesinin ya da el yazısı bir listenin
-  fotoğrafı cihaz üzerinde okunur (iOS'ta Apple Vision, Android'de ML Kit; internet gerekmez). Numara ve ad ayrıştırılır,
-  sınıfta zaten olan ya da şüpheli satırlar işaretlenir; öğretmen listeyi gözden geçirip
-  onaylar. Büyük harfli listelerde noktası okunmayan "İ" için yaygın "ı"lı ad/soyad listesi
-  kullanılır (`src/features/ocr/trNames.ts`).
-- **Formlar:** yoklama, ödev kontrolü, sözlü, derse katılım şablonları ya da boş form;
-  seçenekler ve renk tonları (olumlu, nötr, uyarı, olumsuz) düzenlenebilir. Form arşivleme,
-  silme, diğer sınıflara kopyalama ve başka sınıftan form ekleme.
-- **Kayıtlar (oturumlar):** bir form için tarih seçip kayıt açma, öğrencileri tek dokunuşla
-  işaretleme, toplu uygulama ve geri alma, öğrenciye not ekleme, taslak/yayında durumu;
-  kayıt listesinde doluluk ve seçenek sayımları.
+  fotoğrafı cihaz üzerinde okunur (iOS'ta Apple Vision, Android'de ML Kit; internet gerekmez).
+  Numara ve ad ayrıştırılır, sınıfta zaten olan ya da şüpheli satırlar işaretlenir; öğretmen
+  listeyi gözden geçirip onaylar. Büyük harfli listelerde noktası okunmayan "İ" için yaygın
+  "ı"lı ad/soyad listesi kullanılır (`src/features/ocr/trNames.ts`). Yazılan/yapıştırılan adlar
+  ise olduğu gibi alınır (sözlükle "düzeltilmez").
+- **Formlar:** seçenekler ve renk tonları (olumlu, nötr, uyarı, olumsuz) düzenlenebilir; form
+  arşivleme, silme, diğer sınıflara kopyalama.
+- **Kayıt doldurma:** günün kaydı tek ekranda: tarih, ilerleme ("21/28"), ince "Tümü" satırı,
+  öğrenci başına kompakt seçenekler (≤ 4 seçenekte tek satır), not, geri alınabilir toplu
+  işaretleme ve altta "Kaydet". Kaydedilmemiş değişiklikle çıkış (geri tuşu ya da kaydırma) onay
+  ister. Kayıt ilk "Kaydet"te oluşturulur; boş kayıt birikmez.
+
+Tasarım dili ("Kalem kutusu": ekranda tek sarı ana eylem, kurşun metin, sade liste satırları)
+ve yazı kuralları [`docs/DESIGN.md`](docs/DESIGN.md) içindedir.
 
 ### Ekranlar (yönlendirme)
 
@@ -34,14 +45,16 @@ yoklama, ödev kontrolü, sözlü, derse katılım gibi formları hızlıca dold
 |---|---|
 | `/login`, `/register`, `/forgot-password`, `/reset-password` | Hesap ekranları |
 | `/` | Sınıflarım |
-| `/class/new` (`?classId=` ile düzenleme) | Sınıf ekle / düzenle |
-| `/class/[classId]` | Sınıf ayrıntısı ve öğrenci listesi |
-| `/class/[classId]/import` | Fotoğraftan öğrenci ekleme |
-| `/class/[classId]/forms` | Sınıfın formları |
+| `/class/new` (`?classId=` ile düzenleme) | Yeni sınıf sihirbazı / sınıfı düzenle |
+| `/class/[classId]` | Sınıf ekranı (formlar + öğrenciler satırı) |
+| `/class/[classId]/students` | Öğrenciler |
+| `/class/[classId]/import` (`?method=photo\|paste\|type`) | Öğrenci ekle |
+| `/class/[classId]/forms` | Arşivdeki formlar |
 | `/class/[classId]/form/new` (`?preset=` şablon) | Yeni form |
 | `/class/[classId]/form/[formId]` | Formun kayıtları |
 | `/class/[classId]/form/[formId]/edit` | Formu düzenle |
-| `/class/[classId]/form/[formId]/session/[sessionId]` | Kaydı doldur |
+| `/class/[classId]/form/[formId]/session/[sessionId]` (`new?date=`) | Kaydı doldur |
+| bilinmeyen adres | Sınıflarım'a yönlendirilir (`app/+not-found.tsx`) |
 
 ## Kurulum
 
@@ -126,6 +139,40 @@ kaldırır. Pencere ve React Native sahnede başlatılır; `teacherapp://` bağl
 `RCTLinkingManager`'a iletilir. `ios/` klasörünü elle düzenlemeyin. Şablon değişirse eklenti
 prebuild'i hatayla durdurur; Expo şablonu UIScene'i kendisi desteklediğinde eklenti kaldırılabilir.
 
+## E2E testleri (Maestro)
+
+`.maestro/` altındaki akışlar uygulamayı iOS simülatöründe uçtan uca dener
+([Maestro](https://maestro.dev) 2.x, `~/.maestro/bin/maestro`). Uygulama **gerçek Supabase
+projesine** bağlanır; adlar yapaydır.
+
+| Akış | Ne dener |
+|---|---|
+| `auth.yaml` | Yeni hesap (`e2e+<zaman>@sinifdefteri.test`), çıkış, giriş; ardından test hesabıyla giriş |
+| `wizard.yaml` | "E2E 6/A" sihirbazı: 5 ad yapıştır → gözden geçir → Yoklama + Ödev kontrolü → sınıf ekranı |
+| `photo-import.yaml` | Öğrenciler → Öğrenci ekle → Fotoğraftan → Galeriden seç; 8 adlı yapay e-Okul listesinden en az 6'sı okunur, sayı artar |
+| `forms.yaml` | "+ Form" → Sözlü; Yoklama: Tümü Geldi, bir öğrenci Gelmedi, Kaydet, yeniden açınca kayıtlı |
+| `students.yaml` | Ara ("ayse" → Ayşe), adı düzenle, sil; sonunda E2E sınıfını siler |
+
+Ortak adımlar `.maestro/subflows/` içinde (açılış, giriş, çıkış, sınıf açma/silme). Akışlar
+sırayla çalışır (`.maestro/config.yaml`); `wizard` önceki çalıştırmadan kalan "E2E 6/A"
+sınıflarını önce siler.
+
+```bash
+npx expo run:ios --device <UDID> --port 8087     # bir kez: derle ve kur
+npx expo start --dev-client --port 8087          # Metro (ayrı terminal)
+DEVICE=<UDID> scripts/e2e/run.sh                 # tüm akışlar
+DEVICE=<UDID> FLOWS="forms students" scripts/e2e/run.sh
+```
+
+`scripts/e2e/run.sh` önce yapay sınıf listesini (`scripts/e2e/make-list-image.swift`)
+simülatör galerisine ekler, geliştirme derlemesinin yüzen "Tools" düğmesini ve tanıtım
+penceresini kapatır (uygulamanın `EXDevMenu*` ayarları), sonra akışları çalıştırır. Ekran
+görüntüleri `OUT_DIR`'e (varsayılan `$TMPDIR/sinif-defteri-e2e`) yazılır. Test hesabı
+`EMAIL`/`PASSWORD` ile değiştirilebilir (varsayılan `e2e+u02@sinifdefteri.test`). Bilinen
+tuzaklar: iOS "Save Password?" penceresi akışlarda kapatılır; şifre alanına yazmadan önce
+"Şifreyi göster"e dokunulur (güçlü şifre önerisi alanı örtmesin); panel açılırken dokunmadan
+önce animasyon beklenir. `auth.yaml` her çalıştırmada yeni bir test hesabı bırakır.
+
 ## Komutlar
 
 | Komut | Ne yapar |
@@ -146,8 +193,8 @@ app/                     Yönlendirme (expo-router); ekranlar features/ içinden
 src/
   components/ui/         Tasarım sistemi bileşenleri (Screen, Button, OptionChip, Sheet, …)
   features/auth/         Oturum sağlayıcısı, useAuth, Türkçe hata metinleri
-  features/classes/      Sınıf listesi, sınıf ekle/düzenle, sınıf ayrıntısı
-  features/students/     Öğrenci API'si, ad düzenleme, öğrenci formu
+  features/classes/      Sınıflarım, yeni sınıf sihirbazı (wizard/), sınıf ekranı, sınıfı düzenle
+  features/students/     Öğrenciler ekranı, öğrenci API'si, ad düzenleme, öğrenci paneli
   features/ocr/          Fotoğraftan öğrenci ekleme (Vision/ML Kit, ayrıştırıcı, gözden geçirme)
   features/forms/        Form listesi, form oluşturucu, kopyalama
   features/sessions/     Kayıt listesi ve kayıt doldurma ekranı, tarih yardımcıları
@@ -155,7 +202,10 @@ src/
   types/database.ts      Veritabanı tipleri
   theme/                 Renk, yazı, boşluk, ikon boyutu, radius, gölge ve hareket token'ları
 modules/                 Yerel Expo modülleri (vision-text-recognition: iOS Apple Vision OCR)
-docs/DESIGN.md           Tasarım sistemi ve yazı dili kuralları
+docs/DESIGN.md           Tasarım dili ("Kalem kutusu"), ekran kalıpları, yazı kuralları
+.maestro/                Maestro uçtan uca akışları (iOS simülatörü)
+scripts/e2e/             E2E çalıştırıcısı ve yapay sınıf listesi üreticisi
+scripts/ocr/             OCR doğruluk fikstürleri üreticisi (Apple Vision, macOS)
 supabase/                Göçler ve yerel Supabase yapılandırması
 react-native.config.js   ML Kit'i iOS'ta bağlamaz (iOS'ta OCR Apple Vision ile yapılır)
 ```

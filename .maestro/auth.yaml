@@ -1,0 +1,74 @@
+# a. Hesap: yeni hesap aç (e2e+<zaman>@sinifdefteri.test), çıkış yap, aynı hesapla giriş yap.
+# E-posta doğrulaması isteniyorsa var olan test hesabına (${EMAIL}) düşülür.
+appId: com.ulas.teacherapp
+name: auth
+env:
+  EMAIL: e2e+u02@sinifdefteri.test
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/launch.yaml
+- runFlow:
+    when:
+      visible:
+        id: "classes-list"
+    file: subflows/sign-out.yaml
+- takeScreenshot: auth-01-login
+- tapOn:
+    id: "login-register"
+- extendedWaitUntil:
+    visible:
+      id: "register-screen"
+    timeout: 10000
+- evalScript: ${output.newEmail = 'e2e+' + Date.now() + '@sinifdefteri.test'}
+- tapOn:
+    id: "register-name"
+- inputText: "E2E Öğretmen"
+- tapOn:
+    id: "register-email"
+- inputText: ${output.newEmail}
+# Şifre görünür yapılınca iOS "güçlü şifre" önerisi alanı kapatmaz.
+- tapOn: "Şifreyi göster"
+- tapOn:
+    id: "register-password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- takeScreenshot: auth-02-register-filled
+- tapOn:
+    id: "register-submit"
+- extendedWaitUntil:
+    visible:
+      id: "classes-list|register-done"
+    timeout: 30000
+- runFlow: subflows/dismiss-save-password.yaml
+- takeScreenshot: auth-03-after-register
+# Doğrulama gerekmediyse: yeni hesapla çıkış + giriş.
+- runFlow:
+    when:
+      visible:
+        id: "classes-list"
+    commands:
+      - assertVisible:
+          id: "classes-empty"
+      - runFlow: subflows/sign-out.yaml
+      - runFlow:
+          file: subflows/login.yaml
+          env:
+            EMAIL: ${output.newEmail}
+      - runFlow: subflows/sign-out.yaml
+# Doğrulama gerekiyorsa: giriş ekranına dön.
+- runFlow:
+    when:
+      visible:
+        id: "register-done"
+    commands:
+      - tapOn:
+          id: "register-done"
+- extendedWaitUntil:
+    visible:
+      id: "login-screen"
+    timeout: 10000
+# Sonraki akışlar sabit test hesabını kullanır (yeni hesaplar birikmesin diye veri orada tutulmaz).
+- runFlow: subflows/login.yaml
+- assertVisible:
+    id: "classes-screen"
+- takeScreenshot: auth-04-logged-in

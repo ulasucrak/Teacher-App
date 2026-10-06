@@ -21,8 +21,8 @@ import { colors, layout, spacing } from '@/theme';
 import type { FormEntryRow, FormRow, FormSessionRow, StudentRow } from '@/types/database';
 
 import {
-  createSession,
   deleteSession,
+  ensureSessionForDate,
   findSessionByDate,
   getForm,
   getSession,
@@ -155,6 +155,11 @@ export function SessionFillScreen() {
     return unsubscribe;
   }, [navigation]);
 
+  // iOS'ta kaydırarak geri dönüş beforeRemove ile durdurulamaz: değişiklik varken kapalı.
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: dirtyCount === 0 });
+  }, [navigation, dirtyCount]);
+
   // --- Eylemler --------------------------------------------------------------
   const onToggle = useCallback((studentId: string, optionKey: string) => {
     dispatch({ type: 'toggle', studentId, optionKey });
@@ -183,13 +188,28 @@ export function SessionFillScreen() {
     setSaving(true);
     try {
       let session = data.session;
+      let createdNow = false;
       if (!session) {
-        session = await createSession({ formId, sessionDate: data.date });
-        const created = session;
-        setData((d) => (d ? { ...d, session: created } : d));
+        const result = await ensureSessionForDate({ formId, sessionDate: data.date });
+        session = result.session;
+        createdNow = result.created;
       }
       const payload = buildUpsertPayload(state, session.id);
-      await upsertEntries(payload);
+      try {
+        await upsertEntries(payload);
+      } catch (error) {
+        // Yeni oluşturulan kayıt boş kalmasın: ilk kaydetme başarısızsa geri alınır.
+        if (createdNow) await deleteSession(session.id).catch(() => undefined);
+        else if (!data.session) {
+          const existing = session;
+          setData((d) => (d ? { ...d, session: existing } : d));
+        }
+        throw error;
+      }
+      if (!data.session) {
+        const saved = session;
+        setData((d) => (d ? { ...d, session: saved } : d));
+      }
       dispatch({ type: 'saved', entries: payload });
       if (session.status === 'draft') {
         // Eski taslak kayıtlar kaydedilince yayına alınır (taslak arayüzü kaldırıldı).

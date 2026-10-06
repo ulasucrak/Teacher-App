@@ -16,7 +16,7 @@ jest.mock('../api', () => {
     getForm: jest.fn(),
     getSession: jest.fn(),
     findSessionByDate: jest.fn(),
-    createSession: jest.fn(),
+    ensureSessionForDate: jest.fn(),
     listStudents: jest.fn(),
     listEntries: jest.fn(),
     upsertEntries: jest.fn(),
@@ -27,12 +27,13 @@ jest.mock('../api', () => {
 
 const mockRouter = { back: jest.fn(), push: jest.fn(), canGoBack: jest.fn(() => true) };
 const mockAddListener = jest.fn((..._args: unknown[]) => () => undefined);
+const mockSetOptions = jest.fn();
 let mockParams: Record<string, string> = { classId: 'c1', formId: 'f1', sessionId: 's1' };
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams,
   useRouter: () => mockRouter,
-  useNavigation: () => ({ addListener: mockAddListener, dispatch: jest.fn() }),
+  useNavigation: () => ({ addListener: mockAddListener, dispatch: jest.fn(), setOptions: mockSetOptions }),
 }));
 jest.mock('react-native/Libraries/Modal/Modal', () => jest.requireActual('@/test/nativeModalMock'));
 
@@ -149,14 +150,14 @@ describe('SessionFillScreen', () => {
     expect(mocked.upsertEntries.mock.calls[0][0]).toHaveLength(2);
     expect(await screen.findByText('Kaydedildi')).toBeOnTheScreen();
     expect(saveButton()).toBeDisabled();
-    expect(mocked.createSession).not.toHaveBeenCalled();
+    expect(mocked.ensureSessionForDate).not.toHaveBeenCalled();
     expect(mocked.updateSessionStatus).not.toHaveBeenCalled();
   });
 
   it("opens today's unsaved session and creates it on first save", async () => {
     mockParams = { classId: 'c1', formId: 'f1', sessionId: 'new', date: '2026-10-07' };
     mocked.findSessionByDate.mockResolvedValue(null);
-    mocked.createSession.mockResolvedValue({ ...session, id: 'created', session_date: '2026-10-07' });
+    mocked.ensureSessionForDate.mockResolvedValue({ session: { ...session, id: 'created', session_date: '2026-10-07' }, created: true });
     await renderScreen();
 
     expect(mocked.findSessionByDate).toHaveBeenCalledWith('f1', '2026-10-07');
@@ -167,9 +168,46 @@ describe('SessionFillScreen', () => {
     await fireEvent.press(saveButton());
 
     await waitFor(() => expect(mocked.upsertEntries).toHaveBeenCalledTimes(1));
-    expect(mocked.createSession).toHaveBeenCalledWith({ formId: 'f1', sessionDate: '2026-10-07' });
+    expect(mocked.ensureSessionForDate).toHaveBeenCalledWith({ formId: 'f1', sessionDate: '2026-10-07' });
     expect(mocked.upsertEntries.mock.calls[0][0]).toHaveLength(3);
     expect(mocked.upsertEntries.mock.calls[0][0][0]).toMatchObject({ session_id: 'created' });
+  });
+
+  it('deletes the just-created session when the first save fails', async () => {
+    mockParams = { classId: 'c1', formId: 'f1', sessionId: 'new', date: '2026-10-07' };
+    mocked.findSessionByDate.mockResolvedValue(null);
+    mocked.ensureSessionForDate.mockResolvedValue({ session: { ...session, id: 'created', session_date: '2026-10-07' }, created: true });
+    mocked.upsertEntries.mockRejectedValueOnce(new Error('network down'));
+    mocked.deleteSession.mockResolvedValue(undefined);
+    await renderScreen();
+
+    await fireEvent.press(screen.getByTestId('bulk-done'));
+    await fireEvent.press(saveButton());
+
+    await waitFor(() => expect(mocked.deleteSession).toHaveBeenCalledWith('created'));
+    // Değişiklikler hâlâ kaydedilmemiş; tekrar kaydetmek yeni kayıt oluşturur.
+    expect(saveButton()).not.toBeDisabled();
+  });
+
+  it('keeps a session another device created when the first save fails', async () => {
+    mockParams = { classId: 'c1', formId: 'f1', sessionId: 'new', date: '2026-10-07' };
+    mocked.findSessionByDate.mockResolvedValue(null);
+    mocked.ensureSessionForDate.mockResolvedValue({ session: { ...session, id: 'other', session_date: '2026-10-07' }, created: false });
+    mocked.upsertEntries.mockRejectedValueOnce(new Error('network down'));
+    await renderScreen();
+
+    await fireEvent.press(screen.getByTestId('bulk-done'));
+    await fireEvent.press(saveButton());
+
+    await waitFor(() => expect(mocked.upsertEntries).toHaveBeenCalledTimes(1));
+    expect(mocked.deleteSession).not.toHaveBeenCalled();
+  });
+
+  it('disables the iOS swipe-back gesture while there are unsaved changes', async () => {
+    await renderScreen();
+    expect(mockSetOptions).toHaveBeenLastCalledWith({ gestureEnabled: true });
+    await fireEvent.press(screen.getByTestId('bulk-done'));
+    expect(mockSetOptions).toHaveBeenLastCalledWith({ gestureEnabled: false });
   });
 
   it("reuses the day's existing session", async () => {

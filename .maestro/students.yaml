@@ -1,0 +1,90 @@
+# e. Öğrenciler: ara, adı düzenle, bir öğrenciyi sil. Sonunda E2E sınıfı silinir (test verisi kalmasın).
+appId: com.ulas.teacherapp
+name: students
+env:
+  EMAIL: e2e+u02@sinifdefteri.test
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/ensure-login.yaml
+- runFlow: subflows/open-e2e-class.yaml
+- tapOn:
+    id: "class-students-row"
+- extendedWaitUntil:
+    visible:
+      id: "students-search"
+    timeout: 20000
+- copyTextFrom:
+    id: "students-count"
+- evalScript: ${output.before = parseInt(maestro.copiedText, 10)}
+# Arama Türkçe harfleri yok sayar: "ayse" → "Ayşe Yılmaz".
+- tapOn:
+    id: "students-search"
+- inputText: "ayse"
+- hideKeyboard
+- assertVisible:
+    id: "student-row-0"
+    text: ".*Ayşe Yılmaz.*"
+- assertNotVisible:
+    id: "student-row-1"
+- takeScreenshot: students-01-search
+# Düzenle.
+- tapOn:
+    id: "student-row-0"
+- extendedWaitUntil:
+    visible:
+      id: "student-sheet-name"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: "student-sheet-name"
+- eraseText: 40
+- inputText: "Ayşe Yılmaz Kaya"
+# (hideKeyboard iOS'ta "return" gönderip formu kaydedebilir; doğrudan Kaydet'e dokunulur.)
+- takeScreenshot: students-02-edit
+- tapOn:
+    id: "student-sheet-save"
+- extendedWaitUntil:
+    visible: "Kaydedildi"
+    timeout: 15000
+- assertVisible:
+    id: "student-row-0"
+    text: ".*Ayşe Yılmaz Kaya.*"
+# Sil (düzenleme paneli → Öğrenciyi sil → onay).
+- tapOn:
+    id: "student-row-0"
+- extendedWaitUntil:
+    visible:
+      id: "student-sheet-delete"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: "student-sheet-delete"
+- extendedWaitUntil:
+    visible:
+      id: "students-delete-confirm-confirm"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: "students-delete-confirm-confirm"
+- extendedWaitUntil:
+    visible:
+      id: "students-no-match"
+    timeout: 15000
+- takeScreenshot: students-03-deleted
+- tapOn:
+    id: "students-search-clear"
+- copyTextFrom:
+    id: "students-count"
+- assertTrue:
+    condition: ${parseInt(maestro.copiedText, 10) === output.before - 1}
+    label: "Öğrenci sayısı bir azaldı"
+# Temizlik: E2E sınıfını sil.
+- tapOn:
+    id: "screen-back"
+- extendedWaitUntil:
+    visible:
+      id: "class-more"
+    timeout: 10000
+- runFlow: subflows/delete-current-class.yaml
+- assertNotVisible: "E2E 6/A,.*"
+- takeScreenshot: students-04-cleaned-up

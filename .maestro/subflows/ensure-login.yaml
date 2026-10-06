@@ -1,0 +1,13 @@
+# Uygulamayı açar; oturum yoksa ${EMAIL} ile giriş yapar.
+appId: com.ulas.teacherapp
+---
+- runFlow: launch.yaml
+- runFlow:
+    when:
+      visible:
+        id: "login-screen"
+    file: login.yaml
+- extendedWaitUntil:
+    visible:
+      id: "classes-list"
+    timeout: 30000

@@ -1,4 +1,4 @@
-/** 4 tabanlı boşluk ölçeği — bkz. docs/DESIGN_V2.md §5. */
+/** 4 tabanlı boşluk ölçeği — bkz. docs/DESIGN.md §5. */
 export const spacing = {
   xxs: 2,
   xs: 4,
@@ -32,8 +32,8 @@ export const layout = {
   headerHeight: 52,
   /** Liste satırı en küçük yüksekliği. */
   rowHeight: 64,
-  /** Okul numarası sütunu genişliği. */
-  numberColumn: 32,
+  /** Okul numarası sütunu genişliği: 4 basamaklı e-Okul numarası ("1104") kesilmeden sığar. */
+  numberColumn: 44,
   /** @deprecated v1 kırmızı kenar çizgisi kalınlığı; v2'de çizgi ince ayraçtır. */
   marginRuleWidth: 1,
   /** İkon kutusu (boş durum, uygulama işareti). */

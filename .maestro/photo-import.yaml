@@ -1,0 +1,107 @@
+# c. Fotoğraftan öğrenci ekleme: Öğrenciler → ⋯ → Öğrenci ekle → Fotoğraftan → Galeriden seç.
+# scripts/e2e/run.sh önce yapay e-Okul listesini (8 satır) simülatörün galerisine ekler;
+# galerideki en yeni fotoğraf seçilir. Bilinen 8 addan en az 6'sı inceleme listesinde olmalı.
+appId: com.ulas.teacherapp
+name: photo-import
+env:
+  EMAIL: e2e+u02@sinifdefteri.test
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/ensure-login.yaml
+- runFlow: subflows/open-e2e-class.yaml
+- tapOn:
+    id: "class-students-row"
+- extendedWaitUntil:
+    visible:
+      id: "students-count"
+    timeout: 20000
+- copyTextFrom:
+    id: "students-count"
+- evalScript: ${output.before = parseInt(maestro.copiedText, 10)}
+- tapOn:
+    id: "students-menu"
+- waitForAnimationToEnd
+- tapOn:
+    id: "students-menu-add"
+# Panel aşağıdan kayarken dokunulursa alttaki satıra denk gelebilir: animasyon bitsin.
+- extendedWaitUntil:
+    visible:
+      id: "students-add-photo"
+    timeout: 10000
+- waitForAnimationToEnd
+- tapOn:
+    id: "students-add-photo"
+- extendedWaitUntil:
+    visible:
+      id: "photo-library"
+    timeout: 20000
+- takeScreenshot: photo-01-import
+- tapOn:
+    id: "photo-library"
+# iOS fotoğraf seçicisi: en yeni fotoğraf ilk hücrededir.
+- extendedWaitUntil:
+    visible:
+      id: "PXGGridLayout-Info"
+    timeout: 20000
+- takeScreenshot: photo-02-picker
+- tapOn:
+    id: "PXGGridLayout-Info"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "student-row-0"
+    timeout: 60000
+- takeScreenshot: photo-03-review
+# Bilinen adlardan kaçı okundu (satırın erişilebilirlik metni "<ad>, ad soyad").
+- evalScript: ${output.found = 0}
+- runFlow:
+    file: subflows/count-name.yaml
+    env:
+      NAME: Selin Bayezit
+- runFlow:
+    file: subflows/count-name.yaml
+    env:
+      NAME: Emre Karaca
+- runFlow:
+    file: subflows/count-name.yaml
+    env:
+      NAME: Zeynep Arslan
+- runFlow:
+    file: subflows/count-name.yaml
+    env:
+      NAME: Burak Özdemir
+- runFlow:
+    file: subflows/count-name.yaml
+    env:
+      NAME: Elif Şahin
+- runFlow:
+    file: subflows/count-name.yaml
+    env:
+      NAME: Mert Güneş
+- runFlow:
+    file: subflows/count-name.yaml
+    env:
+      NAME: Derya Çelik
+- runFlow:
+    file: subflows/count-name.yaml
+    env:
+      NAME: Kerem Aydoğan
+- assertTrue:
+    condition: ${output.found >= 6}
+    label: "Bilinen 8 addan en az 6'sı okundu"
+- tapOn:
+    id: "import-save"
+- extendedWaitUntil:
+    visible:
+      id: "students-count"
+    timeout: 30000
+- extendedWaitUntil:
+    notVisible:
+      id: "import-screen"
+    timeout: 10000
+- copyTextFrom:
+    id: "students-count"
+- assertTrue:
+    condition: ${parseInt(maestro.copiedText, 10) >= output.before + 6}
+    label: "Öğrenci sayısı en az 6 arttı"
+- takeScreenshot: photo-04-students

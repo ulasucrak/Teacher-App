@@ -480,6 +480,23 @@ describe('eğik fotoğraf', () => {
 // Türkçe harf geri getirme (sözlük)
 // ---------------------------------------------------------------------------
 
+describe('noktası yer yer düşen OCR', () => {
+  it('aynı satırdaki sözlük adı noktasız okunduysa sözlükte olmayan ad da "İ" alır', () => {
+    // Simülatördeki Vision: "ÖZDEMİR" noktalı, "SELIN BAYEZIT" noktasız.
+    expect(names(parseRows([['1', '1101', 'SELIN BAYEZIT'], ['2', '1104', 'BURAK ÖZDEMİR']]))).toEqual([
+      'Selin Bayezit',
+      'Burak Özdemir',
+    ]);
+  });
+
+  it('satırda noktası düşen sözlük adı yoksa noktasız "I" "ı" kalır', () => {
+    expect(names(parseRows([['1', '12', 'SELİN KAYA'], ['2', '13', 'MERT BAYEZIT']]))).toEqual([
+      'Selin Kaya',
+      'Mert Bayezıt',
+    ]);
+  });
+});
+
 describe('restoreTurkishLetters', () => {
   it.each([
     ['Irem', 'İrem'],
@@ -492,11 +509,48 @@ describe('restoreTurkishLetters', () => {
     ['SELIN', 'SELİN'],
     ['YILMAZ', 'YILMAZ'],
     ['gunes', 'güneş'],
+  ])('%s → %s', (read, expected) => {
+    expect(restoreTurkishLetters(read)).toBe(expected);
+  });
+
+  it.each([
     ['Smaıl', 'İsmail'],
     ['Brahim', 'İbrahim'],
     ['Rem', 'İrem'],
-  ])('%s → %s', (read, expected) => {
-    expect(restoreTurkishLetters(read)).toBe(expected);
+  ])('düşmüş baş İ yalnızca istenince: %s → %s', (read, expected) => {
+    expect(restoreTurkishLetters(read)).toBeNull();
+    expect(restoreTurkishLetters(read, false, true)).toBe(expected);
+  });
+
+  it('OCR satırında düşmüş baş İ: düşük güvende ya da adaylar destekleyince', () => {
+    // Güven yüksek, aday yok: okunduğu gibi kalır.
+    expect(names(parseCellRows([[{ text: '12' }, { text: 'Brahim Kaya', confidence: 1 }]]))).toEqual(['Brahim Kaya']);
+    // Düşük güven: geri getirilir.
+    expect(names(parseCellRows([[{ text: '12' }, { text: 'Brahim Kaya', confidence: 0.3 }]]))).toEqual(['İbrahim Kaya']);
+    // Adaylardan biri "İbrahim" okumuş.
+    expect(
+      names(parseCellRows([[{ text: '12' }, { text: 'Brahim Kaya', confidence: 1, alternates: ['İbrahim Kaya'] }]])),
+    ).toEqual(['İbrahim Kaya']);
+  });
+
+  it('groupIntoCells aday okumaları hücreye taşır', () => {
+    const cells = groupIntoCells({
+      blocks: [
+        {
+          lines: [
+            {
+              text: 'Ali Kaya',
+              confidence: 1,
+              candidates: [
+                { text: 'Ali Kaya', confidence: 1 },
+                { text: 'Ali Kaja', confidence: 0.5 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(cells[0][0]).toEqual({ text: 'Ali Kaya', confidence: 1, alternates: ['Ali Kaja'] });
   });
 
   it('sözlükte olmayan kelimeye dokunmaz', () => {
@@ -659,8 +713,31 @@ describe('parsePlainNameList', () => {
     ]);
   });
 
-  it('başlık satırlarını, boş satırları ve yinelemeleri atar; Türkçe harfleri düzeltir', () => {
-    expect(names(parsePlainNameList('Adı Soyadı\n\nIrem Ozturk\nİrem Öztürk\n'))).toEqual(['İrem Öztürk']);
+  it('başlık satırlarını, boş satırları ve yinelemeleri atar', () => {
+    expect(names(parsePlainNameList('Adı Soyadı\n\nİrem Öztürk\n\nirem öztürk\n'))).toEqual(['İrem Öztürk']);
+  });
+
+  it('yazılan adları sözlükle "düzeltmez" (sözlükte olmayan adlar dahil)', () => {
+    expect(names(parsePlainNameList('Pek Ayşe\nRem Kaya\nSila Er\nIrem Ozturk\nBrahim Doğan'))).toEqual([
+      'Pek Ayşe',
+      'Rem Kaya',
+      'Sila Er',
+      'Irem Ozturk',
+      'Brahim Doğan',
+    ]);
+  });
+
+  it('Türkçe harfsiz BÜYÜK HARF metinde I = i; Türkçe metinde I = ı', () => {
+    expect(names(parsePlainNameList('MICHAEL SMITH\nALI VELI'))).toEqual(['Michael Smith', 'Ali Veli']);
+    expect(names(parsePlainNameList('AYŞE YILMAZ\nKADIR KILIÇ'))).toEqual(['Ayşe Yılmaz', 'Kadır Kılıç']);
+  });
+
+  it('ocr: true ile OCR düzeltmeleri yapılır', () => {
+    expect(names(parsePlainNameList('Irem Ozturk', { ocr: true }))).toEqual(['İrem Öztürk']);
+  });
+
+  it('yazılan addaki rakamlar atılır ve uyarı verilir', () => {
+    expect(parsePlainNameList('Ali V3li')).toEqual([{ number: null, fullName: 'Ali Vli', warnings: ['digits'] }]);
   });
 
   it('sekmeyle ayrılmış (tablodan kopyalanan) satırları okur', () => {

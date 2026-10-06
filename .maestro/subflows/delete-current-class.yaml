@@ -1,0 +1,17 @@
+# Açık sınıf ekranında "⋯" → Sınıfı sil → onay; Sınıflarım'a döner.
+appId: com.ulas.teacherapp
+---
+- tapOn:
+    id: "class-more"
+- tapOn:
+    id: "class-menu-delete"
+- tapOn:
+    id: "class-delete-confirm-confirm"
+- extendedWaitUntil:
+    visible:
+      id: "classes-screen"
+    timeout: 20000
+- extendedWaitUntil:
+    notVisible:
+      id: "class-delete-confirm"
+    timeout: 10000

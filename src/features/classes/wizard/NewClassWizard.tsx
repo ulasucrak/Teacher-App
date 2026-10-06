@@ -1,6 +1,6 @@
 import { Stack, useNavigation, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, BackHandler, StyleSheet, View } from 'react-native';
 
 import {
   Banner,
@@ -82,6 +82,16 @@ export function NewClassWizard() {
     return unsubscribe;
   }, [navigation, dirty, created]);
 
+  // Android geri tuşu 2. ve 3. adımda bir önceki adıma döner (sınıf henüz oluşturulmadıysa).
+  useEffect(() => {
+    if (step === 0 || created || saving) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setStep((current) => Math.max(0, current - 1));
+      return true;
+    });
+    return () => subscription.remove();
+  }, [step, created, saving]);
+
   const close = () => {
     if (router.canGoBack()) router.back();
     else router.replace('/');
@@ -115,6 +125,8 @@ export function NewClassWizard() {
 
   const nextFromStudents = () => {
     const drafts = collector.flush();
+    // Yapıştırılan metinden öğrenci çıkmadıysa adımda kalınır (uyarı görünür).
+    if (drafts === null) return;
     setStudents(drafts.map((d) => ({ full_name: normalizeStudentName(d.fullName), number: d.number })));
     setStep(2);
   };

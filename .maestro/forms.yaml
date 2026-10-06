@@ -1,0 +1,77 @@
+# d. Formlar: sınıf ekranında "+ Form" → Sözlü → listede görünür. Yoklama'yı aç → "Tümü: Geldi" →
+# bir öğrenciyi Gelmedi yap → Kaydet → yeniden aç: işaretler kayıtlı.
+appId: com.ulas.teacherapp
+name: forms
+env:
+  EMAIL: e2e+u02@sinifdefteri.test
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/ensure-login.yaml
+- runFlow: subflows/open-e2e-class.yaml
+- tapOn:
+    id: "class-add-form"
+- extendedWaitUntil:
+    visible:
+      id: "add-form-preset-sozlu"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: forms-01-add-sheet
+- tapOn:
+    id: "add-form-preset-sozlu"
+- extendedWaitUntil:
+    visible: "Sözlü,.*"
+    timeout: 15000
+- takeScreenshot: forms-02-sozlu-added
+# Yoklama: bugünün kaydı açılır.
+- tapOn: "Yoklama,.*"
+- extendedWaitUntil:
+    visible:
+      id: "bulk-geldi"
+    timeout: 20000
+- tapOn:
+    id: "bulk-geldi"
+- tapOn:
+    id: "student-row-1-gelmedi"
+- assertVisible:
+    id: "student-row-1-gelmedi"
+    selected: true
+- copyTextFrom:
+    id: "student-row-1-name"
+- evalScript: ${output.absent = maestro.copiedText}
+- takeScreenshot: forms-03-filled
+- tapOn:
+    id: "save-button"
+- extendedWaitUntil:
+    visible: "Kaydedildi"
+    timeout: 15000
+- tapOn:
+    id: "screen-back"
+- extendedWaitUntil:
+    visible:
+      id: "class-students-row"
+    timeout: 10000
+# Yeniden aç: kayıt sunucudan yüklenir.
+- tapOn: "Yoklama,.*"
+- extendedWaitUntil:
+    visible:
+      id: "student-row-1-gelmedi"
+    timeout: 20000
+- assertVisible:
+    id: "student-row-1-name"
+    text: ${output.absent}
+- assertVisible:
+    id: "student-row-1-gelmedi"
+    selected: true
+- assertVisible:
+    id: "student-row-0-geldi"
+    selected: true
+- assertVisible:
+    id: "student-row-1-geldi"
+    selected: false
+- takeScreenshot: forms-04-reopened
+- tapOn:
+    id: "screen-back"
+- extendedWaitUntil:
+    visible:
+      id: "class-students-row"
+    timeout: 10000

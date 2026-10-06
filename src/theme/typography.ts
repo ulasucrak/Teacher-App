@@ -1,7 +1,7 @@
 import type { TextStyle } from 'react-native';
 
 /**
- * Yazı tipleri — bkz. docs/DESIGN_V2.md §4.
+ * Yazı tipleri — bkz. docs/DESIGN.md §4.
  * Anahtarlar app/_layout.tsx içinde `useFonts` ile yüklenen adlarla aynı olmalı.
  */
 export const fontFamilies = {

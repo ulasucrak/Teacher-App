@@ -1,0 +1,13 @@
+# İnceleme listesinde ${NAME} varsa output.found bir artar (liste kaydırılarak aranır).
+appId: com.ulas.teacherapp
+---
+- scrollUntilVisible:
+    element:
+      text: "${NAME}.*"
+    timeout: 6000
+    optional: true
+- runFlow:
+    when:
+      visible: "${NAME}.*"
+    commands:
+      - evalScript: ${output.found = output.found + 1}

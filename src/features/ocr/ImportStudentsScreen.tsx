@@ -119,11 +119,16 @@ function AddStudents({ classId, className, existing, initialMethod }: AddStudent
     return unsubscribe;
   }, [navigation, dirty]);
 
+  // iOS'ta kaydırarak geri dönüş beforeRemove ile durdurulamaz: liste varken kapalı.
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !dirty });
+  }, [navigation, dirty]);
+
   const { flush } = collector;
   const save = useCallback(async () => {
     if (saving) return;
     const drafts = flush();
-    if (drafts.length === 0) return;
+    if (!drafts || drafts.length === 0) return;
     setSaving(true);
     setError(null);
     try {

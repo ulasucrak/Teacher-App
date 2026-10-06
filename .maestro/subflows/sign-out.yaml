@@ -1,0 +1,13 @@
+# Sınıflarım "⋯" → Çıkış yap → onay.
+appId: com.ulas.teacherapp
+---
+- tapOn:
+    id: "classes-menu"
+- tapOn:
+    id: "classes-signout"
+- tapOn:
+    id: "classes-signout-confirm-confirm"
+- extendedWaitUntil:
+    visible:
+      id: "login-screen"
+    timeout: 15000
