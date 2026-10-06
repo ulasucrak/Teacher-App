@@ -421,6 +421,22 @@ function singleNumbersAreOrdinals(rows: RawRow[]): boolean {
   return steps / (values.length - 1) >= 0.6;
 }
 
+/**
+ * İki sayılı (S.No + Okul No) tabloda tek sayılı satır: sıra numarası okunmamış olabilir.
+ * Komşu satırın sıra numarasından beklenen değer tutmuyor ve sayı komşunun okul numarasıyla
+ * aynı uzunluktaysa sayı okul numarasıdır ("1 | 112 | SELİN" satırında "1" kaçırılmış).
+ */
+function isMissedOrdinalRow(rows: RawRow[], index: number): boolean {
+  const value = rows[index].numbers[0];
+  const prev = rows[index - 1];
+  const next = rows[index + 1];
+  const neighbor = prev && prev.numbers.length >= 2 ? prev : next && next.numbers.length >= 2 ? next : null;
+  if (!neighbor) return false;
+  const expected = Number(neighbor.numbers[0]) + (neighbor === prev ? 1 : -1);
+  const school = neighbor.numbers[neighbor.numbers.length - 1];
+  return Number(value) !== expected && value.length === school.length;
+}
+
 /** Satırın okul numarası (yoksa null). */
 function schoolNumberOf(row: RawRow, singlesAreOrdinals: boolean): string | null {
   // İlk sayı sıra no; sonuncusu okul no (aradaki çizgi "1" okunmuş olabilir).
@@ -443,8 +459,9 @@ export function parseRows(rows: string[][]): ParsedStudent[] {
 
   const seen = new Set<string>();
   const students: ParsedStudent[] = [];
-  for (const row of raw) {
-    const number = schoolNumberOf(row, singlesAreOrdinals);
+  for (const [index, row] of raw.entries()) {
+    const ordinals = singlesAreOrdinals && !(row.numbers.length === 1 && isMissedOrdinalRow(raw, index));
+    const number = schoolNumberOf(row, ordinals);
 
     const fullName = toTurkishTitleCase(row.nameTokens.map((t) => t.text).join(' '));
     const hadDigits = row.nameTokens.some((t) => t.hadDigits);
