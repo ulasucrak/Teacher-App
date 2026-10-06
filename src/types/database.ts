@@ -331,6 +331,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      delete_my_account: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
       copy_form_to_classes: {
         Args: { p_class_ids: string[]; p_form_id: string };
         Returns: {

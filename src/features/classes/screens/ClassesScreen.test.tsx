@@ -97,6 +97,15 @@ describe('ClassesScreen', () => {
     expect(await screen.findByText('7/C')).toBeOnTheScreen();
   });
 
+  it('opens account from the header menu', async () => {
+    mockList.mockResolvedValue([]);
+    await renderScreen();
+    await screen.findByText('Henüz sınıfınız yok');
+    await fireEvent.press(screen.getByTestId('classes-menu'));
+    await fireEvent.press(screen.getByTestId('classes-account'));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/account'));
+  });
+
   it('signs out from the overflow menu after confirmation', async () => {
     mockList.mockResolvedValue([cls({})]);
     await renderScreen();
