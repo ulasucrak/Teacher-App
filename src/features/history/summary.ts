@@ -116,7 +116,7 @@ export function countItems(
 }
 
 /** "5 Artı" / sayıyla başlayan etikette "5: 2" (sözlü notu gibi) / "1 kaldırılmış seçenek". */
-function countText(item: CountItem): string {
+export function countText(item: CountItem): string {
   if (item.key === REMOVED_OPTION_KEY) return `${item.count} ${REMOVED_OPTION_LABEL.toLocaleLowerCase('tr-TR')}`;
   if (/^\d/.test(item.label)) return `${item.label}: ${item.count}`;
   return `${item.count} ${item.label}`;

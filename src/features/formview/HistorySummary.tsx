@@ -14,6 +14,7 @@ import { colors, layout, spacing } from '@/theme';
 import type { FormMode, FormOption } from '@/types/database';
 
 import { sortSummaryStudents, type SummarySort } from './board';
+import { ToneCounts } from './ToneCounts';
 
 interface HistorySummaryProps {
   mode: FormMode;
@@ -65,7 +66,7 @@ export function HistorySummary({
     return (
       <ListRow
         title={item.fullName}
-        subtitle={counts}
+        subtitleContent={<ToneCounts items={item.items} empty="Kayıt yok" testID={`summary-row-${index}-counts`} />}
         number={item.number}
         onPress={() => onOpenStudent(item)}
         accessibilityLabel={`${item.fullName}: ${counts}${net !== null ? `, net ${formatNet(net)}` : ''}`}
@@ -90,9 +91,7 @@ export function HistorySummary({
           <Text variant="label" tone="muted">
             Sınıf toplamı
           </Text>
-          <Text variant="body" testID="summary-totals-counts">
-            {formatCounts(summary.totals, options, 'İşaret yok')}
-          </Text>
+          <ToneCounts items={summary.items} empty="İşaret yok" variant="body" testID="summary-totals-counts" />
         </View>
         {summary.net !== null ? (
           <View accessible accessibilityLabel={`Sınıf neti ${formatNet(summary.net)}`}>

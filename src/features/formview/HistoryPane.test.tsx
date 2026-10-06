@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import { Providers } from '@/features/forms/test-utils';
 import * as history from '@/features/history';
 import { addDays, todayIso } from '@/features/sessions/date';
+import { tones } from '@/theme';
 
 import { attendanceForm, event, localIso, plusMinusForm } from './fixtures';
 import { HistoryPane } from './HistoryPane';
@@ -40,7 +41,7 @@ describe('HistoryPane summary', () => {
   it('shows class totals with net and counts per student, defaulting to all time', async () => {
     await renderPane();
 
-    expect(await screen.findByTestId('summary-totals-counts')).toHaveTextContent('10 Artı, 2 Eksi');
+    expect(await screen.findByTestId('summary-totals-counts')).toHaveProp('accessibilityLabel', '10 Artı, 2 Eksi');
     expect(screen.getByTestId('summary-totals-net')).toHaveTextContent('+8');
     expect(mocked.getFormSummary).toHaveBeenCalledWith(
       { id: 'f2', options: plusMinusForm.options },
@@ -50,6 +51,14 @@ describe('HistoryPane summary', () => {
     expect(screen.getByTestId('summary-row-0')).toHaveProp('accessibilityLabel', 'Ayşe Kaya: 1 Artı, net +1');
     expect(screen.getByTestId('summary-row-1')).toHaveProp('accessibilityLabel', 'Ali Yılmaz: 5 Artı, 2 Eksi, net +3');
     expect(screen.getByTestId('summary-row-1-net')).toHaveTextContent('+3');
+    // Sayıların yanında tonun rengi: Artı olumlu (yeşil), Eksi olumsuz (kırmızı).
+    const counts = screen.getByTestId('summary-row-1-counts');
+    expect(counts).toHaveProp('accessibilityLabel', '5 Artı, 2 Eksi');
+    expect(counts).toHaveTextContent(/5 Artı/);
+    expect(counts).toHaveTextContent(/2 Eksi/);
+    const hidden = { includeHiddenElements: true };
+    expect(screen.getByTestId('summary-row-1-counts-dot-arti', hidden)).toHaveStyle({ backgroundColor: tones.positive.solid });
+    expect(screen.getByTestId('summary-row-1-counts-dot-eksi', hidden)).toHaveStyle({ backgroundColor: tones.negative.solid });
     expect(screen.getByTestId('range-chip')).toHaveTextContent('Tüm zamanlar');
   });
 
@@ -69,7 +78,7 @@ describe('HistoryPane summary', () => {
     );
     await renderPane(attendanceForm);
 
-    expect(await screen.findByTestId('summary-totals-counts')).toHaveTextContent('18 Var, 2 Yok');
+    expect(await screen.findByTestId('summary-totals-counts')).toHaveProp('accessibilityLabel', '18 Var, 2 Yok');
     expect(screen.queryByTestId('summary-totals-net')).toBeNull();
     expect(screen.queryByTestId('summary-row-0-net')).toBeNull();
     expect(screen.queryByTestId('summary-sort-name')).toBeNull();

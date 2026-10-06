@@ -9,6 +9,8 @@ import { Text } from './Text';
 export interface ListRowProps {
   title: string;
   subtitle?: string;
+  /** `subtitle` yerine özel alt satır (ör. renkli noktalı sayılar); en fazla bir satır yüksekliği beklenir. */
+  subtitleContent?: ReactNode;
   /** Okul numarası: solda dar, soluk ve hizalı bir sütunda gösterilir. */
   number?: string | number | null;
   /** Numara olmasa da numara sütununu ayır (aynı listede hizalama için). */
@@ -34,6 +36,7 @@ export interface ListRowProps {
 export function ListRow({
   title,
   subtitle,
+  subtitleContent,
   number,
   ruled,
   leading,
@@ -70,7 +73,8 @@ export function ListRow({
             <Text variant="bodyStrong" numberOfLines={2} color={titleColor}>
               {title}
             </Text>
-            {subtitle ? (
+            {subtitleContent ?? null}
+            {!subtitleContent && subtitle ? (
               <Text variant="caption" tone="muted" numberOfLines={1}>
                 {subtitle}
               </Text>

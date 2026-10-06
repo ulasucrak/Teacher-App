@@ -255,7 +255,10 @@ describe('FormScreen (daily form)', () => {
         { studentId: 's1', fullName: 'Ali Yılmaz', number: '12', counts: { var: 18, yok: 2 }, items: [], total: 20, net: null },
       ],
       totals: { var: 18, yok: 2 },
-      items: [],
+      items: [
+        { key: 'var', label: 'Var', tone: 'positive', count: 18, score: null },
+        { key: 'yok', label: 'Yok', tone: 'negative', count: 2, score: null },
+      ],
       total: 20,
       net: null,
       scored: false,
@@ -263,7 +266,7 @@ describe('FormScreen (daily form)', () => {
     await render(<FormScreen />, { wrapper: Providers });
 
     expect(await screen.findByTestId('form-tab-history')).toBeSelected();
-    expect(await screen.findByTestId('summary-totals-counts')).toHaveTextContent('18 Var, 2 Yok');
+    expect(await screen.findByTestId('summary-totals-counts')).toHaveProp('accessibilityLabel', '18 Var, 2 Yok');
     expect(screen.queryByTestId('summary-totals-net')).toBeNull();
     expect(screen.queryByTestId('summary-sort-name')).toBeNull();
   });

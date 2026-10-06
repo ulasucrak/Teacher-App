@@ -44,6 +44,7 @@ export {
   REMOVED_OPTION_LABEL,
   computeNet,
   countItems,
+  countText,
   formatCounts,
   formatNet,
   parseCounts,
