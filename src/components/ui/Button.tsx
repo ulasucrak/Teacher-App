@@ -12,6 +12,12 @@ import { colors, iconSize, layout, radii, spacing } from '@/theme';
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 
+/**
+ * - `primary`: sarı kalem — ekrandaki TEK ana eylem.
+ * - `secondary`: sıra grisi — yan eylem ("Tekrar dene", "Vazgeç").
+ * - `ghost`: mavi metin — bağlantı gibi hafif eylem ("Şifremi unuttum").
+ * - `destructive`: kırmızı — yalnızca onay adımında ("Sınıfı sil").
+ */
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 
 export interface ButtonProps {
@@ -35,30 +41,19 @@ interface VariantColors {
   bg: string;
   bgPressed: string;
   fg: string;
-  border?: string;
 }
 
 const variantColors: Record<ButtonVariant, VariantColors> = {
-  primary: { bg: colors.primary, bgPressed: colors.primaryPressed, fg: colors.textInverse },
-  secondary: {
-    bg: colors.surface,
-    bgPressed: colors.surfaceMuted,
-    fg: colors.primary,
-    border: colors.primary,
-  },
+  primary: { bg: colors.accent, bgPressed: colors.accentPressed, fg: colors.onAccent },
+  secondary: { bg: colors.surfaceMuted, bgPressed: colors.rule, fg: colors.text },
   ghost: { bg: 'transparent', bgPressed: colors.pressedOverlay, fg: colors.primary },
   destructive: { bg: colors.danger, bgPressed: colors.dangerPressed, fg: colors.textInverse },
 };
 
 const disabledColors: Record<ButtonVariant, VariantColors> = {
-  primary: { bg: colors.primaryMuted, bgPressed: colors.primaryMuted, fg: colors.primaryMutedText },
+  primary: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted },
   destructive: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted },
-  secondary: {
-    bg: colors.surface,
-    bgPressed: colors.surface,
-    fg: colors.textMuted,
-    border: colors.rule,
-  },
+  secondary: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted },
   ghost: { bg: 'transparent', bgPressed: 'transparent', fg: colors.textMuted },
 };
 
@@ -93,11 +88,7 @@ export function Button({
         styles.base,
         size === 'sm' ? styles.sm : styles.md,
         fullWidth ? styles.full : styles.inline,
-        {
-          backgroundColor: pressed ? palette.bgPressed : palette.bg,
-          borderColor: palette.border ?? 'transparent',
-          borderWidth: palette.border ? layout.inputBorder : 0,
-        },
+        { backgroundColor: pressed ? palette.bgPressed : palette.bg },
         style,
       ]}
     >
@@ -107,7 +98,12 @@ export function Button({
         ) : icon ? (
           <Icon name={icon} size={size === 'sm' ? iconSize.md : iconSize.lg} color={palette.fg} />
         ) : null}
-        <Text variant={size === 'md' ? 'bodyStrong' : 'label'} color={palette.fg} numberOfLines={1}>
+        <Text
+          variant={size === 'md' ? 'bodyStrong' : 'label'}
+          color={palette.fg}
+          numberOfLines={1}
+          style={styles.label}
+        >
           {label}
         </Text>
       </View>
@@ -117,14 +113,14 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
   },
-  md: { minHeight: layout.buttonHeight },
-  sm: { minHeight: layout.buttonHeightSm, paddingHorizontal: spacing.lg },
+  md: { minHeight: layout.buttonHeight, borderRadius: radii.md },
+  sm: { minHeight: layout.buttonHeightSm, borderRadius: radii.sm, paddingHorizontal: spacing.md },
   full: { alignSelf: 'stretch' },
   inline: { alignSelf: 'flex-start' },
-  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  label: { flexShrink: 1 },
 });

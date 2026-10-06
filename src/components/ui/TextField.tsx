@@ -25,6 +25,10 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   ref?: Ref<TextInput>;
 }
 
+/**
+ * Etiketli metin alanı: sıra grisi dolgu, odakta beyaz + mavi kenar, hatada kırmızı kenar.
+ * `multiline` verilirse (ör. "Listeyi yapıştırın") en az 3 satır yükseklik alır.
+ */
 export function TextField({
   label,
   error,
@@ -41,7 +45,8 @@ export function TextField({
   const [revealed, setRevealed] = useState(false);
   const hasError = Boolean(error);
 
-  const borderColor = hasError ? colors.danger : focused ? colors.primary : colors.border;
+  const borderColor = hasError ? colors.danger : focused ? colors.primary : 'transparent';
+  const multiline = Boolean(inputProps.multiline);
 
   return (
     <View style={[styles.container, containerStyle]}>
@@ -53,6 +58,8 @@ export function TextField({
           styles.inputWrap,
           { borderColor },
           (focused || hasError) && styles.inputWrapEmphasis,
+          focused && styles.inputFocused,
+          multiline && styles.inputWrapMultiline,
           !editable && styles.inputDisabled,
         ]}
       >
@@ -69,7 +76,8 @@ export function TextField({
           maxFontSizeMultiplier={fontScale.max}
           secureTextEntry={password && !revealed}
           autoCorrect={password ? false : inputProps.autoCorrect}
-          style={styles.input}
+          textAlignVertical={multiline ? 'top' : undefined}
+          style={[styles.input, multiline && styles.inputMultiline]}
           onFocus={(e) => {
             setFocused(true);
             onFocus?.(e);
@@ -113,19 +121,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: layout.buttonHeight,
     borderRadius: radii.sm,
-    borderWidth: layout.inputBorder,
-    backgroundColor: colors.surface,
-    paddingLeft: spacing.md + spacing.xxs,
+    borderWidth: layout.inputBorderFocus,
+    backgroundColor: colors.surfaceMuted,
+    paddingLeft: spacing.lg - layout.inputBorderFocus,
     paddingRight: spacing.xxs,
   },
   inputWrapEmphasis: { borderWidth: layout.inputBorderFocus },
-  inputDisabled: { backgroundColor: colors.surfaceMuted },
+  inputFocused: { backgroundColor: colors.surface },
+  inputWrapMultiline: { alignItems: 'stretch', minHeight: layout.buttonHeight * 3 },
+  inputDisabled: { opacity: 0.6 },
   input: {
     ...typography.body,
     flex: 1,
     color: colors.text,
     paddingVertical: spacing.md,
   },
+  inputMultiline: { paddingTop: spacing.md, paddingRight: spacing.md },
   message: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
   messageText: { flex: 1 },
 });

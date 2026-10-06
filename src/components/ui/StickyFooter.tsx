@@ -8,7 +8,7 @@ export interface StickyFooterProps {
   children: ReactNode;
 }
 
-/** Ekranın altına sabit birincil eylem alanı (Seviye 3). `Screen`'in `footer` prop'u ile kullanın. */
+/** Ekranın altına sabit eylem alanı (Seviye 3). `Screen`'in `footer` prop'u bunu kullanır; içine `BottomActionBar` ya da tek `Button` koyun. */
 export function StickyFooter({ children }: StickyFooterProps) {
   const insets = useSafeAreaInsets();
   return (

@@ -19,9 +19,11 @@ export interface OptionGridProps {
   disabled?: boolean;
   /** Ekran okuyucu bağlamı, örn. öğrenci adı: "Ayşe Yılmaz". */
   contextLabel?: string;
+  /** Her çipe `${testIDPrefix}-${option.key}` verilir. */
+  testIDPrefix?: string;
 }
 
-/** Seçenek çiplerini eşit sütunlu ızgarada dizer (varsayılan 3 sütun). */
+/** Seçenek çiplerini eşit sütunlu ızgarada dizer (varsayılan 3 sütun). Satır içi kompakt dizilim için `ChipGroup`. */
 export function OptionGrid({
   options,
   value,
@@ -29,6 +31,7 @@ export function OptionGrid({
   columns = 3,
   disabled,
   contextLabel,
+  testIDPrefix,
 }: OptionGridProps) {
   const rows: OptionGridItem[][] = [];
   for (let i = 0; i < options.length; i += columns) {
@@ -48,6 +51,7 @@ export function OptionGrid({
               disabled={disabled}
               onPress={() => onChange(option.key)}
               accessibilityLabel={contextLabel ? `${contextLabel}: ${option.label}` : option.label}
+              testID={testIDPrefix ? `${testIDPrefix}-${option.key}` : undefined}
             />
           ))}
           {Array.from({ length: columns - row.length }, (_, i) => (

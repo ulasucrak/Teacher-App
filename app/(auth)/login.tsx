@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, View, type TextInput } from 'react-native';
 
-import { Banner, Button, Text, TextField } from '@/components/ui';
+import { Banner, Button, TextField } from '@/components/ui';
 import { AuthPage, useAuth, validateEmail, validatePassword } from '@/features/auth';
 import { spacing } from '@/theme';
 
@@ -38,7 +38,14 @@ export default function LoginScreen() {
     <AuthPage
       size="display"
       title="Sınıf Defteri"
-      description="Yoklama, ödev kontrolü ve sözlü notlarınız tek defterde."
+      description="Yoklama ve ödev kontrolü, ders arasında birkaç dokunuşla."
+      switchPrompt={{
+        text: 'Hesabınız yok mu?',
+        actionLabel: 'Hesap oluşturun',
+        onPress: () => router.push('/register'),
+        testID: 'login-register',
+      }}
+      testID="login-screen"
     >
       {formError ? <Banner kind="error" message={formError} /> : null}
 
@@ -55,6 +62,7 @@ export default function LoginScreen() {
         autoCapitalize="none"
         autoComplete="email"
         textContentType="username"
+        testID="login-email"
         returnKeyType="next"
         onSubmitEditing={() => passwordRef.current?.focus()}
         submitBehavior="submit"
@@ -72,34 +80,28 @@ export default function LoginScreen() {
         autoCapitalize="none"
         autoComplete="current-password"
         textContentType="password"
+        testID="login-password"
         returnKeyType="go"
         onSubmitEditing={submit}
       />
 
       <View style={styles.actions}>
-        <Button label="Giriş yap" onPress={submit} loading={submitting} />
+        <Button label="Giriş yap" onPress={submit} loading={submitting} testID="login-submit" />
         <Button
           label="Şifremi unuttum"
           variant="ghost"
           size="sm"
           fullWidth={false}
-          style={styles.ghostAlign}
+          style={styles.forgot}
           onPress={() => router.push('/forgot-password')}
+          testID="login-forgot"
         />
-      </View>
-
-      <View style={styles.switch}>
-        <Text variant="body" tone="muted">
-          Hesabınız yok mu?
-        </Text>
-        <Button label="Hesap oluştur" variant="secondary" onPress={() => router.push('/register')} />
       </View>
     </AuthPage>
   );
 }
 
 const styles = StyleSheet.create({
-  actions: { gap: spacing.sm, alignItems: 'flex-start' },
-  ghostAlign: { marginLeft: -spacing.lg },
-  switch: { marginTop: spacing.xxl, gap: spacing.sm },
+  actions: { gap: spacing.sm, marginTop: spacing.sm },
+  forgot: { alignSelf: 'center' },
 });

@@ -19,27 +19,37 @@ import { StickyFooter } from './StickyFooter';
 import { Text } from './Text';
 
 export interface ScreenProps {
-  /** Üst çubuk başlığı. `largeTitle` ise başlık içerikte büyük ve sola hizalı çizilir. */
+  /**
+   * Başlık. `largeTitle` ise içerikte büyük ve sola hizalı çizilir (kök ekranlar: Sınıflarım,
+   * Sınıf); değilse üst çubukta ortalı (alt ekranlar).
+   */
   title?: string;
   largeTitle?: boolean;
+  /** Büyük başlığın altında tek satır soluk bilgi ("28 öğrenci"). Yalnızca `largeTitle` ile. */
+  subtitle?: string;
   /**
    * Geri düğmesi. `true` → router.back(); fonksiyon → özel davranış; `false` → yok.
    * Varsayılan: geri gidilebiliyorsa göster.
    */
   back?: boolean | (() => void);
-  /** Sağ üst eylem(ler), genellikle `IconButton`. */
+  /** Sağ üst: en fazla BİR öğe — genellikle "Diğer seçenekler" (⋯) `IconButton`. */
   headerRight?: ReactNode;
+  /** Varsayılan üst çubuğun yerine özel başlık (ör. `WizardHeader`). */
+  header?: ReactNode;
   /** İçerik kaydırılsın mı (varsayılan true). Liste ekranlarında false verip FlatList kullanın. */
   scroll?: boolean;
-  /** Altta sabit eylem alanı (StickyFooter içine konur). */
+  /** Altta sabit eylem alanı (StickyFooter içine konur). FAB ile birlikte kullanmayın. */
   footer?: ReactNode;
+  /** Sağ altta yüzen birincil eylem (`Fab`). Kaydırılan içeriğe otomatik alt boşluk eklenir. */
+  fab?: ReactNode;
   /** Yatay sayfa boşluğu uygulansın mı (varsayılan true). */
   padded?: boolean;
   /** Başlık çubuğunun altındaki ince çizgi. */
   headerDivider?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
-  /** Tam ekran arka plan (örn. `RuledPaper`). */
+  /** Tam ekran arka plan. */
   background?: ReactNode;
+  testID?: string;
   children: ReactNode;
 }
 
@@ -47,14 +57,18 @@ export interface ScreenProps {
 export function Screen({
   title,
   largeTitle = false,
+  subtitle,
   back,
   headerRight,
+  header: customHeader,
   scroll = true,
   footer,
+  fab,
   padded = true,
   headerDivider = false,
   contentStyle,
   background,
+  testID,
   children,
 }: ScreenProps) {
   const router = useRouter();
@@ -65,10 +79,12 @@ export function Screen({
   const onBack = typeof back === 'function' ? back : () => router.back();
   const showBar = showBack || Boolean(headerRight) || (Boolean(title) && !largeTitle);
 
-  const header = showBar ? (
+  const bar = showBar ? (
     <View style={[styles.bar, headerDivider && styles.barDivider]}>
       <View style={styles.side}>
-        {showBack ? <IconButton icon="back" accessibilityLabel="Geri" onPress={onBack} /> : null}
+        {showBack ? (
+          <IconButton icon="back" accessibilityLabel="Geri" onPress={onBack} testID="screen-back" />
+        ) : null}
       </View>
       <View style={styles.barTitle}>
         {title && !largeTitle ? (
@@ -83,27 +99,33 @@ export function Screen({
 
   const big =
     title && largeTitle ? (
-      <Text variant="title" accessibilityRole="header" style={styles.largeTitle}>
-        {title}
-      </Text>
+      <View style={[styles.largeTitle, !showBar && styles.largeTitleTop, !padded && styles.padded]}>
+        <Text variant="title" accessibilityRole="header">
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text variant="bodySmall" tone="muted">
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
     ) : null;
 
-  const contentPadding = [
-    padded && styles.padded,
-    !footer && { paddingBottom: insets.bottom + spacing.xxl },
-    contentStyle,
-  ];
+  const safeBottom = footer ? 0 : insets.bottom + spacing.xxl;
+  // Kaydırılan içerik FAB'ın altında kalmasın; FlatList ekranları `layout.fabClearance` ekler.
+  const scrollPadding = [padded && styles.padded, { paddingBottom: safeBottom + (fab ? layout.fabClearance : 0) }, contentStyle];
+  const viewPadding = [padded && styles.padded, { paddingBottom: safeBottom }, contentStyle];
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
+    <View style={[styles.root, { paddingTop: insets.top }]} testID={testID}>
       <StatusBar style="dark" />
       {background ? <View style={StyleSheet.absoluteFill}>{background}</View> : null}
-      {header}
+      {customHeader ?? bar}
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {scroll ? (
           <ScrollView
             style={styles.flex}
-            contentContainerStyle={[styles.scrollContent, contentPadding]}
+            contentContainerStyle={[styles.scrollContent, scrollPadding]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
           >
@@ -111,13 +133,21 @@ export function Screen({
             {children}
           </ScrollView>
         ) : (
-          <View style={[styles.flex, contentPadding]}>
+          <View style={[styles.flex, viewPadding]}>
             {big}
             {children}
           </View>
         )}
         {footer ? <StickyFooter>{footer}</StickyFooter> : null}
       </KeyboardAvoidingView>
+      {fab ? (
+        <View
+          pointerEvents="box-none"
+          style={[styles.fabHost, { bottom: Math.max(insets.bottom, spacing.lg) + spacing.sm }]}
+        >
+          {fab}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -135,7 +165,9 @@ const styles = StyleSheet.create({
   side: { minWidth: layout.minTouch * 2, flexDirection: 'row', alignItems: 'center' },
   sideRight: { justifyContent: 'flex-end' },
   barTitle: { flex: 1, paddingHorizontal: spacing.xs },
-  largeTitle: { marginTop: spacing.sm, marginBottom: spacing.lg },
+  largeTitle: { marginTop: spacing.xs, marginBottom: spacing.xl, gap: spacing.xxs },
+  largeTitleTop: { marginTop: spacing.xxl },
   scrollContent: { flexGrow: 1 },
   padded: { paddingHorizontal: layout.pageX },
+  fabHost: { position: 'absolute', right: layout.pageX, left: layout.pageX, alignItems: 'flex-end' },
 });

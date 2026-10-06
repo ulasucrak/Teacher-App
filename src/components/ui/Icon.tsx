@@ -7,7 +7,7 @@ import { colors, iconSize } from '@/theme';
 
 type SymbolName = Exclude<ComponentProps<typeof SymbolView>['name'], string>;
 
-/** Uygulamada kullanılan ikonlar: iOS'ta SF Symbols, Android'de Material Symbols. */
+/** Uygulamada kullanılan ikonlar: iOS'ta SF Symbols, Android'de Material Symbols. Yeni ad eklerken iki platformu da verin. */
 const icons = {
   back: { ios: 'chevron.left', android: 'arrow_back' },
   search: { ios: 'magnifyingglass', android: 'search' },
@@ -34,6 +34,15 @@ const icons = {
   eyeOff: { ios: 'eye.slash', android: 'visibility_off' },
   mail: { ios: 'envelope', android: 'mail' },
   lock: { ios: 'lock', android: 'lock' },
+  paste: { ios: 'doc.on.clipboard', android: 'content_paste' },
+  keyboard: { ios: 'keyboard', android: 'keyboard' },
+  copy: { ios: 'doc.on.doc', android: 'content_copy' },
+  archive: { ios: 'archivebox', android: 'archive' },
+  calendar: { ios: 'calendar', android: 'calendar_today' },
+  checklist: { ios: 'checklist', android: 'checklist' },
+  list: { ios: 'list.bullet', android: 'format_list_bulleted' },
+  settings: { ios: 'gearshape', android: 'settings' },
+  pencil: { ios: 'pencil.line', android: 'stylus' },
 } satisfies Record<string, SymbolName>;
 
 export type IconName = keyof typeof icons;

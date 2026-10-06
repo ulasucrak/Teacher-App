@@ -34,8 +34,9 @@ export default function ForgotPasswordScreen() {
   return (
     <AuthPage
       title="Şifrenizi sıfırlayın"
-      description="Hesabınızın e-posta adresini yazın; şifre sıfırlama bağlantısı gönderelim."
+      description="E-posta adresinize bir sıfırlama bağlantısı gönderelim."
       back
+      testID="forgot-screen"
     >
       {sent ? (
         <>
@@ -44,7 +45,7 @@ export default function ForgotPasswordScreen() {
             title="Bağlantı gönderildi"
             message={`${email.trim()} adresine gelen bağlantıyla yeni şifrenizi belirleyin, sonra giriş yapın.`}
           />
-          <Button label="Giriş ekranına dön" onPress={() => router.replace('/login')} />
+          <Button label="Giriş ekranına dön" onPress={() => router.replace('/login')} testID="forgot-done" />
         </>
       ) : (
         <>
@@ -62,10 +63,11 @@ export default function ForgotPasswordScreen() {
             autoCapitalize="none"
             autoComplete="email"
             textContentType="emailAddress"
+            testID="forgot-email"
             returnKeyType="send"
             onSubmitEditing={submit}
           />
-          <Button label="Sıfırlama bağlantısı gönder" onPress={submit} loading={submitting} />
+          <Button label="Bağlantı gönder" onPress={submit} loading={submitting} testID="forgot-submit" />
         </>
       )}
     </AuthPage>

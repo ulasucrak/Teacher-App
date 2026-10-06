@@ -66,9 +66,9 @@ export default function RegisterScreen() {
       >
         <Banner
           kind="success"
-          message="Bağlantıya dokunduktan sonra bu ekrana dönüp giriş yapın. E-posta gelmediyse gereksiz klasörüne bakın."
+          message="Bağlantıya dokunun, sonra buradan giriş yapın. E-posta gelmediyse gereksiz klasörüne bakın."
         />
-        <Button label="Giriş ekranına dön" onPress={() => router.replace('/login')} />
+        <Button label="Giriş ekranına dön" onPress={() => router.replace('/login')} testID="register-done" />
       </AuthPage>
     );
   }
@@ -76,8 +76,15 @@ export default function RegisterScreen() {
   return (
     <AuthPage
       title="Hesap oluşturun"
-      description="Sınıflarınız, öğrencileriniz ve formlarınız bu hesapta saklanır."
+      description="Sınıflarınız ve kayıtlarınız bu hesapta saklanır."
       back
+      switchPrompt={{
+        text: 'Hesabınız var mı?',
+        actionLabel: 'Giriş yapın',
+        onPress: () => (router.canGoBack() ? router.back() : router.replace('/login')),
+        testID: 'register-login',
+      }}
+      testID="register-screen"
     >
       {formError ? <Banner kind="error" message={formError} /> : null}
 
@@ -93,6 +100,7 @@ export default function RegisterScreen() {
         autoCapitalize="words"
         autoComplete="name"
         textContentType="name"
+        testID="register-name"
         returnKeyType="next"
         onSubmitEditing={() => emailRef.current?.focus()}
         submitBehavior="submit"
@@ -111,6 +119,7 @@ export default function RegisterScreen() {
         autoCapitalize="none"
         autoComplete="email"
         textContentType="emailAddress"
+        testID="register-email"
         returnKeyType="next"
         onSubmitEditing={() => passwordRef.current?.focus()}
         submitBehavior="submit"
@@ -129,11 +138,12 @@ export default function RegisterScreen() {
         autoCapitalize="none"
         autoComplete="new-password"
         textContentType="newPassword"
+        testID="register-password"
         returnKeyType="go"
         onSubmitEditing={submit}
       />
 
-      <Button label="Hesap oluştur" onPress={submit} loading={submitting} />
+      <Button label="Hesap oluştur" onPress={submit} loading={submitting} testID="register-submit" />
     </AuthPage>
   );
 }

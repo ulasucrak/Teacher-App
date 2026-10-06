@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, elevation, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
+import { colors, elevation, iconSize, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
 
 import { IconButton } from './IconButton';
 import { Text } from './Text';
@@ -19,13 +19,17 @@ export interface SheetProps {
    * Modal/Alert açmak için kullanın; iOS aynı anda iki modal sunamaz.
    */
   onDismissed?: () => void;
+  /** Başlığın altında tek satırlık açıklama (isteğe bağlı). */
+  description?: string;
+  /** Panele `testID`, kapat düğmesine `${testID}-close` verilir. */
+  testID?: string;
 }
 
 /** iOS Modal'ı yerel olarak kapanınca `onDismiss` bildirir; diğer platformlarda bildirim yok. */
 const hasNativeDismiss = () => Platform.OS === 'ios';
 
 /** Alttan açılan basit seçici / panel (RN Modal üstüne). Perdeye dokununca kapanır. */
-export function Sheet({ visible, onClose, title, children, footer, onDismissed }: SheetProps) {
+export function Sheet({ visible, onClose, title, children, footer, onDismissed, description, testID }: SheetProps) {
   const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
@@ -80,6 +84,7 @@ export function Sheet({ visible, onClose, title, children, footer, onDismissed }
       <View style={styles.anchor} pointerEvents="box-none">
         <Animated.View
           accessibilityViewIsModal
+          testID={testID}
           style={[
             styles.sheet,
             { maxHeight: height * 0.85, paddingBottom: Math.max(insets.bottom, spacing.lg) },
@@ -88,10 +93,24 @@ export function Sheet({ visible, onClose, title, children, footer, onDismissed }
         >
           <View style={styles.handle} />
           <View style={styles.header}>
-            <Text variant="heading" accessibilityRole="header" style={styles.title}>
-              {title}
-            </Text>
-            <IconButton icon="close" accessibilityLabel="Kapat" onPress={onClose} />
+            <View style={styles.titles}>
+              <Text variant="heading" accessibilityRole="header">
+                {title}
+              </Text>
+              {description ? (
+                <Text variant="bodySmall" tone="muted">
+                  {description}
+                </Text>
+              ) : null}
+            </View>
+            <IconButton
+              icon="close"
+              variant="tonal"
+              size={iconSize.md}
+              accessibilityLabel="Kapat"
+              onPress={onClose}
+              testID={testID ? `${testID}-close` : undefined}
+            />
           </View>
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
             {children}
@@ -114,20 +133,22 @@ const styles = StyleSheet.create({
   },
   handle: {
     alignSelf: 'center',
-    width: 36,
-    height: 4,
+    width: spacing.xxxl + spacing.xs,
+    height: spacing.xs,
     borderRadius: radii.full,
     backgroundColor: colors.rule,
     marginTop: spacing.sm,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: layout.pageX + spacing.xs,
-    paddingRight: spacing.xs,
-    paddingTop: spacing.xs,
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingLeft: layout.pageX,
+    paddingRight: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
-  title: { flex: 1 },
+  titles: { flex: 1, gap: spacing.xxs, paddingTop: spacing.sm },
   body: { paddingHorizontal: layout.pageX, paddingBottom: spacing.lg },
   footer: { paddingHorizontal: layout.pageX, paddingTop: spacing.sm },
 });

@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { iconSize, radii, spacing, tones, type ToneName } from '@/theme';
 
+import { Button } from './Button';
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 
@@ -25,13 +26,19 @@ export interface BannerProps {
   kind?: BannerKind;
   title?: string;
   message: string;
+  /** İsteğe bağlı tek eylem ("Tekrar dene"); banner'ın içinde, metnin altında. */
+  actionLabel?: string;
+  onAction?: () => void;
+  actionTestID?: string;
+  testID?: string;
 }
 
 /** Satır içi bilgi / hata bandı. Hata: ne oldu + nasıl düzelir. */
-export function Banner({ kind = 'info', title, message }: BannerProps) {
+export function Banner({ kind = 'info', title, message, actionLabel, onAction, actionTestID, testID }: BannerProps) {
   const t = tones[kindTone[kind]];
   return (
     <View
+      testID={testID}
       style={[styles.banner, { backgroundColor: t.soft }]}
       accessibilityRole={kind === 'error' ? 'alert' : 'summary'}
       accessibilityLiveRegion="polite"
@@ -43,9 +50,18 @@ export function Banner({ kind = 'info', title, message }: BannerProps) {
             {title}
           </Text>
         ) : null}
-        <Text variant="bodySmall">
-          {message}
-        </Text>
+        <Text variant="bodySmall">{message}</Text>
+        {actionLabel && onAction ? (
+          <Button
+            label={actionLabel}
+            onPress={onAction}
+            variant="ghost"
+            size="sm"
+            fullWidth={false}
+            style={styles.action}
+            testID={actionTestID}
+          />
+        ) : null}
       </View>
     </View>
   );
@@ -56,8 +72,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
-    padding: spacing.md,
+    padding: spacing.md + spacing.xxs,
     borderRadius: radii.sm,
   },
   texts: { flex: 1, gap: spacing.xxs },
+  action: { marginLeft: -spacing.md, marginBottom: -spacing.sm },
 });
