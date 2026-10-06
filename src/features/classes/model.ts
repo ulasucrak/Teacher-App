@@ -91,3 +91,13 @@ export function validateClassDraft(
     },
   };
 }
+
+/**
+ * Ayrıntı girilmediyse sınıf adından düzey ve şube çıkarır: "5/B" → 5 + B, "10-A" → 10 + A,
+ * "7C" → 7 + C. Tanınmayan adlarda (ör. "Matematik kulübü") ikisi de boş kalır.
+ */
+export function deriveClassParts(name: string): { grade: string; section: string } {
+  const match = /^\s*(\d{1,2})\s*[/\-. ]?\s*(\p{L})\s*$/u.exec(name);
+  if (!match) return { grade: '', section: '' };
+  return { grade: match[1], section: match[2].toLocaleUpperCase('tr-TR') };
+}
