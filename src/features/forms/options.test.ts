@@ -1,7 +1,10 @@
+import { getFormsErrorMessage } from './errors';
+import { parseFormMode } from './mode';
 import {
   MAX_OPTIONS,
   createDraftOption,
   finalizeOptions,
+  hasScores,
   moveOption,
   normalizeLabel,
   parseOptions,
@@ -61,6 +64,26 @@ describe('finalizeOptions', () => {
   });
 });
 
+describe('finalizeOptions with scores', () => {
+  it('keeps a score and omits the field when there is none', () => {
+    const scored = { ...draft('Artı', null, 'positive'), score: 1 };
+    const result = finalizeOptions([scored, draft('Not', null)]);
+    expect(result[0]).toEqual({ key: 'arti', label: 'Artı', tone: 'positive', score: 1 });
+    expect(result[1]).not.toHaveProperty('score');
+  });
+
+  it('round-trips through drafts', () => {
+    const options = [
+      { key: 'arti', label: 'Artı', tone: 'positive' as const, score: 1 },
+      { key: 'eksi', label: 'Eksi', tone: 'negative' as const, score: -1 },
+      { key: 'yok', label: 'Yok', tone: 'neutral' as const },
+    ];
+    const drafts = toDraftOptions(options);
+    expect(drafts.map((d) => d.score)).toEqual([1, -1, null]);
+    expect(finalizeOptions(drafts)).toEqual(options);
+  });
+});
+
 describe('finalizeOptions with saved keys', () => {
   it('never reuses the key of a removed saved option', () => {
     // "Gelmedi" (gelmedi) kaldırıldı, aynı adla yeni seçenek eklendi.
@@ -109,6 +132,17 @@ describe('validateForm', () => {
     expect(v.optionErrors[c.id]).toMatch(/boş olamaz/);
   });
 
+  it('checks scores', () => {
+    const ok = { ...draft('Artı'), score: -1.5 };
+    const big = { ...draft('Çok'), score: 1001 };
+    const nan = { ...draft('Boş'), score: Number.NaN };
+    const v = validateForm({ ...base, options: [ok, big, nan] });
+    expect(v.optionErrors[ok.id]).toBeUndefined();
+    expect(v.optionErrors[big.id]).toMatch(/Puan/);
+    expect(v.optionErrors[nan.id]).toMatch(/Puan/);
+    expect(v.valid).toBe(false);
+  });
+
   it('normalizes labels with Turkish casing', () => {
     expect(normalizeLabel('  İYİ  ')).toBe('iyi');
     expect(normalizeLabel('IŞIK')).toBe('ışık');
@@ -125,6 +159,21 @@ describe('removedOptions', () => {
 });
 
 describe('parseOptions', () => {
+  it('keeps a numeric score and drops a bad one', () => {
+    expect(
+      parseOptions([
+        { key: 'a', label: 'A', tone: 'positive', score: 1 },
+        { key: 'b', label: 'B', tone: 'negative', score: '2' },
+        { key: 'c', label: 'C', tone: 'neutral', score: null },
+      ]),
+    ).toEqual([
+      { key: 'a', label: 'A', tone: 'positive', score: 1 },
+      { key: 'b', label: 'B', tone: 'negative' },
+      { key: 'c', label: 'C', tone: 'neutral' },
+    ]);
+    expect(hasScores(parseOptions([{ key: 'c', label: 'C', tone: 'neutral' }]))).toBe(false);
+  });
+
   it('keeps only valid option objects', () => {
     expect(
       parseOptions([
@@ -166,5 +215,29 @@ describe('PRESETS', () => {
     ]);
     expect(byId.sozlu).toEqual(['5:positive', '4:positive', '3:neutral', '2:warning', '1:negative']);
     expect(byId.katilim).toEqual(['Çok iyi:positive', 'İyi:positive', 'Orta:neutral', 'Zayıf:negative']);
+    expect(byId.artieksi).toEqual(['Artı:positive', 'Eksi:negative']);
+  });
+
+  it('use the agreed modes and scores', () => {
+    const byId = Object.fromEntries(PRESETS.map((p) => [p.id, p]));
+    expect(PRESETS.filter((p) => p.mode === 'repeatable').map((p) => p.id)).toEqual(['artieksi']);
+    expect(byId.yoklama?.mode).toBe('daily');
+    expect(hasScores(byId.yoklama?.options ?? [])).toBe(false);
+    expect(byId.artieksi?.options.map((o) => o.score)).toEqual([1, -1]);
+    // Puan yalnızca artı/eksi şablonunda.
+    expect(PRESETS.filter((p) => hasScores(p.options)).map((p) => p.id)).toEqual(['artieksi']);
+  });
+});
+
+describe('form mode', () => {
+  it('narrows unknown values to daily', () => {
+    expect(parseFormMode('repeatable')).toBe('repeatable');
+    expect(parseFormMode('daily')).toBe('daily');
+    expect(parseFormMode(null)).toBe('daily');
+    expect(parseFormMode('weekly')).toBe('daily');
+  });
+
+  it('explains a blocked mode change', () => {
+    expect(getFormsErrorMessage({ code: 'TA001', message: 'x' }, 'save')).toMatch(/türü değiştirilemez/);
   });
 });

@@ -3,13 +3,16 @@ export {
   copyFormToClasses,
   createForm,
   deleteForm,
+  formHasRecords,
   getForm,
   listForms,
   listOtherClassesForms,
+  updateForm,
 } from './api';
 export type { FormInput, FormListItem } from './api';
 export { ToneDots } from './components/ToneDots';
-export { parseOptions, slugify, toneLabels } from './options';
+export { FORM_MODES, formModeDescriptions, formModeLabels, parseFormMode } from './mode';
+export { MAX_SCORE, hasScores, isScore, parseOptions, slugify, toneLabels } from './options';
 export { PRESETS, getPreset } from './presets';
 export type { FormPreset, PresetId } from './presets';
 export { formsRoutes } from './params';

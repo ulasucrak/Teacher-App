@@ -47,6 +47,7 @@ const form: FormRow = {
   subject: 'Matematik',
   description: '5. sınıf MEB kitabı',
   archived: false,
+  mode: 'daily',
   sort_order: 0,
   created_at: '2026-10-01T00:00:00Z',
   options: [

@@ -73,6 +73,7 @@ const form = (id: string, title: string, extra: Partial<formsApi.FormListItem> =
   options,
   sort_order: 0,
   archived: false,
+  mode: 'daily',
   created_at: '',
   lastSessionDate: null,
   ...extra,

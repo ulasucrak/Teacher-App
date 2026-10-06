@@ -89,8 +89,20 @@ supabase gen types typescript --linked > src/types/database.ts
 | --- | --- |
 | `classes` | Sınıflar (ad, seviye, şube) |
 | `students` | Öğrenciler (ad soyad, okul no, fotoğraf) — bir sınıfa bağlı |
-| `forms` | Değerlendirme formları; `options` = `[{ key, label, tone }]`, `tone`: `positive` \| `neutral` \| `warning` \| `negative` |
-| `form_sessions` | Bir formun belirli bir tarihte doldurulması (`draft` / `published`) |
+| `forms` | Değerlendirme formları; `options` = `[{ key, label, tone, score? }]`, `tone`: `positive` \| `neutral` \| `warning` \| `negative`, `score`: isteğe bağlı sayı (net için). `mode`: `daily` (günde bir kez) \| `repeatable` (birikimli) |
+| `form_sessions` | Günlük formun belirli bir tarihte doldurulması (`draft` / `published`); form + tarih başına tek kayıt |
 | `form_entries` | Oturumdaki her öğrenci için seçilen seçenek ve not (oturum + öğrenci başına tek kayıt) |
+| `form_marks` | Birikimli formda her işaret bir satır (`mark_date` = cihazın yerel günü). Eklenir ya da silinir (geri alma), değiştirilmez |
+| `form_events` | Geçmiş (denetim kaydı). Yalnızca tetikleyiciler yazar, istemci okur: günlük kayıt ekleme/değiştirme/silme, işaret ekleme/geri alma |
 
-`copy_form_to_classes(p_form_id, p_class_ids)` fonksiyonu bir formu (başlık, ders, açıklama, seçenekler) seçilen diğer sınıflara kopyalar; öğretmene ait olmayan sınıflar atlanır.
+`copy_form_to_classes(p_form_id, p_class_ids)` fonksiyonu bir formu (başlık, ders, açıklama, seçenekler, tür) seçilen diğer sınıflara kopyalar; öğretmene ait olmayan sınıflar atlanır.
+
+Form türü, formda kayıt ya da işaret varken değiştirilemez (`forms_guard_mode_change` tetikleyicisi, hata kodu `TA001`).
+Günlük kayıt yalnızca günlük forma (`TA002`), işaret yalnızca birikimli forma, formun sınıfındaki öğrenciye (`TA003`) ve
+formda tanımlı seçenekle (`TA004`) eklenebilir.
+
+| RPC | Açıklama |
+| --- | --- |
+| `form_tally(p_form_id, p_from?, p_to?, p_day?)` | Öğrenci başına seçenek sayıları (`counts`: tarih aralığı, `day_counts`: tek gün). Günlükte kayıtlı değerler, birikimlide geri alınmamış işaretler sayılır |
+| `form_history(p_form_id, p_from?, p_to?, p_student_id?, p_before_occurred_at?, p_before_id?, p_limit?)` | Geçmiş, yeniden eskiye, öğrenci adıyla; imleçle sayfalı |
+| `undo_last_mark(p_form_id, p_student_id, p_mark_date?, p_option_key?)` | Öğrencinin son işaretini geri alır |

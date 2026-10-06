@@ -37,6 +37,7 @@ const form: FormRow = {
   subject: 'Matematik',
   description: null,
   archived: false,
+  mode: 'daily',
   sort_order: 0,
   created_at: '',
   options: [

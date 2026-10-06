@@ -35,6 +35,7 @@ export function makeForm(overrides: Partial<FormListItem> = {}): FormListItem {
     options,
     sort_order: 0,
     archived: false,
+    mode: 'daily',
     created_at: '2026-09-01T08:00:00Z',
     lastSessionDate: null,
     ...overrides,

@@ -43,7 +43,13 @@ const defaultApi: SetupApi = { createClass, addStudents, createForm };
 export function presetFormInput(id: PresetId): FormInput | null {
   const preset = getPreset(id);
   if (!preset) return null;
-  return { title: preset.title, subject: null, description: null, options: preset.options.map((o) => ({ ...o })) };
+  return {
+    title: preset.title,
+    subject: null,
+    description: null,
+    options: preset.options.map((o) => ({ ...o })),
+    mode: preset.mode,
+  };
 }
 
 export function setupMessage(stage: SetupStage, className: string, error: unknown): string {

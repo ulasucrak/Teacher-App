@@ -31,6 +31,9 @@ export function getFormsErrorMessage(error: unknown, action: FormsAction): strin
     if (e.code === '23514') {
       return 'Seçenekler geçersiz. Her seçeneğe bir ad ve renk verin, sonra tekrar kaydedin.';
     }
+    if (e.code === 'TA001') {
+      return 'Bu formda kayıt olduğu için türü değiştirilemez. Farklı türde yeni bir form oluşturun.';
+    }
   }
   return fallback[action];
 }

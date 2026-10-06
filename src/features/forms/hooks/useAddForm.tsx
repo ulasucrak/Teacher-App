@@ -74,6 +74,7 @@ export function useAddForm({ classId, existingTitles, onChanged }: UseAddFormOpt
         subject: null,
         description: null,
         options: preset.options.map((o) => ({ ...o })),
+        mode: preset.mode,
       });
       setVisible(false);
       toast.show(`${preset.title} eklendi`);

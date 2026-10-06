@@ -5,6 +5,8 @@ export const MIN_OPTIONS = 2;
 export const MAX_OPTIONS = 12;
 export const MAX_LABEL_LENGTH = 24;
 export const MAX_TITLE_LENGTH = 60;
+/** Seçenek puanının mutlak üst sınırı (veritabanı denetimiyle aynı). */
+export const MAX_SCORE = 1000;
 
 export const TONE_ORDER: readonly FormOptionTone[] = ['positive', 'neutral', 'warning', 'negative'];
 
@@ -20,12 +22,14 @@ export const toneLabels: Record<FormOptionTone, string> = {
  * Düzenleyicideki seçenek taslağı. `key` kaydedilmiş seçenekte sabittir (eski kayıtlar
  * ona bağlı); yeni seçenekte `null` olur ve kaydederken bir kez üretilir.
  * `id` yalnızca liste içi kimliktir (React anahtarı).
+ * `score`: isteğe bağlı puan (artı +1, eksi −1); puansız seçenekte `null`.
  */
 export interface DraftOption {
   id: string;
   key: string | null;
   label: string;
   tone: FormOptionTone;
+  score: number | null;
 }
 
 const TR_ASCII: Record<string, string> = {
@@ -83,11 +87,27 @@ function nextDraftId(): string {
 }
 
 export function toDraftOptions(options: readonly FormOption[]): DraftOption[] {
-  return options.map((o) => ({ id: nextDraftId(), key: o.key, label: o.label, tone: o.tone }));
+  return options.map((o) => ({
+    id: nextDraftId(),
+    key: o.key,
+    label: o.label,
+    tone: o.tone,
+    score: isScore(o.score) ? o.score : null,
+  }));
 }
 
 export function createDraftOption(tone: FormOptionTone = 'neutral'): DraftOption {
-  return { id: nextDraftId(), key: null, label: '', tone };
+  return { id: nextDraftId(), key: null, label: '', tone, score: null };
+}
+
+/** Geçerli bir puan mı (sonlu sayı)? */
+export function isScore(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+/** Puanı olan seçenek nesnesi; puansızda `score` alanı hiç yazılmaz. */
+function withScore(option: Omit<FormOption, 'score'>, score: number | null | undefined): FormOption {
+  return isScore(score) ? { ...option, score } : option;
 }
 
 /** Sırayı bir adım yukarı (-1) ya da aşağı (+1) taşır; sınırdaysa aynı diziyi döndürür. */
@@ -114,10 +134,10 @@ export function finalizeOptions(
   for (const d of drafts) if (d.key) taken.add(d.key);
   return drafts.map((d) => {
     const label = d.label.trim().replace(/\s+/g, ' ');
-    if (d.key) return { key: d.key, label, tone: d.tone };
+    if (d.key) return withScore({ key: d.key, label, tone: d.tone }, d.score);
     const key = uniqueKey(slugify(label), taken);
     taken.add(key);
-    return { key, label, tone: d.tone };
+    return withScore({ key, label, tone: d.tone }, d.score);
   });
 }
 
@@ -165,6 +185,13 @@ export function validateForm(values: FormDraftValues): FormValidation {
     } else {
       seen.set(normalized, option.id);
     }
+    if (
+      option.score !== null &&
+      !result.optionErrors[option.id] &&
+      (!isScore(option.score) || Math.abs(option.score) > MAX_SCORE)
+    ) {
+      result.optionErrors[option.id] = `Puan −${MAX_SCORE} ile ${MAX_SCORE} arasında bir sayı olmalı. Puanı düzeltin ya da boş bırakın.`;
+    }
   }
 
   result.valid = !result.title && !result.options && Object.keys(result.optionErrors).length === 0;
@@ -177,16 +204,21 @@ export function removedOptions(original: readonly FormOption[], drafts: readonly
   return original.filter((o) => !kept.has(o.key));
 }
 
-/** Ham jsonb değerini güvenle FormOption[]'a çevirir (bozuk öğeler atlanır). */
+/** Ham jsonb değerini güvenle FormOption[]'a çevirir (bozuk öğeler atlanır; geçerli `score` korunur). */
 export function parseOptions(value: unknown): FormOption[] {
   if (!Array.isArray(value)) return [];
   const out: FormOption[] = [];
   for (const item of value) {
     if (!item || typeof item !== 'object') continue;
-    const { key, label, tone } = item as Record<string, unknown>;
+    const { key, label, tone, score } = item as Record<string, unknown>;
     if (typeof key !== 'string' || typeof label !== 'string') continue;
     if (typeof tone !== 'string' || !(TONE_ORDER as readonly string[]).includes(tone)) continue;
-    out.push({ key, label, tone: tone as FormOptionTone });
+    out.push(withScore({ key, label, tone: tone as FormOptionTone }, isScore(score) ? score : null));
   }
   return out;
+}
+
+/** Formda en az bir puanlı seçenek var mı? (Net yalnızca o zaman anlamlıdır.) */
+export function hasScores(options: readonly Pick<FormOption, 'score'>[]): boolean {
+  return options.some((o) => isScore(o.score));
 }

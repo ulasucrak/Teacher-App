@@ -15,6 +15,7 @@ import type {
   Tables,
 } from '@/types/database';
 
+import { parseFormMode } from '@/features/forms/mode';
 import { parseOptions } from '@/features/forms/options';
 
 import type { UpsertEntry } from './draft';
@@ -53,7 +54,7 @@ export function toUserMessage(error: unknown, fallback: string): string {
 }
 
 function toForm(row: Tables<'forms'>): FormRow {
-  return { ...row, options: parseOptions(row.options) };
+  return { ...row, options: parseOptions(row.options), mode: parseFormMode(row.mode) };
 }
 
 /** Sınır dönüşümü: veritabanındaki `status` metni birleşim türüne daraltılır. */

@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Banner, BottomActionBar, Button, ConfirmSheet, Screen, SectionHeader, TextField } from '@/components/ui';
 import { spacing } from '@/theme';
-import type { FormOption } from '@/types/database';
+import type { FormMode, FormOption } from '@/types/database';
 
 import type { FormInput } from '../api';
 import { errorMessage } from '../errors';
@@ -26,6 +26,8 @@ export interface FormBuilderValues {
   subject: string;
   description: string;
   options: DraftOption[];
+  /** Form türü; verilmezse kaydederken gönderilmez (yeni formda veritabanı `daily` yazar). */
+  mode?: FormMode;
 }
 
 export interface FormBuilderProps {
@@ -50,6 +52,7 @@ export function valuesForTemplate(choice: TemplateChoice | null | undefined): Fo
     subject: '',
     description: '',
     options: preset ? toDraftOptions(preset.options) : blankOptions(),
+    mode: preset?.mode ?? 'daily',
   };
 }
 
@@ -87,6 +90,7 @@ export function FormBuilder({ initial, originalOptions, screenTitle, submitLabel
         subject: values.subject.trim() || null,
         description: values.description.trim() || null,
         options: finalizeOptions(values.options, originalOptions?.map((o) => o.key)),
+        ...(values.mode ? { mode: values.mode } : {}),
       });
     } catch (error) {
       setSaveError(errorMessage(error, 'save'));

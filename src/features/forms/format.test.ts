@@ -18,6 +18,7 @@ describe('groupFormsByClass', () => {
     description: null,
     options: [],
     archived: false,
+    mode: 'daily',
     sort_order: 0,
     created_at: '',
     teacher_id: 't',
