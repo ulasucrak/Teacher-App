@@ -1,4 +1,11 @@
-import { classMetaParts, sortClasses, suggestClassName, toClassSummary, validateClassDraft } from './model';
+import {
+  classMetaParts,
+  deriveClassParts,
+  sortClasses,
+  suggestClassName,
+  toClassSummary,
+  validateClassDraft,
+} from './model';
 
 const base = { id: 'x', teacher_id: 't', created_at: '2026-01-01', grade: null, section: null };
 
@@ -51,5 +58,18 @@ describe('suggestClassName', () => {
   it('combines grade and section', () => {
     expect(suggestClassName('5', 'i')).toBe('5/İ');
     expect(suggestClassName('5', '')).toBe('');
+  });
+});
+
+describe('deriveClassParts', () => {
+  it.each([
+    ['5/B', '5', 'B'],
+    ['10-a', '10', 'A'],
+    ['7C', '7', 'C'],
+    ['6 i', '6', 'İ'],
+    ['Matematik kulübü', '', ''],
+    ['5/B Fen', '', ''],
+  ])('%p', (name, grade, section) => {
+    expect(deriveClassParts(name)).toEqual({ grade, section });
   });
 });

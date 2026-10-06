@@ -1,8 +1,19 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
-import { Banner, Button, EmptyState, IconButton, LoadingState, Screen, Sheet, Text, useToast } from '@/components/ui';
+import {
+  Banner,
+  Button,
+  ConfirmSheet,
+  EmptyState,
+  Fab,
+  IconButton,
+  LoadingState,
+  OverflowMenu,
+  Screen,
+  useToast,
+} from '@/components/ui';
 import { getDisplayName, useAuth } from '@/features/auth';
 import { colors, layout, spacing } from '@/theme';
 
@@ -10,96 +21,68 @@ import { listClasses } from '../api';
 import { ClassListRow } from '../components/ClassListRow';
 import { useRemoteData } from '../useRemoteData';
 
-const LOAD_ERROR = 'Sınıflar yüklenemedi. Aşağı çekerek ya da "Tekrar dene" ile yeniden deneyin.';
+const LOAD_ERROR = 'Sınıflar yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.';
 
-/** "Sınıflarım": öğretmenin sınıfları, sayılarıyla. */
+/** "Sınıflarım": sınıfların listesi, tek ana eylem "Yeni sınıf"; hesap "⋯" menüsünde. */
 export function ClassesScreen() {
   const router = useRouter();
   const toast = useToast();
   const { user, signOut } = useAuth();
   const name = getDisplayName(user);
-  const [accountOpen, setAccountOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const classes = useRemoteData(listClasses, LOAD_ERROR);
 
   const openNew = () => router.push('/class/new');
 
-  const confirmSignOut = () => {
-    // Uyarı açık panelin üstünde gösterilir; panel karar verilince kapanır.
-    Alert.alert('Çıkış yapılsın mı?', 'Tekrar girmek için e-posta ve şifreniz gerekir.', [
-      { text: 'Vazgeç', style: 'cancel' },
-      {
-        text: 'Çıkış yap',
-        style: 'destructive',
-        onPress: async () => {
-          setAccountOpen(false);
-          const result = await signOut();
-          if (!result.ok) toast.show(result.message, 'error');
-        },
-      },
-    ]);
+  const doSignOut = async () => {
+    setSigningOut(true);
+    const result = await signOut();
+    setSigningOut(false);
+    setConfirmOpen(false);
+    if (!result.ok) toast.show(result.message, 'error');
   };
 
   const items = classes.data ?? [];
+  const ready = classes.status === 'ready';
   const hasClasses = items.length > 0;
-
-  const header = (
-    <View style={styles.header}>
-      <Text variant="title" accessibilityRole="header">
-        Sınıflarım
-      </Text>
-      {name ? (
-        <Text variant="body" tone="muted">
-          {`Merhaba, ${name}`}
-        </Text>
-      ) : null}
-      {classes.error && classes.status === 'ready' ? (
-        <View style={styles.banner}>
-          <Banner kind="error" message={classes.error} />
-        </View>
-      ) : null}
-    </View>
-  );
 
   let body;
   if (classes.status === 'loading') {
-    body = (
-      <>
-        {header}
-        <LoadingState label="Sınıflarınız yükleniyor" />
-      </>
-    );
+    body = <LoadingState label="Sınıflarınız yükleniyor" />;
   } else if (classes.status === 'error') {
     body = (
-      <>
-        {header}
-        <View style={[styles.padded, styles.errorBox]}>
-          <Banner kind="error" title="Sınıflar yüklenemedi" message={classes.error ?? LOAD_ERROR} />
-          <Button label="Tekrar dene" variant="secondary" onPress={classes.retry} />
-        </View>
-      </>
+      <View style={[styles.padded, styles.errorBox]}>
+        <Banner kind="error" title="Sınıflar yüklenemedi" message={classes.error ?? LOAD_ERROR} />
+        <Button label="Tekrar dene" variant="secondary" onPress={classes.retry} testID="classes-retry" />
+      </View>
     );
   } else {
     body = (
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ClassListRow item={item} onPress={() => router.push(`/class/${item.id}`)} />
+        renderItem={({ item, index }) => (
+          <ClassListRow item={item} onPress={() => router.push(`/class/${item.id}`)} testID={`class-row-${index}`} />
         )}
         ListHeaderComponent={
-          <>
-            {header}
-            {hasClasses ? <View style={styles.listTop} /> : null}
-          </>
+          classes.error ? (
+            <View style={[styles.padded, styles.banner]}>
+              <Banner kind="error" message={classes.error} />
+            </View>
+          ) : null
         }
         ListEmptyComponent={
           <View style={styles.padded}>
             <EmptyState
               icon="people"
               title="Henüz sınıfınız yok"
-              description="Sınıf eklediğinizde öğrencileriniz, yoklama ve ödev formları burada listelenir. İlk sınıfınızı ekleyerek başlayın."
-              actionLabel="Sınıf ekle"
+              description="İlk sınıfınızı ekleyin; öğrencileri fotoğraftan alabilirsiniz."
+              actionLabel="Yeni sınıf"
               onAction={openNew}
+              actionTestID="classes-empty-new"
+              testID="classes-empty"
             />
           </View>
         }
@@ -113,46 +96,67 @@ export function ClassesScreen() {
           />
         }
         contentContainerStyle={styles.listContent}
+        testID="classes-list"
       />
     );
   }
 
   return (
     <Screen
+      title="Sınıflarım"
+      largeTitle
+      subtitle={name ? `Merhaba, ${name}` : undefined}
       back={false}
       scroll={false}
       padded={false}
+      testID="classes-screen"
       headerRight={
-        <IconButton icon="more" accessibilityLabel="Hesap seçenekleri" onPress={() => setAccountOpen(true)} />
+        <IconButton
+          icon="more"
+          accessibilityLabel="Diğer seçenekler"
+          onPress={() => setMenuOpen(true)}
+          testID="classes-menu"
+        />
       }
-      footer={hasClasses ? <Button label="Sınıf ekle" icon="plus" onPress={openNew} /> : undefined}
+      fab={
+        ready && hasClasses ? <Fab label="Yeni sınıf" onPress={openNew} testID="classes-fab" /> : undefined
+      }
     >
       {body}
-      <Sheet visible={accountOpen} onClose={() => setAccountOpen(false)} title="Hesap">
-        <View style={styles.account}>
-          {name ? <Text variant="bodyStrong">{name}</Text> : null}
-          {user?.email ? (
-            <Text variant="bodySmall" tone="muted">
-              {user.email}
-            </Text>
-          ) : null}
-        </View>
-        <Button label="Çıkış yap" variant="secondary" icon="logout" onPress={confirmSignOut} />
-      </Sheet>
+      <OverflowMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        title={name || 'Hesap'}
+        description={user?.email ?? undefined}
+        testID="classes-menu-sheet"
+        actions={[
+          {
+            key: 'signout',
+            label: 'Çıkış yap',
+            icon: 'logout',
+            destructive: true,
+            onPress: () => setConfirmOpen(true),
+            testID: 'classes-signout',
+          },
+        ]}
+      />
+      <ConfirmSheet
+        visible={confirmOpen}
+        title="Çıkış yapılsın mı?"
+        message="Tekrar girmek için e-posta ve şifreniz gerekir."
+        confirmLabel="Çıkış yap"
+        loading={signingOut}
+        onConfirm={() => void doSignOut()}
+        onCancel={() => setConfirmOpen(false)}
+        testID="classes-signout-confirm"
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: layout.pageX, paddingTop: spacing.sm, gap: spacing.xs },
-  banner: { marginTop: spacing.md },
   padded: { paddingHorizontal: layout.pageX },
-  errorBox: { marginTop: spacing.xl, gap: spacing.lg },
-  listTop: {
-    marginTop: spacing.xl,
-    borderBottomWidth: layout.hairline,
-    borderBottomColor: colors.rule,
-  },
-  listContent: { flexGrow: 1, paddingBottom: spacing.xxl },
-  account: { gap: spacing.xxs, marginBottom: spacing.xl },
+  errorBox: { marginTop: spacing.lg, gap: spacing.lg },
+  banner: { marginBottom: spacing.md },
+  listContent: { flexGrow: 1, paddingBottom: layout.fabClearance + spacing.xxl },
 });
