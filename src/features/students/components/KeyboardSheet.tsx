@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, Text } from '@/components/ui';
+import { useOverlayColumnStyle } from '@/components/ui/AppFrame';
 import { isWeb, WEB_MAX_SHEET_WIDTH } from '@/lib/platform';
 import { colors, elevation, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
 
@@ -34,7 +35,10 @@ export interface KeyboardSheetProps {
 export function KeyboardSheet({ visible, onClose, title, children, footer, onDismissed, testID }: KeyboardSheetProps) {
   const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height: windowHeight } = useWindowDimensions();
+  // Web masaüstü: perde tüm sayfayı karartır, panel uygulama sütununun içinde kalır.
+  const column = useOverlayColumnStyle();
+  const height = typeof column?.height === 'number' ? column.height : windowHeight;
   const [mounted, setMounted] = useState(visible);
   const [progress] = useState(() => new Animated.Value(0));
 
@@ -80,7 +84,7 @@ export function KeyboardSheet({ visible, onClose, title, children, footer, onDis
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Kapat" />
       </Animated.View>
       <KeyboardAvoidingView
-        style={styles.anchor}
+        style={[styles.anchor, column]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         pointerEvents="box-none"
       >
