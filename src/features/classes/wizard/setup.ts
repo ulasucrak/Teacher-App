@@ -3,7 +3,7 @@
  * oluşturur. Her aşama bir kez yapılır; hata olursa ilerleme korunur ve "Tekrar dene"
  * kaldığı yerden devam eder (sınıf iki kez oluşturulmaz).
  */
-import { createForm, getPreset, type FormInput, type PresetId } from '@/features/forms';
+import { createForm, getPreset, presetFormValues, type FormInput, type ModeChoice, type PresetId } from '@/features/forms';
 import { addStudents, type NewStudent } from '@/features/students';
 import type { ClassRow } from '@/types/database';
 
@@ -26,6 +26,8 @@ export interface SetupInput {
   klass: ValidClass;
   students: readonly NewStudent[];
   presets: readonly PresetId[];
+  /** Hazır formların türü; verilmezse her şablon kendi önerdiği türle eklenir. */
+  modeChoice?: ModeChoice;
 }
 
 export type SetupOutcome =
@@ -40,16 +42,11 @@ export interface SetupApi {
 
 const defaultApi: SetupApi = { createClass, addStudents, createForm };
 
-export function presetFormInput(id: PresetId): FormInput | null {
+export function presetFormInput(id: PresetId, choice: ModeChoice = 'suggested'): FormInput | null {
   const preset = getPreset(id);
   if (!preset) return null;
-  return {
-    title: preset.title,
-    subject: null,
-    description: null,
-    options: preset.options.map((o) => ({ ...o })),
-    mode: preset.mode,
-  };
+  const { mode, options } = presetFormValues(preset, choice);
+  return { title: preset.title, subject: null, description: null, options, mode };
 }
 
 export function setupMessage(stage: SetupStage, className: string, error: unknown): string {
@@ -93,7 +90,7 @@ export async function runClassSetup(
   // Sıra numarası her seferinde sonuncudan hesaplandığı için formlar tek tek oluşturulur.
   for (const id of input.presets) {
     if (progress.formsSaved.includes(id)) continue;
-    const form = presetFormInput(id);
+    const form = presetFormInput(id, input.modeChoice);
     if (!form) continue;
     try {
       await api.createForm(classRow.id, form);

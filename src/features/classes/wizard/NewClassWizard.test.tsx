@@ -3,6 +3,7 @@ import { act } from 'react';
 import { BackHandler } from 'react-native';
 
 import { NewClassWizard } from './NewClassWizard';
+import { runClassSetup } from './setup';
 
 jest.mock('expo-router', () => ({
   Stack: { Screen: () => null },
@@ -91,5 +92,35 @@ describe('NewClassWizard', () => {
     expect(screen.getByTestId('wizard-step-1')).toBeTruthy();
     // İlk adımda geri tuşu ekranı kapatır (gezinmeye bırakılır).
     expect(backListeners).toHaveLength(0);
+  });
+
+  it('offers one form-type choice for all selected templates and passes it on', async () => {
+    jest.mocked(runClassSetup).mockResolvedValue({
+      ok: true,
+      progress: { classRow: null, studentsSaved: true, formsSaved: [] },
+      classRow: { id: 'c9', name: '6/A', grade: null, section: null, teacher_id: 't', created_at: '' },
+    });
+    await goToStudents();
+    await fireEvent.press(screen.getByTestId('wizard-skip-students'));
+
+    // Varsayılan: şablonların önerdiği tür.
+    expect(screen.getByTestId('wizard-mode-suggested')).toBeSelected();
+    await fireEvent.press(screen.getByTestId('wizard-form-odev'));
+    await fireEvent.press(screen.getByTestId('wizard-mode-repeatable'));
+    expect(screen.getByTestId('wizard-mode-description')).toHaveTextContent(/birikir/);
+    await fireEvent.press(screen.getByTestId('wizard-create'));
+
+    expect(runClassSetup).toHaveBeenCalledWith(
+      expect.objectContaining({ presets: ['yoklama', 'odev'], modeChoice: 'repeatable' }),
+      expect.anything(),
+    );
+  });
+
+  it('hides the form-type choice when no template is selected', async () => {
+    await goToStudents();
+    await fireEvent.press(screen.getByTestId('wizard-skip-students'));
+    await fireEvent.press(screen.getByTestId('wizard-form-yoklama'));
+
+    expect(screen.queryByTestId('wizard-mode-suggested')).toBeNull();
   });
 });

@@ -24,7 +24,7 @@ export interface UseFormActions {
 }
 
 /**
- * Form satırının ikincil eylemleri: Geçmiş, Düzenle, Diğer sınıflara kopyala,
+ * Form satırının ikincil eylemleri: Düzenle, Diğer sınıflara kopyala,
  * Arşivle (geri alınabilir, onay yok), Sil (ConfirmSheet).
  */
 export function useFormActions({ classId, onChanged }: UseFormActionsOptions): UseFormActions {
@@ -113,12 +113,6 @@ export function useFormActions({ classId, onChanged }: UseFormActionsOptions): U
 
   const actions: OverflowAction[] = menuForm
     ? [
-        {
-          key: 'history',
-          label: 'Geçmiş',
-          icon: 'calendar',
-          onPress: () => router.push(formsRoutes.open(classId, menuForm.id, 'history')),
-        },
         {
           key: 'edit',
           label: 'Düzenle',

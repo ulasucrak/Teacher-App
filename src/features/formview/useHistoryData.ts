@@ -11,7 +11,8 @@ import {
 } from '@/features/history';
 import type { FormRow } from '@/types/database';
 
-export type HistoryView = 'summary' | 'timeline';
+/** Geçmiş görünümleri: özet, günlük inceleme (`day`) ve zaman çizelgesi (`list`). */
+export type HistoryView = 'summary' | 'day' | 'list';
 
 interface Keyed<T> {
   key: string;
@@ -85,7 +86,7 @@ export function useHistoryData(form: Pick<FormRow, 'id' | 'options'>, { active, 
   }, [active, view, formId, options, summaryKey, attempt]);
 
   useEffect(() => {
-    if (!active || view !== 'timeline') return;
+    if (!active || view !== 'list') return;
     const request = ++timelineRequest.current;
     listHistory(formId, { range, studentId }).then(
       (page) => {

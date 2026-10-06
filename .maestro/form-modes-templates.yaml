@@ -1,0 +1,40 @@
+# Hazır formda tür seçimi: "+ Form" panelinde Birikimli seçip Ödev kontrolü eklenir.
+appId: com.ulas.teacherapp
+name: form-modes-templates
+env:
+  EMAIL: test+formmodes@ornek.com
+  PASSWORD: Test1234!
+---
+- runFlow: subflows/ensure-login.yaml
+- tapOn: "7/F,.*"
+- extendedWaitUntil:
+    visible:
+      id: "class-add-form"
+    timeout: 20000
+- tapOn:
+    id: "class-add-form"
+- extendedWaitUntil:
+    visible:
+      id: "mode-choice-suggested"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: fm2-10-add-sheet-suggested
+- tapOn:
+    id: "mode-choice-repeatable"
+- takeScreenshot: fm2-11-add-sheet-repeatable
+- tapOn:
+    id: "add-form-preset-odev"
+- extendedWaitUntil:
+    visible: "Ödev kontrolü eklendi"
+    timeout: 15000
+- takeScreenshot: fm2-12-class-with-odev
+- tapOn: "Ödev kontrolü,.*"
+- extendedWaitUntil:
+    visible:
+      id: "mark-row-0"
+    timeout: 20000
+- tapOn:
+    id: "mark-row-0-tamamlandi"
+- tapOn:
+    id: "mark-row-0-getirmedi"
+- takeScreenshot: fm2-13-odev-mark

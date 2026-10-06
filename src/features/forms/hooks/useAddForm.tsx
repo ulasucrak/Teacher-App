@@ -10,7 +10,7 @@ import { FormSourceSheet } from '../components/FormSourceSheet';
 import { errorMessage } from '../errors';
 import type { ClassFormsGroup } from '../format';
 import { formsRoutes } from '../params';
-import { getPreset, type PresetId } from '../presets';
+import { getPreset, presetFormValues, type ModeChoice, type PresetId } from '../presets';
 
 export interface UseAddFormOptions {
   classId: string;
@@ -30,7 +30,7 @@ export interface UseAddForm {
 type AfterClose = 'copy' | 'blank' | null;
 
 /**
- * "+ Form" akışı: şablon tek dokunuşla eklenir (toast "Yoklama eklendi"), "Başka sınıftan
+ * "+ Form" akışı: şablon (üstte seçilen türle) tek dokunuşla eklenir (toast "Yoklama eklendi"), "Başka sınıftan
  * kopyala" ikinci paneli açar, "Boş form" form oluşturucuya gider.
  */
 export function useAddForm({ classId, existingTitles, onChanged }: UseAddFormOptions): UseAddForm {
@@ -39,6 +39,7 @@ export function useAddForm({ classId, existingTitles, onChanged }: UseAddFormOpt
 
   const [visible, setVisible] = useState(false);
   const [busyPreset, setBusyPreset] = useState<PresetId | null>(null);
+  const [modeChoice, setModeChoice] = useState<ModeChoice>('suggested');
   const [error, setError] = useState<string | null>(null);
   const afterClose = useRef<AfterClose>(null);
 
@@ -51,6 +52,7 @@ export function useAddForm({ classId, existingTitles, onChanged }: UseAddFormOpt
   const open = useCallback(() => {
     afterClose.current = null;
     setError(null);
+    setModeChoice('suggested');
     setVisible(true);
   }, []);
 
@@ -69,13 +71,8 @@ export function useAddForm({ classId, existingTitles, onChanged }: UseAddFormOpt
     setBusyPreset(id);
     setError(null);
     try {
-      await createForm(classId, {
-        title: preset.title,
-        subject: null,
-        description: null,
-        options: preset.options.map((o) => ({ ...o })),
-        mode: preset.mode,
-      });
+      const { mode, options } = presetFormValues(preset, modeChoice);
+      await createForm(classId, { title: preset.title, subject: null, description: null, options, mode });
       setVisible(false);
       toast.show(`${preset.title} eklendi`);
       onChanged();
@@ -132,6 +129,8 @@ export function useAddForm({ classId, existingTitles, onChanged }: UseAddFormOpt
         existingTitles={existingTitles}
         busyPreset={busyPreset}
         error={error}
+        modeChoice={modeChoice}
+        onModeChoice={setModeChoice}
         onPreset={(id) => void addPreset(id)}
         onCopyFromOther={() => closeThen('copy')}
         onBlank={() => closeThen('blank')}

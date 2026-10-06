@@ -120,14 +120,14 @@ describe('ClassDetailScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/class/c1/students');
   });
 
-  it("opens today's session when a form row is tapped", async () => {
+  it('opens the form screen (İşaretle | Geçmiş) when a form row is tapped', async () => {
     await renderScreen();
 
     await fireEvent.press(await screen.findByTestId('form-row-1'));
-    expect(mockPush).toHaveBeenCalledWith(`/class/c1/form/f2/session/new?date=${todayIso()}`);
+    expect(mockPush).toHaveBeenCalledWith('/class/c1/form/f2');
   });
 
-  it('sends a cumulative form to its marking screen and labels its type', async () => {
+  it('labels cumulative forms and opens every form on the same screen', async () => {
     forms.listForms.mockResolvedValue([
       form('f1', 'Yoklama'),
       form('f4', 'Artı / eksi', { mode: 'repeatable', lastSessionDate: todayIso() }),
@@ -138,20 +138,10 @@ describe('ClassDetailScreen', () => {
     expect(screen.queryByTestId('form-row-0-mode')).toBeNull();
     expect(screen.getByText('Son işaret: Bugün')).toBeOnTheScreen();
 
-    // Birikimli formun günlük kaydı olamaz: işaretleme ekranı açılır.
     await fireEvent.press(screen.getByTestId('form-row-1'));
     expect(mockPush).toHaveBeenCalledWith('/class/c1/form/f4');
-    // Günlük form: bugünün kaydı.
     await fireEvent.press(screen.getByTestId('form-row-0'));
-    expect(mockPush).toHaveBeenCalledWith(`/class/c1/form/f1/session/new?date=${todayIso()}`);
-  });
-
-  it('opens the history of a form from its row menu', async () => {
-    await renderScreen();
-
-    await fireEvent.press(await screen.findByTestId('form-row-0-more'));
-    await fireEvent.press(await screen.findByRole('button', { name: 'Geçmiş' }));
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/class/c1/form/f1?tab=history'));
+    expect(mockPush).toHaveBeenCalledWith('/class/c1/form/f1');
   });
 
   it('confirms a photo import once and clears the route param', async () => {
@@ -178,6 +168,28 @@ describe('ClassDetailScreen', () => {
     expect(input.options.map((o) => o.key)).toEqual(['geldi', 'gelmedi', 'gec_geldi', 'izinli']);
     expect(await screen.findByText('Yoklama eklendi')).toBeOnTheScreen();
     await waitFor(() => expect(forms.listForms).toHaveBeenCalledTimes(2));
+  });
+
+  it('adds a template with the type chosen at the top of the + Form sheet', async () => {
+    forms.listForms.mockResolvedValueOnce([]);
+    forms.createForm.mockResolvedValue(form('f9', 'Ödev kontrolü'));
+    await renderScreen();
+
+    await fireEvent.press(await screen.findByTestId('class-forms-empty'));
+    // Satırlar hangi türle ekleneceğini yazar; varsayılan: şablonun önerdiği tür.
+    expect(await screen.findByTestId('mode-choice-suggested')).toBeSelected();
+    expect(screen.getByRole('button', { name: 'Yoklama, Günde bir kez' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Artı / eksi, Birikimli' })).toBeOnTheScreen();
+
+    await fireEvent.press(screen.getByTestId('mode-choice-repeatable'));
+    expect(screen.getByRole('button', { name: 'Yoklama, Birikimli' })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('add-form-preset-odev'));
+
+    await waitFor(() => expect(forms.createForm).toHaveBeenCalledTimes(1));
+    const input = forms.createForm.mock.calls[0]![1];
+    expect(input.mode).toBe('repeatable');
+    expect(input.options.find((o) => o.key === 'tamamlandi')?.score).toBe(1);
+    expect(input.options.find((o) => o.key === 'gelmedi')?.score).toBeUndefined();
   });
 
   it('copies a form from another class', async () => {

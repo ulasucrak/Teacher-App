@@ -1,4 +1,5 @@
-# Günlük form (Yoklama): işaretle, kaydet (hata vermemeli), değiştir, Geçmiş'te değişiklikler.
+# Günlük form (Yoklama): sınıf ekranından sekmeli açılır, İşaretle'de doğrudan işaretlenip
+# kaydedilir; dün; Geçmiş'te Gün görünümü (günlük inceleme), takvim, liste.
 appId: com.ulas.teacherapp
 name: form-modes-daily
 env:
@@ -11,46 +12,63 @@ env:
     visible:
       id: "class-students-row"
     timeout: 20000
-- takeScreenshot: fm-04-class
 - tapOn: "Yoklama,.*"
 - extendedWaitUntil:
     visible:
-      id: "bulk-geldi"
+      id: "student-row-0"
     timeout: 20000
+- assertVisible:
+    id: "form-tab-mark"
+    selected: true
+- takeScreenshot: fm2-01-daily-mark
 - tapOn:
     id: "bulk-geldi"
 - tapOn:
     id: "student-row-1-gelmedi"
-- takeScreenshot: fm-05-daily-fill
 - tapOn:
     id: "save-button"
 - extendedWaitUntil:
     visible: "Kaydedildi"
     timeout: 15000
-- takeScreenshot: fm-06-daily-saved
+- takeScreenshot: fm2-02-daily-saved
+# Dün
 - tapOn:
-    id: "student-row-1-izinli"
+    id: "fill-day-prev"
+- extendedWaitUntil:
+    visible:
+      id: "student-row-0"
+    timeout: 15000
+- tapOn:
+    id: "student-row-0-izinli"
+- tapOn:
+    id: "student-row-2-gec_geldi"
+- takeScreenshot: fm2-03-daily-yesterday
 - tapOn:
     id: "save-button"
 - extendedWaitUntil:
     visible: "Kaydedildi"
     timeout: 15000
+# Geçmiş > Gün
 - tapOn:
-    id: "fill-more"
-- tapOn: "Geçmiş"
-- extendedWaitUntil:
-    visible:
-      id: "history-pane"
-    timeout: 15000
-- extendedWaitUntil:
-    visible:
-      id: "summary-totals"
-    timeout: 15000
-- takeScreenshot: fm-07-daily-summary
+    id: "form-tab-history"
 - tapOn:
-    id: "history-view-timeline"
+    id: "history-view-day"
 - extendedWaitUntil:
     visible:
-      id: "timeline-list"
+      id: "day-totals"
     timeout: 15000
-- takeScreenshot: fm-08-daily-timeline
+- takeScreenshot: fm2-04-day-today
+- tapOn:
+    id: "review-day-prev"
+- extendedWaitUntil:
+    visible: "Dün, .*"
+    timeout: 10000
+- takeScreenshot: fm2-05-day-yesterday
+- tapOn:
+    id: "review-day-pick"
+- extendedWaitUntil:
+    visible:
+      id: "calendar-title"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: fm2-06-calendar

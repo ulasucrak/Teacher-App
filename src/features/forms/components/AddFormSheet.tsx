@@ -4,7 +4,9 @@ import { Banner, IconTile, Sheet, Text, type IconName } from '@/components/ui';
 import { colors, layout, radii, spacing } from '@/theme';
 
 import { sameTitle } from '../format';
-import { PRESETS, presetIcon, type PresetId } from '../presets';
+import { formModeLabels } from '../mode';
+import { PRESETS, presetFormValues, presetIcon, type ModeChoice, type PresetId } from '../presets';
+import { ModeChoiceField } from './ModeChoiceField';
 
 export interface AddFormSheetProps {
   visible: boolean;
@@ -16,12 +18,18 @@ export interface AddFormSheetProps {
   busyPreset?: PresetId | null;
   /** Ekleme hatası (panel açıkken toast görünmez). */
   error?: string | null;
+  /** Hazır formların ekleneceği tür ("Önerilen": şablonun kendi türü). */
+  modeChoice: ModeChoice;
+  onModeChoice: (choice: ModeChoice) => void;
   onPreset: (id: PresetId) => void;
   onCopyFromOther: () => void;
   onBlank: () => void;
 }
 
-/** "+ Form" paneli: hazır formlar tek dokunuşla eklenir; ardından kopyala ve boş form. */
+/**
+ * "+ Form" paneli: üstte form türü ("Önerilen" varsayılan), hazır formlar tek dokunuşla
+ * eklenir (satırın altında hangi türle ekleneceği yazar); ardından kopyala ve boş form.
+ */
 export function AddFormSheet({
   visible,
   onClose,
@@ -29,6 +37,8 @@ export function AddFormSheet({
   existingTitles,
   busyPreset = null,
   error,
+  modeChoice,
+  onModeChoice,
   onPreset,
   onCopyFromOther,
   onBlank,
@@ -41,14 +51,18 @@ export function AddFormSheet({
           <Banner kind="error" message={error} />
         </View>
       ) : null}
+      <View style={styles.mode}>
+        <ModeChoiceField value={modeChoice} onChange={onModeChoice} disabled={busy} />
+      </View>
       {PRESETS.map((p) => {
         const exists = existingTitles.some((t) => sameTitle(t, p.title));
+        const mode = formModeLabels[presetFormValues(p, modeChoice).mode];
         return (
           <SheetRow
             key={p.id}
             icon={presetIcon(p.id)}
             label={p.title}
-            hint={exists ? 'Bu sınıfta var' : undefined}
+            hint={exists ? `${mode}. Bu sınıfta var` : mode}
             busy={busyPreset === p.id}
             disabled={busy}
             onPress={() => onPreset(p.id)}
@@ -106,6 +120,7 @@ function SheetRow({ icon, label, hint, busy = false, disabled = false, last = fa
 
 const styles = StyleSheet.create({
   error: { marginBottom: spacing.md },
+  mode: { marginBottom: spacing.md },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

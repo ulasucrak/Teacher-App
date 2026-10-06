@@ -1,4 +1,4 @@
-# Birikimli form (Artı / eksi): tek dokunuşla işaret, geri alma, Geçmiş'te özet ve zaman çizelgesi.
+# Birikimli form (Artı / eksi): işaret, geri alma, Geçmiş > Gün / Özet / Liste.
 appId: com.ulas.teacherapp
 name: form-modes-repeatable
 env:
@@ -16,42 +16,33 @@ env:
     visible:
       id: "mark-row-0"
     timeout: 20000
-- takeScreenshot: fm-09-mark-empty
 - tapOn:
-    id: "mark-row-0-arti"
+    id: "mark-row-3-arti"
 - tapOn:
-    id: "mark-row-0-arti"
+    id: "mark-row-3-arti"
 - tapOn:
-    id: "mark-row-0-eksi"
-- tapOn:
-    id: "mark-row-1-arti"
-- tapOn:
-    id: "mark-row-1-arti"
-- tapOn:
-    id: "mark-row-1-arti"
-- takeScreenshot: fm-10-mark-counts
-- tapOn:
-    id: "mark-row-1-undo"
-- extendedWaitUntil:
-    visible: "Artı geri alındı"
-    timeout: 10000
-- takeScreenshot: fm-11-mark-undone
-- tapOn:
-    id: "mark-row-2-eksi"
+    id: "mark-row-4-eksi"
+- takeScreenshot: fm2-07-repeatable-mark
 - tapOn:
     id: "form-tab-history"
+- tapOn:
+    id: "history-view-day"
+- extendedWaitUntil:
+    visible:
+      id: "day-totals"
+    timeout: 15000
+- takeScreenshot: fm2-08-repeatable-day
+- tapOn:
+    id: "history-view-summary"
 - extendedWaitUntil:
     visible:
       id: "summary-totals"
     timeout: 15000
-- takeScreenshot: fm-12-summary
 - tapOn:
-    id: "summary-sort-score"
-- takeScreenshot: fm-13-summary-by-net
-- tapOn:
-    id: "history-view-timeline"
+    id: "range-chip"
 - extendedWaitUntil:
     visible:
-      id: "timeline-list"
-    timeout: 15000
-- takeScreenshot: fm-14-timeline
+      id: "range-apply"
+    timeout: 10000
+- waitForAnimationToEnd
+- takeScreenshot: fm2-09-range-sheet

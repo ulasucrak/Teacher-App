@@ -17,7 +17,7 @@ import {
   validateForm,
   type DraftOption,
 } from './options';
-import { PRESETS } from './presets';
+import { PRESETS, presetFormValues } from './presets';
 
 function draft(label: string, key: string | null = null, tone: DraftOption['tone'] = 'neutral'): DraftOption {
   return { ...createDraftOption(tone), key, label };
@@ -266,5 +266,22 @@ describe('parseScoreText / formatScoreText', () => {
     expect(formatScoreText(null)).toBe('');
     expect(formatScoreText(-1)).toBe('-1');
     expect(formatScoreText(0.5)).toBe('0,5');
+  });
+});
+
+describe('presetFormValues', () => {
+  const find = (id: string) => PRESETS.find((p) => p.id === id)!;
+
+  it('uses the suggested type unless one is forced', () => {
+    expect(presetFormValues(find('yoklama')).mode).toBe('daily');
+    expect(presetFormValues(find('yoklama'), 'repeatable').mode).toBe('repeatable');
+    expect(presetFormValues(find('artieksi'), 'daily').mode).toBe('daily');
+  });
+
+  it('adds the suggested scores only in the cumulative type and never overrides a set score', () => {
+    const katilim = presetFormValues(find('katilim'), 'repeatable');
+    expect(katilim.options.map((o) => o.score)).toEqual([2, 1, undefined, -1]);
+    expect(presetFormValues(find('katilim'), 'daily').options.some((o) => o.score !== undefined)).toBe(false);
+    expect(presetFormValues(find('artieksi')).options.map((o) => o.score)).toEqual([1, -1]);
   });
 });

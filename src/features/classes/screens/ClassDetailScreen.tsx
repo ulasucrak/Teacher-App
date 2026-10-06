@@ -18,7 +18,6 @@ import {
   type OverflowAction,
 } from '@/components/ui';
 import { FormListRow, formsRoutes, listForms, useAddForm, useFormActions } from '@/features/forms';
-import { sessionsRoutes } from '@/features/sessions';
 import { colors, layout, spacing } from '@/theme';
 
 import { deleteClass, getClass } from '../api';
@@ -29,8 +28,8 @@ const CLASS_ERROR = 'Sınıf açılamadı. Bağlantınızı kontrol edip tekrar 
 const FORMS_ERROR = 'Formlar yüklenemedi. Aşağı çekerek yenileyin.';
 
 /**
- * `/class/[classId]`: sınıfın formları (günlük formda satıra dokununca bugünün kaydı,
- * birikimli formda işaretleme ekranı açılır), küçük "+ Form", altta tek satır "Öğrenciler". Sınıfı düzenle/sil "⋯" içinde.
+ * `/class/[classId]`: sınıfın formları (satıra dokununca "İşaretle | Geçmiş" form ekranı açılır),
+ * küçük "+ Form", altta tek satır "Öğrenciler". Sınıfı düzenle/sil "⋯" içinde.
  */
 export function ClassDetailScreen() {
   const { classId, imported } = useLocalSearchParams<{ classId: string; imported?: string }>();
@@ -170,13 +169,9 @@ export function ClassDetailScreen() {
         key={form.id}
         form={form}
         index={index}
-        onOpen={() =>
-          // Günlük form: bugünün kaydı doğrudan açılır (en sık iş). Birikimli formun günlük kaydı
-          // olamaz (veritabanı TA002): işaretleme ekranı açılır.
-          router.push(form.mode === 'repeatable' ? formsRoutes.open(c.id, form.id) : sessionsRoutes.day(c.id, form.id))
-        }
+        onOpen={() => router.push(formsRoutes.open(c.id, form.id))}
         onMore={() => formActions.open(form)}
-        openHint={form.mode === 'repeatable' ? 'İşaretleme ekranını açar' : 'Bugünün kaydını açar'}
+        openHint="İşaretle ve geçmiş sekmeleriyle formu açar"
       />
     ));
   }

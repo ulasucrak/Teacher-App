@@ -20,6 +20,26 @@ function makeApi(over: Partial<SetupApi> = {}): jest.Mocked<SetupApi> {
   } as jest.Mocked<SetupApi>;
 }
 
+describe('presetFormInput with a chosen type', () => {
+  it('keeps each template\'s own type by default', () => {
+    expect(presetFormInput('yoklama')?.mode).toBe('daily');
+    expect(presetFormInput('artieksi')?.mode).toBe('repeatable');
+  });
+
+  it('forces the type and adds suggested scores to a cumulative template', () => {
+    const odev = presetFormInput('odev', 'repeatable');
+    expect(odev?.mode).toBe('repeatable');
+    expect(odev?.options.filter((o) => o.score !== undefined).map((o) => [o.key, o.score])).toEqual([
+      ['tamamlandi', 1],
+      ['getirmedi', -1],
+      ['yapmadi', -1],
+    ]);
+    // Sayıların yeterli olduğu şablonda puan yok.
+    expect(presetFormInput('yoklama', 'repeatable')?.options.some((o) => o.score !== undefined)).toBe(false);
+    expect(presetFormInput('artieksi', 'daily')?.mode).toBe('daily');
+  });
+});
+
 describe('runClassSetup', () => {
   it('creates the class, students and selected forms in order', async () => {
     const api = makeApi();
@@ -28,6 +48,12 @@ describe('runClassSetup', () => {
     expect(api.createClass).toHaveBeenCalledWith(input.klass);
     expect(api.addStudents).toHaveBeenCalledWith('c1', input.students);
     expect(api.createForm.mock.calls.map((c) => c[1].title)).toEqual(['Yoklama', 'Ödev kontrolü']);
+  });
+
+  it('creates every selected form with the chosen type', async () => {
+    const api = makeApi();
+    await runClassSetup({ ...input, presets: [...input.presets], modeChoice: 'repeatable' }, emptyProgress, api);
+    expect(api.createForm.mock.calls.map((c) => c[1].mode)).toEqual(['repeatable', 'repeatable']);
   });
 
   it('skips the student insert when there are no students', async () => {

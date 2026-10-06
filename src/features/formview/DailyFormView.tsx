@@ -1,22 +1,18 @@
-import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { FlatList, StyleSheet, View, type ListRenderItem } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { Banner, BottomActionBar, Button, EmptyState, ListRow, LoadingState, OverflowMenu, Text } from '@/components/ui';
-import { countStudents, listSessions, toUserMessage, type SessionSummary } from '@/features/sessions/api';
-import { DaySheet } from '@/features/sessions/components/DaySheet';
+import { Banner, Button, ConfirmSheet, LoadingState, OverflowMenu, type OverflowAction } from '@/components/ui';
+import { SessionFillBody, sessionFillFooter } from '@/features/sessions/components/SessionFillBody';
 import { formatDayLabel, todayIso } from '@/features/sessions/date';
-import { sessionsRoutes } from '@/features/sessions/routes';
+import { useSessionFill } from '@/features/sessions/hooks/useSessionFill';
+import { NEW_SESSION_ID } from '@/features/sessions/routes';
 import { layout, spacing } from '@/theme';
 import type { FormRow } from '@/types/database';
 
+import { DayBar } from './DayBar';
 import { FormShell, type FormTab } from './FormShell';
 import { HistoryPane } from './HistoryPane';
-
-interface Loaded {
-  sessions: SessionSummary[];
-  studentCount: number;
-}
 
 export interface FormViewProps {
   classId: string;
@@ -25,110 +21,86 @@ export interface FormViewProps {
 }
 
 /**
- * Günlük form (günde bir kez): "İşaretle" günlük kayıtların listesi (bugünün kaydını aç/başlat,
- * başka gün seç); kaydı doldurma ekranı ayrı sayfadır. "Geçmiş" tüm değişiklikleri gösterir.
+ * Günlük form (günde bir kez): "İşaretle" seçilen günün kaydını doğrudan doldurur (bugün
+ * varsayılan; gün çubuğuyla başka güne geçilir). Taslak sekmeler arasında korunur; gün
+ * değiştirirken ya da ekrandan çıkarken kaydedilmemiş değişiklik sorulur. "Geçmiş" özet, gün
+ * incelemesi ve zaman çizelgesidir.
  */
 export function DailyFormView({ classId, form, initialTab }: FormViewProps) {
   const router = useRouter();
   const formId = form.id;
 
   const [tab, setTab] = useState<FormTab>(initialTab);
-  const [data, setData] = useState<Loaded | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [day, setDay] = useState(() => todayIso());
   const [menuOpen, setMenuOpen] = useState(false);
-  const [dayOpen, setDayOpen] = useState(false);
-  const pendingDay = useRef<string | null>(null);
-  const requestRef = useRef(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const load = useCallback(() => {
-    const request = ++requestRef.current;
-    setLoadError(null);
-    Promise.all([listSessions(formId), countStudents(classId)])
-      .then(([sessions, studentCount]) => {
-        if (request === requestRef.current) setData({ sessions, studentCount });
-      })
-      .catch((error: unknown) => {
-        if (request === requestRef.current) setLoadError(toUserMessage(error, 'Kayıtlar yüklenemedi. Tekrar deneyin.'));
-      });
-  }, [classId, formId]);
+  const fill = useSessionFill({ classId, formId, sessionId: NEW_SESSION_ID, date: day, form });
+  const { data } = fill;
 
-  // Doldurma ekranından dönünce ilerleme güncel görünsün.
-  useFocusEffect(load);
-
-  const today = todayIso();
-  const studentCount = data?.studentCount ?? 0;
-  const hasToday = data?.sessions.some((s) => s.session.session_date === today) ?? false;
-
-  const renderItem: ListRenderItem<SessionSummary> = ({ item, index }) => {
-    const { session, filled } = item;
-    const dateLabel = formatDayLabel(session.session_date, today);
-    return (
-      <ListRow
-        title={dateLabel}
-        subtitle={session.title ?? undefined}
-        onPress={() => router.push(sessionsRoutes.session(classId, formId, session.id))}
-        accessibilityLabel={`${dateLabel}, ${studentCount} öğrenciden ${filled} işaretli`}
-        accessibilityHint="Kaydı açar"
-        testID={`session-row-${index}`}
-        trailing={
-          <Text variant="number" tone={filled < studentCount ? 'muted' : 'default'}>
-            {`${filled}/${studentCount}`}
-          </Text>
-        }
-      />
-    );
+  const changeDay = (next: string) => {
+    if (next === day) return;
+    fill.confirmDiscard(() => setDay(next));
   };
 
+  // Geçmiş'ten "Bu günü düzenle".
+  const editDay = (next: string) => {
+    if (next === day) {
+      setTab('mark');
+      return;
+    }
+    fill.confirmDiscard(() => {
+      setDay(next);
+      setTab('mark');
+    });
+  };
+
+  const dateLabel = formatDayLabel(day);
+  const filled = fill.students.length - fill.summary.empty;
+  const canFill = fill.options.length > 0 && fill.students.length > 0;
+  // Gün değişti, yeni gün henüz yüklenmedi.
+  const loadingDay = !data || data.date !== day;
+
   let marking;
-  if (loadError && !data) {
+  if (fill.loadError && loadingDay) {
     marking = (
       <View style={styles.stateWrap}>
-        <Banner kind="error" message={loadError} />
-        <Button label="Tekrar dene" variant="secondary" onPress={load} testID="sessions-retry" />
+        <Banner kind="error" message={fill.loadError} />
+        <Button label="Tekrar dene" variant="secondary" testID="fill-retry" onPress={fill.retry} />
       </View>
     );
-  } else if (!data) {
-    marking = <LoadingState label="Kayıtlar yükleniyor" />;
   } else {
     marking = (
-      <FlatList
-        data={data.sessions}
-        keyExtractor={(s) => s.session.id}
-        renderItem={renderItem}
-        ListHeaderComponent={
-          loadError ? (
-            <View style={styles.banner}>
-              <Banner kind="error" message={loadError} />
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <View style={styles.padded}>
-            <EmptyState
-              icon="calendar"
-              title="Henüz kayıt yok"
-              description="İlk kaydı aşağıdan başlatın."
-              testID="sessions-empty"
-            />
-          </View>
-        }
-        contentContainerStyle={styles.listContent}
-        testID="sessions-list"
-      />
+      <>
+        <DayBar
+          value={day}
+          onChange={changeDay}
+          testIDPrefix="fill-day"
+          trailing={canFill && !loadingDay ? `${filled}/${fill.students.length}` : undefined}
+          trailingLabel={`${fill.students.length} öğrenciden ${filled} işaretli`}
+        />
+        {loadingDay ? <LoadingState label="Öğrenciler yükleniyor" /> : <SessionFillBody fill={fill} classId={classId} formId={formId} />}
+      </>
     );
   }
 
-  const footer =
-    tab === 'mark' && data ? (
-      <BottomActionBar
-        secondary={{ label: 'Başka gün', onPress: () => setDayOpen(true), testID: 'sessions-other-day' }}
-        primary={{
-          label: hasToday ? 'Bugünün kaydını aç' : 'Bugünün kaydını başlat',
-          onPress: () => router.push(sessionsRoutes.day(classId, formId, today)),
-          testID: 'sessions-today',
-        }}
-      />
-    ) : undefined;
+  const menuActions: OverflowAction[] = [
+    {
+      key: 'edit',
+      label: 'Formu düzenle',
+      icon: 'edit',
+      onPress: () => router.push(`/class/${classId}/form/${formId}/edit`),
+    },
+  ];
+  if (data?.session) {
+    menuActions.push({
+      key: 'delete',
+      label: 'Kaydı sil',
+      icon: 'trash',
+      destructive: true,
+      onPress: () => setConfirmDelete(true),
+    });
+  }
 
   return (
     <FormShell
@@ -136,37 +108,32 @@ export function DailyFormView({ classId, form, initialTab }: FormViewProps) {
       tab={tab}
       onTab={setTab}
       onMore={() => setMenuOpen(true)}
-      footer={footer}
+      footer={tab === 'mark' && !loadingDay ? sessionFillFooter(fill) : undefined}
       testID="form-screen"
     >
       {tab === 'mark' ? marking : null}
-      <HistoryPane form={form} active={tab === 'history'} />
+      <HistoryPane form={form} active={tab === 'history'} onEditDay={editDay} />
       <OverflowMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
         title={form.title}
         testID="form-menu"
-        actions={[
-          {
-            key: 'edit',
-            label: 'Formu düzenle',
-            icon: 'edit',
-            onPress: () => router.push(`/class/${classId}/form/${formId}/edit`),
-          },
-        ]}
+        actions={menuActions}
       />
-      <DaySheet
-        visible={dayOpen}
-        onClose={() => setDayOpen(false)}
-        onPick={(date) => {
-          pendingDay.current = date;
-          setDayOpen(false);
-        }}
-        onDismissed={() => {
-          const date = pendingDay.current;
-          pendingDay.current = null;
-          if (date) router.push(sessionsRoutes.day(classId, formId, date));
-        }}
+      <ConfirmSheet
+        visible={confirmDelete}
+        title="Bu kayıt silinsin mi?"
+        message={`${dateLabel} kaydındaki tüm işaretlemeler silinir.`}
+        confirmLabel="Kaydı sil"
+        loading={fill.deleting}
+        onConfirm={() =>
+          void fill.deleteCurrent(() => {
+            setConfirmDelete(false);
+            fill.retry();
+          })
+        }
+        onCancel={() => setConfirmDelete(false)}
+        testID="fill-delete-confirm"
       />
     </FormShell>
   );
@@ -174,7 +141,4 @@ export function DailyFormView({ classId, form, initialTab }: FormViewProps) {
 
 const styles = StyleSheet.create({
   stateWrap: { gap: spacing.md, paddingTop: spacing.sm, paddingHorizontal: layout.pageX },
-  banner: { paddingHorizontal: layout.pageX, paddingVertical: spacing.sm },
-  padded: { paddingHorizontal: layout.pageX },
-  listContent: { flexGrow: 1, paddingBottom: spacing.xxl },
 });

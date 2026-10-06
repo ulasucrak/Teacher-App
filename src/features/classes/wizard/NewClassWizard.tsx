@@ -14,7 +14,7 @@ import {
   type BottomAction,
   type ChipGroupItem,
 } from '@/components/ui';
-import { PRESETS, type PresetId } from '@/features/forms';
+import { ModeChoiceField, PRESETS, type ModeChoice, type PresetId } from '@/features/forms';
 import { StudentCollectorView } from '@/features/ocr/ui/StudentCollectorView';
 import { useStudentCollector } from '@/features/ocr/ui/useStudentCollector';
 import { normalizeStudentName, type NewStudent } from '@/features/students';
@@ -49,6 +49,7 @@ export function NewClassWizard() {
   const [details, setDetails] = useState(false);
   const [errors, setErrors] = useState<ClassDraftErrors>({});
   const [presets, setPresets] = useState<PresetId[]>(['yoklama']);
+  const [modeChoice, setModeChoice] = useState<ModeChoice>('suggested');
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<Failure | null>(null);
   const [progress, setProgress] = useState<SetupProgress>(emptyProgress);
@@ -146,7 +147,7 @@ export function NewClassWizard() {
     }
     setSaving(true);
     setFailure(null);
-    const outcome = await runClassSetup({ klass: result.value, students, presets }, progress);
+    const outcome = await runClassSetup({ klass: result.value, students, presets, modeChoice }, progress);
     setProgress(outcome.progress);
     if (outcome.ok) {
       toast.show(`${outcome.classRow.name} oluşturuldu`);
@@ -310,6 +311,14 @@ export function NewClassWizard() {
           contextLabel="Hazır formlar"
           testIDPrefix="wizard-form"
         />
+        {presets.length > 0 ? (
+          <ModeChoiceField
+            value={modeChoice}
+            onChange={setModeChoice}
+            disabled={saving || Boolean(created)}
+            testIDPrefix="wizard-mode"
+          />
+        ) : null}
       </View>
     </Screen>
   );

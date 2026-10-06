@@ -128,7 +128,7 @@ function MarkButton({ option, count, studentName, onPress, testID }: MarkButtonP
         const fg = pressed ? t.onSolid : t.onSoft;
         return (
           <>
-            <Text variant="label" color={fg} numberOfLines={1} maxFontSizeMultiplier={fontScale.dense} style={styles.markLabel}>
+            <Text variant="label" color={fg} numberOfLines={2} align="center" maxFontSizeMultiplier={fontScale.dense} style={styles.markLabel}>
               {option.label}
             </Text>
             {count > 0 ? (

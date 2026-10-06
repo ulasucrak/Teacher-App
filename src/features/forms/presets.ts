@@ -11,6 +11,12 @@ export interface FormPreset {
   /** Günde bir kez (yoklama, ödev, sözlü, katılım) ya da birikimli (artı/eksi). */
   mode: FormMode;
   options: readonly FormOption[];
+  /**
+   * Şablon "Birikimli" eklenirse bu puanlar seçeneklere yazılır (seçenek anahtarı → puan); net
+   * böylece hemen anlamlı olur. Sayılar yeterli olan şablonlarda (yoklama, sözlü) yoktur.
+   * Puanlar sonradan form düzenlemede değiştirilebilir ya da silinebilir.
+   */
+  repeatableScores?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -44,6 +50,7 @@ export const PRESETS: readonly FormPreset[] = [
       { key: 'yapmadi', label: 'Yapmadı', tone: 'negative' },
       { key: 'gelmedi', label: 'Gelmedi', tone: 'neutral' },
     ],
+    repeatableScores: { tamamlandi: 1, getirmedi: -1, yapmadi: -1 },
   },
   {
     id: 'sozlu',
@@ -69,6 +76,7 @@ export const PRESETS: readonly FormPreset[] = [
       { key: 'orta', label: 'Orta', tone: 'neutral' },
       { key: 'zayif', label: 'Zayıf', tone: 'negative' },
     ],
+    repeatableScores: { cok_iyi: 2, iyi: 1, zayif: -1 },
   },
   {
     id: 'artieksi',
@@ -81,6 +89,23 @@ export const PRESETS: readonly FormPreset[] = [
     ],
   },
 ];
+
+/**
+ * Şablon eklenirken tür seçimi: `suggested` şablonun önerdiği türü kullanır; diğerleri türü
+ * zorlar (şablon "Günde bir kez" önerse de "Birikimli" eklenebilir, tersi de).
+ */
+export type ModeChoice = 'suggested' | FormMode;
+
+/** Şablonun seçime göre türü ve seçenekleri (birikimli türde varsa önerilen puanlarla). */
+export function presetFormValues(preset: FormPreset, choice: ModeChoice = 'suggested'): { mode: FormMode; options: FormOption[] } {
+  const mode = choice === 'suggested' ? preset.mode : choice;
+  const scores = mode === 'repeatable' ? preset.repeatableScores : undefined;
+  const options = preset.options.map((o) => {
+    const score = scores?.[o.key];
+    return score === undefined || o.score !== undefined ? { ...o } : { ...o, score };
+  });
+  return { mode, options };
+}
 
 export function getPreset(id: string | null | undefined): FormPreset | undefined {
   return PRESETS.find((p) => p.id === id);
