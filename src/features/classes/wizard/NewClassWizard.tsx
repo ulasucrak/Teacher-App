@@ -256,15 +256,16 @@ export function NewClassWizard() {
         <View style={styles.form}>
           <StudentCollectorView collector={collector} />
           {empty ? (
-            <Button
-              label="Sonra eklerim"
-              variant="ghost"
-              size="sm"
-              fullWidth={false}
-              onPress={skipStudents}
-              style={styles.ghost}
-              testID="wizard-skip-students"
-            />
+            <View style={styles.skipRow}>
+              <Button
+                label="Sonra eklerim"
+                variant="ghost"
+                size="sm"
+                fullWidth={false}
+                onPress={skipStudents}
+                testID="wizard-skip-students"
+              />
+            </View>
           ) : null}
         </View>
       </Screen>
@@ -307,4 +308,5 @@ const styles = StyleSheet.create({
   pair: { flexDirection: 'row', gap: spacing.md },
   pairItem: { flex: 1 },
   ghost: { alignSelf: 'flex-start', marginLeft: -spacing.md },
+  skipRow: { flexDirection: 'row', justifyContent: 'center' },
 });

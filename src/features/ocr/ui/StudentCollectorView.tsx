@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Linking, StyleSheet, View, type TextInput } from 'react-native';
 
-import { Banner, Button, SectionHeader, SegmentedChoice, Text, TextField, type SegmentedChoiceItem } from '@/components/ui';
+import { Banner, Button, SectionHeader, SegmentedChoice, TextField, type SegmentedChoiceItem } from '@/components/ui';
 import { spacing } from '@/theme';
 
 import { recognizeMessages } from '../recognize';
@@ -129,11 +129,7 @@ export function StudentCollectorView({ collector, disabled = false }: StudentCol
             onRemove={collector.removeRow}
           />
         </View>
-      ) : (
-        <Text variant="bodySmall" tone="muted" testID="collect-empty">
-          Eklediğiniz öğrenciler burada listelenir.
-        </Text>
-      )}
+      ) : null}
     </View>
   );
 }
