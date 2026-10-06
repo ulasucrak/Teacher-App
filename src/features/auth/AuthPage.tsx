@@ -23,7 +23,7 @@ export interface AuthPageProps {
 export function AuthPage({ title, description, size = 'title', back, switchPrompt, testID, children }: AuthPageProps) {
   const isHome = size === 'display';
   return (
-    <Screen back={back} testID={testID} contentStyle={[styles.content, isHome && styles.contentHome]}>
+    <Screen back={back ?? (isHome ? false : undefined)} testID={testID} contentStyle={[styles.content, isHome && styles.contentHome]}>
       <View style={styles.heading}>
         {isHome ? <AppMark /> : null}
         <Text variant={size} accessibilityRole="header">
