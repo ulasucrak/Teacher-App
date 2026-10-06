@@ -452,7 +452,21 @@ function compatibleLetter(read: string, dict: string): boolean {
   // Büyük "I": noktası düşmüş "İ" ya da gerçek "ı" olabilir.
   if (read === 'I') return dict === 'i' || dict === 'ı';
   const lower = read.toLocaleLowerCase(LOCALE);
+  // OCR "i" ile "ı"yı iki yönde de karıştırır ("Smaıl").
+  if (lower === 'ı') return dict === 'ı' || dict === 'i';
   return lower === dict || lower === asciiFoldLower(dict);
+}
+
+/** Sözlük yazımını okunan kelimenin düzeniyle yazar (BÜYÜK, Baş harf büyük ya da küçük). */
+function inCaseOf(word: string, spelling: string): string {
+  const upper = word === word.toLocaleUpperCase(LOCALE) && word !== word.toLocaleLowerCase(LOCALE);
+  if (upper) return spelling.toLocaleUpperCase(LOCALE);
+  const first = Array.from(word)[0];
+  if (first !== first.toLocaleLowerCase(LOCALE)) {
+    const [head, ...rest] = Array.from(spelling);
+    return head.toLocaleUpperCase(LOCALE) + rest.join('');
+  }
+  return spelling;
 }
 
 /**
@@ -474,16 +488,25 @@ export function restoreTurkishLetters(word: string, dotAware = false): string | 
   if (matches.length > 1 && dotAware) {
     matches = matches.filter((spelling) => Array.from(spelling).every((d, i) => chars[i] !== 'I' || d === 'ı'));
   }
-  if (matches.length !== 1) return null;
-  const [spelling] = matches;
-  const upper = word === word.toLocaleUpperCase(LOCALE) && word !== word.toLocaleLowerCase(LOCALE);
-  if (upper) return spelling.toLocaleUpperCase(LOCALE);
-  const first = chars[0];
-  if (first !== first.toLocaleLowerCase(LOCALE)) {
-    const [head, ...rest] = Array.from(spelling);
-    return head.toLocaleUpperCase(LOCALE) + rest.join('');
-  }
-  return spelling;
+  if (matches.length === 1) return inCaseOf(word, matches[0]);
+  if (matches.length === 0 && dictionarySpellings(key).length === 0) return restoreDroppedInitialI(word);
+  return null;
+}
+
+/**
+ * Vision kelime başındaki "İ"yi bazen tümden atlar: "Brahim", "Smail", "Rem". Kelime sözlükte
+ * yoksa, büyük harfle başlıyorsa ve başına "i"/"ı" eklenmiş hâli sözlükte TEK bir yazımla
+ * eşleşiyorsa o yazım döner ("Brahim" → "İbrahim").
+ */
+function restoreDroppedInitialI(word: string): string | null {
+  const chars = Array.from(word);
+  if (chars.length < 3 || chars[0] === chars[0].toLocaleLowerCase(LOCALE)) return null;
+  const key = asciiFoldLower(`i${chars.map((c) => (c === 'I' ? 'i' : c.toLocaleLowerCase(LOCALE))).join('')}`);
+  const matches = dictionarySpellings(key).filter((spelling) => {
+    const letters = Array.from(spelling).slice(1);
+    return letters.length === chars.length && letters.every((d, i) => compatibleLetter(chars[i], d));
+  });
+  return matches.length === 1 ? inCaseOf(word, matches[0]) : null;
 }
 
 /** Ad kelimesindeki OCR karışıklıklarını düzeltir: "Y1LMAZ" → "YILMAZ", "lŞIK" → "IŞIK". */
@@ -629,28 +652,31 @@ function singleNumbersAreOrdinals(rows: RawRow[]): boolean {
 }
 
 /**
- * İki sayılı (S.No + Okul No) tabloda tek sayılı satır: sıra numarası okunmamış olabilir.
- * Komşu satırın sıra numarasından beklenen değer tutmuyor ve sayı komşunun okul numarasıyla
- * aynı uzunluktaysa sayı okul numarasıdır ("1 | 112 | SELİN" satırında "1" kaçırılmış).
- * Kısa sayılar (1–2 basamak) sıra numarası da olabilir (ör. arada okunmamış satır varken
- * "7"): onlar ancak her iki komşu da iki sayılıysa ve hiçbirinin sırasına uymuyorsa okul no sayılır.
+ * İki sayılı (S.No + Okul No) tabloda tek sayılı satır: sıra numarası okunmamış olabilir
+ * (Vision tek haneli hücreleri arka arkaya birkaç satırda atlayabilir). En yakın iki sayılı
+ * satırlardan (yukarıda ve aşağıda, k satır uzakta) beklenen sıra numarası hesaplanır:
+ * - sayı beklenen sıra numarasına eşitse sıra numarasıdır;
+ * - değilse ve en az 3 basamaklıysa ve bir komşunun okul numarasıyla uzunluğu en çok 1 farklıysa okul numarasıdır
+ *   ("1 | 112 | SELİN" satırında "1" kaçırılmış);
+ * - kısa sayılar (1–2 basamak) arada okunmamış satır varken sıra numarası da olabilir ("7"):
+ *   ancak hem yukarıdaki hem aşağıdaki iki sayılı satırın sırasına uymuyorsa okul numarası sayılır.
  */
 function isMissedOrdinalRow(rows: RawRow[], index: number): boolean {
   const value = rows[index].numbers[0];
   const isDouble = (row: RawRow | undefined): row is RawRow => !!row && row.numbers.length >= 2;
-  const prev = rows[index - 1];
-  const next = rows[index + 1];
-  const neighbors = [
-    ...(isDouble(prev) ? [{ row: prev, step: 1 }] : []),
-    ...(isDouble(next) ? [{ row: next, step: -1 }] : []),
-  ];
+  const nearest = (direction: 1 | -1) => {
+    for (let i = index + direction, k = 1; i >= 0 && i < rows.length; i += direction, k += 1) {
+      if (isDouble(rows[i])) return { row: rows[i], expected: Number(rows[i].numbers[0]) - direction * k };
+    }
+    return null;
+  };
+  const neighbors = [nearest(-1), nearest(1)].filter((n): n is NonNullable<typeof n> => n !== null);
   if (neighbors.length === 0) return false;
-  if (value.length < 3 && neighbors.length < 2) return false;
-  return neighbors.every(({ row, step }) => {
-    const expected = Number(row.numbers[0]) + step;
-    const school = row.numbers[row.numbers.length - 1];
-    return Number(value) !== expected && value.length === school.length;
-  });
+  if (neighbors.some((n) => n.expected === Number(value))) return false;
+  const schoolLength = (row: RawRow) => row.numbers[row.numbers.length - 1].length;
+  // Okul numaraları sıralı listede 3→4 basamağa geçebilir; uzun sayıda bir komşu yeter.
+  if (value.length >= 3) return neighbors.some(({ row }) => Math.abs(value.length - schoolLength(row)) <= 1);
+  return neighbors.length === 2 && neighbors.every(({ row }) => value.length === schoolLength(row));
 }
 
 /** Satırın okul numarası (yoksa null). */

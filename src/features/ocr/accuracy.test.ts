@@ -13,7 +13,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { foldTurkish, parseOcrResult, type ParsedStudent } from './parser';
+import { foldTurkish, groupIntoRows, parseOcrResult, type ParsedStudent } from './parser';
 import { visionToOcrResult } from './vision';
 
 interface Truth {
@@ -70,6 +70,7 @@ function levenshtein(a: string, b: string): number {
 /** Doğru listedeki her öğrenciye en benzer (henüz eşlenmemiş) okunan satırı bulur. */
 function score(name: string, truth: Truth, parsed: ParsedStudent[]): Score {
   const used = new Set<number>();
+  const misses: string[] = [];
   let names = 0;
   let numbers = 0;
   let matched = 0;
@@ -84,12 +85,24 @@ function score(name: string, truth: Truth, parsed: ParsedStudent[]): Score {
         bestDistance = distance;
       }
     });
-    if (best < 0 || bestDistance > Math.max(2, expected.fullName.length * 0.3)) continue;
+    if (best < 0 || bestDistance > Math.max(2, expected.fullName.length * 0.3)) {
+      misses.push(`  eksik: ${expected.number ?? '-'} ${expected.fullName}`);
+      continue;
+    }
     used.add(best);
     matched += 1;
-    if (parsed[best].fullName === expected.fullName) names += 1;
-    if (parsed[best].number === expected.number) numbers += 1;
+    const got = parsed[best];
+    if (got.fullName === expected.fullName) names += 1;
+    if (got.number === expected.number) numbers += 1;
+    if (got.fullName !== expected.fullName || got.number !== expected.number) {
+      misses.push(`  ${expected.number ?? '-'} ${expected.fullName}  ←  ${got.number ?? '-'} ${got.fullName} (${got.confidence ?? '?'})`);
+    }
   }
+  parsed.forEach((p, i) => {
+    if (!used.has(i)) misses.push(`  fazla: ${p.number ?? '-'} ${p.fullName}`);
+  });
+  // Ayrıntı: OCR_ACCURACY_DETAIL=1 npx jest accuracy
+  if (process.env.OCR_ACCURACY_DETAIL && misses.length > 0) console.log(`${name}\n${misses.join('\n')}`);
   return { name, total: truth.students.length, names, numbers, extra: parsed.length - matched };
 }
 
@@ -108,6 +121,10 @@ const pct = (n: number, total: number) => (total === 0 ? 100 : Math.round((1000 
 
 const scores = fixtureNames.map((name) => {
   const { raw, truth } = load(name);
+  // Görsel satırlar: OCR_ACCURACY_ROWS=<fikstür adı> npx jest accuracy
+  if (process.env.OCR_ACCURACY_ROWS === name) {
+    console.log(groupIntoRows(visionToOcrResult(raw)).map((cells) => cells.join(' | ')).join('\n'));
+  }
   return score(name, truth, parseOcrResult(visionToOcrResult(raw)));
 });
 
