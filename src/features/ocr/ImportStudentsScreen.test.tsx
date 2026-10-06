@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { fetchImportContext, insertStudents } from './api';
 import { ImportStudentsScreen } from './ImportStudentsScreen';
@@ -7,10 +7,11 @@ import { isExpoGo, recognizePhoto } from './recognize';
 
 const mockBack = jest.fn();
 const mockToastShow = jest.fn();
+const mockSetOptions = jest.fn();
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: mockBack, replace: jest.fn(), canGoBack: () => true }),
-  useNavigation: () => ({ addListener: () => () => undefined, dispatch: jest.fn() }),
+  useNavigation: () => ({ addListener: () => () => undefined, dispatch: jest.fn(), setOptions: mockSetOptions }),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -67,6 +68,14 @@ beforeEach(() => {
 });
 
 describe('ImportStudentsScreen', () => {
+  it('disables the iOS swipe-back gesture once the list has students', async () => {
+    await render(<ImportStudentsScreen classId="c1" />);
+    await waitFor(() => expect(mockSetOptions).toHaveBeenLastCalledWith({ gestureEnabled: true }));
+    await fireEvent.press(await screen.findByTestId('photo-camera'));
+    expect(await screen.findByDisplayValue('Selin Bayezit')).toBeTruthy();
+    expect(mockSetOptions).toHaveBeenLastCalledWith({ gestureEnabled: false });
+  });
+
   it('reads a photo, skips students already in the class and adds the rest', async () => {
     insert.mockResolvedValue(2);
     await render(<ImportStudentsScreen classId="c1" />);

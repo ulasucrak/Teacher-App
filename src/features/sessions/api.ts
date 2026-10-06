@@ -126,12 +126,23 @@ export async function listSessions(formId: string): Promise<SessionSummary[]> {
  * Taslak/yayın ayrımı arayüzden kaldırıldı: yeni kayıtlar doğrudan `published` oluşturulur
  * (sütun veritabanında korunur; eski taslaklar ilk kayıtta yayına alınır).
  */
-export async function createSession(input: {
+/** Postgres benzersizlik ihlali (form_id + session_date için tek kayıt). */
+const UNIQUE_VIOLATION = '23505';
+
+interface NewSessionInput {
   formId: string;
   sessionDate: string;
   title?: string | null;
   status?: FormSessionStatus;
-}): Promise<FormSessionRow> {
+}
+
+/**
+ * Günün kaydını oluşturur. O gün için kayıt başka bir cihazda az önce oluşturulduysa
+ * (benzersizlik ihlali, 23505) var olan kayıt döner; `created` yalnızca yeni kayıtta true.
+ */
+export async function ensureSessionForDate(
+  input: NewSessionInput,
+): Promise<{ session: FormSessionRow; created: boolean }> {
   const { data, error } = await supabase
     .from('form_sessions')
     .insert({
@@ -142,8 +153,17 @@ export async function createSession(input: {
     })
     .select('*')
     .single();
+  if (error && error.code === UNIQUE_VIOLATION) {
+    const existing = await findSessionByDate(input.formId, input.sessionDate);
+    if (existing) return { session: existing, created: false };
+  }
   if (error) fail(error, 'Kayıt oluşturulamadı. Tekrar deneyin.');
-  return toSession(data);
+  return { session: toSession(data), created: true };
+}
+
+/** Günün kaydını oluşturur (varsa var olanı döndürür); bkz. ensureSessionForDate. */
+export async function createSession(input: NewSessionInput): Promise<FormSessionRow> {
+  return (await ensureSessionForDate(input)).session;
 }
 
 /** Formun verilen tarihteki (en son oluşturulan) kaydı; yoksa null. */
