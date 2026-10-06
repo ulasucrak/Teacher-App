@@ -2,7 +2,7 @@
  * Ortak öğrenci listesi (fotoğraf / yapıştırma / elle yazma) için saf yardımcılar.
  * Üç yol da aynı `ReviewRow` listesini besler; kaydetmeden önce `toDrafts` ile süzülür.
  */
-import { parsePlainText, type ParsedStudent } from '../parser';
+import { parsePlainNameList, type ParsedStudent } from '../parser';
 import { appendParsed, createManualRow, nextRowId, type ExistingStudent, type ReviewRow } from '../review';
 
 /** Satırların kaynağı: fotoğraf sayfası kimliği ya da yapıştırma/elle yazma. */
@@ -32,12 +32,9 @@ export function mergeParsed(
   return { rows: [...rows, ...kept], added: kept.length, skipped: appended.length - kept.length };
 }
 
-/**
- * Yapıştırılan düz liste: her satır bir öğrenci, baştaki numara okul numarası olarak alınır.
- * TODO(O02): `parsePlainNameList` '@/features/ocr' içinden dışa açılınca onu kullanın.
- */
+/** Yapıştırılan düz liste: her satır bir öğrenci, baştaki numara okul numarası olarak alınır. */
 export function parsePastedList(text: string): ParsedStudent[] {
-  return parsePlainText(text).filter((s) => s.fullName.trim().length > 0);
+  return parsePlainNameList(text).filter((s) => s.fullName.trim().length > 0);
 }
 
 /** Elle yazılan tek satır ("12 Ayşe Yılmaz" ya da "Ayşe Yılmaz"). Ad yoksa null. */
