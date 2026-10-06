@@ -4,19 +4,31 @@ import { useEffect, useRef, useState } from 'react';
 import { type TextInput } from 'react-native';
 
 import { Banner, Button, LoadingState, TextField, useToast } from '@/components/ui';
-import { AuthPage, MIN_PASSWORD_LENGTH, RESET_PASSWORD_PATH, useAuth, validatePassword } from '@/features/auth';
+import {
+  AuthPage,
+  clearRecoveryFromAddressBar,
+  getInitialRecoveryUrl,
+  isRecoveryUrl,
+  MIN_PASSWORD_LENGTH,
+  useAuth,
+  validatePassword,
+} from '@/features/auth';
 
 type Phase = { kind: 'verifying' } | { kind: 'ready' } | { kind: 'invalid'; message: string };
 
 /**
  * E-postadaki sıfırlama bağlantısının açtığı ekran
- * (`teacherapp://reset-password#access_token=…` ya da `?code=…`).
+ * (`teacherapp://reset-password#access_token=…` ya da `?code=…`; web'de `https://…/reset-password#…`).
  */
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const toast = useToast();
   const { session, recoverSession, updatePassword } = useAuth();
-  const url = Linking.useLinkingURL();
+  const linkingUrl = Linking.useLinkingURL();
+  // Web: yönlendirici adresi değiştirmiş olabilir; açılıştaki bağlantı önceliklidir.
+  // İlk çizimde bir kez okunur: ayrılırken adres temizlense de bu ekran bağlantıyı kullanabilir.
+  const [initialUrl] = useState(getInitialRecoveryUrl);
+  const url = isRecoveryUrl(linkingUrl) ? linkingUrl : (initialUrl ?? linkingUrl);
   const handledUrl = useRef<string | null>(null);
   const confirmRef = useRef<TextInput>(null);
 
@@ -28,9 +40,11 @@ export default function ResetPasswordScreen() {
   const [submitting, setSubmitting] = useState(false);
   const inFlight = useRef(false);
 
+  // Ekran doğrulama bitmeden kapanırsa da token'lar adres çubuğunda kalmasın (web; mobilde etkisiz).
+  useEffect(() => clearRecoveryFromAddressBar, []);
+
   useEffect(() => {
-    const isRecoveryLink = Boolean(url && url.includes(RESET_PASSWORD_PATH.slice(1)) && /[#?&](access_token|code|error)=/.test(url));
-    if (!isRecoveryLink) {
+    if (!isRecoveryUrl(url)) {
       // Bağlantı yoksa yalnızca açık bir oturumla şifre değiştirilebilir.
       if (handledUrl.current === null) {
         setPhase(
@@ -45,6 +59,7 @@ export default function ResetPasswordScreen() {
     handledUrl.current = url;
     setPhase({ kind: 'verifying' });
     recoverSession(url).then((result) => {
+      clearRecoveryFromAddressBar();
       setPhase(result.ok ? { kind: 'ready' } : { kind: 'invalid', message: result.message });
     });
   }, [url, session, recoverSession]);

@@ -5,7 +5,8 @@ import { createContext, useCallback, useEffect, useMemo, useState, type ReactNod
 import { supabase, supabaseConfigError } from '@/lib/supabase';
 
 import { getAuthErrorMessage, isNetworkError } from './errors';
-import { parseRecoveryUrl, RESET_PASSWORD_PATH } from './recovery';
+import { parseRecoveryUrl, RESET_PASSWORD_PATH, webResetRedirectUrl } from './recovery';
+import { webOrigin } from './webUrl';
 
 export type AuthResult = { ok: true } | { ok: false; message: string };
 export type SignUpResult = { ok: true; needsEmailConfirmation: boolean } | { ok: false; message: string };
@@ -27,8 +28,14 @@ export interface AuthContextValue {
   updatePassword: (password: string) => Promise<AuthResult>;
 }
 
-/** Supabase panelinde Auth → URL Configuration → Redirect URLs listesine eklenmesi gereken adres. */
-export const getPasswordResetRedirectUrl = () => Linking.createURL(RESET_PASSWORD_PATH);
+/**
+ * Supabase panelinde Auth → URL Configuration → Redirect URLs listesine eklenmesi gereken adres.
+ * Mobil: `teacherapp://reset-password`; web: sitenin kökü + `/reset-password`.
+ */
+export const getPasswordResetRedirectUrl = () => {
+  const origin = webOrigin();
+  return origin ? webResetRedirectUrl(origin) : Linking.createURL(RESET_PASSWORD_PATH);
+};
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 

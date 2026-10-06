@@ -25,15 +25,18 @@ export const supabase = createClient<Database>(
   supabaseAnonKey ?? 'missing-anon-key',
   {
     auth: {
+      // Web'de AsyncStorage `window.localStorage` kullanır: oturum sayfa yenilenince de korunur.
       storage: AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
+      // Şifre sıfırlama bağlantısı her platformda /reset-password ekranında elle çözülür (recovery.ts).
       detectSessionInUrl: false,
     },
   },
 );
 
 // Uygulama ön plandayken oturum yenilemesini çalıştır, arka planda durdur.
+// Web'de supabase-js sekme görünürlüğünü kendisi izler.
 if (Platform.OS !== 'web') {
   AppState.addEventListener('change', (state) => {
     if (state === 'active') {

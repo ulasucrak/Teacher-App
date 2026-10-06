@@ -42,7 +42,14 @@ export function StudentCollectorView({ collector, disabled = false }: StudentCol
       {method === 'photo' ? (
         <>
           {!collector.photoAvailable ? (
-            <Banner kind="warning" message={recognizeMessages.unavailable} />
+            <Banner
+              kind="warning"
+              message={collector.photoUnavailableMessage ?? recognizeMessages.unavailable}
+              actionLabel={disabled ? undefined : 'Listeyi yapıştır'}
+              onAction={disabled ? undefined : () => setMethod('paste')}
+              actionTestID="collect-photo-unavailable-paste"
+              testID="collect-photo-unavailable"
+            />
           ) : null}
           <PhotoPanel collector={collector} disabled={disabled} />
         </>
