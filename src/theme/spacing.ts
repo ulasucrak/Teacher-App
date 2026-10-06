@@ -32,8 +32,8 @@ export const layout = {
   headerHeight: 52,
   /** Liste satırı en küçük yüksekliği. */
   rowHeight: 64,
-  /** Okul numarası sütunu genişliği. */
-  numberColumn: 32,
+  /** Okul numarası sütunu genişliği: 4 basamaklı e-Okul numarası ("1104") kesilmeden sığar. */
+  numberColumn: 44,
   /** @deprecated v1 kırmızı kenar çizgisi kalınlığı; v2'de çizgi ince ayraçtır. */
   marginRuleWidth: 1,
   /** İkon kutusu (boş durum, uygulama işareti). */
