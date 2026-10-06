@@ -9,6 +9,7 @@ import {
   type HistoryCursor,
   type HistoryEvent,
 } from '@/features/history';
+import { useRealtimeRefresh } from '@/lib/realtime';
 import type { FormRow } from '@/types/database';
 
 /** Geçmiş görünümleri: özet, günlük inceleme (`day`) ve zaman çizelgesi (`list`). */
@@ -33,6 +34,26 @@ export interface HistoryData {
   loadMoreError: string | null;
   loadMore: () => void;
   retry: () => void;
+}
+
+/**
+ * Canlı yenilemede gelen ilk sayfayı yüklü zaman çizelgesiyle birleştirir: yeni olaylar başa
+ * eklenir, `loadMore` ile yüklenmiş sayfalar ve devam imleci korunur. İlk sayfa yüklü olaylarla
+ * hiç örtüşmüyorsa (arada boşluk olabilir) liste ilk sayfayla değiştirilir (`replaced`).
+ */
+export function mergeTimeline(current: Timeline, page: Timeline): { timeline: Timeline; replaced: boolean } {
+  if (current.events.length === 0) return { timeline: page, replaced: true };
+  const ids = new Set(current.events.map((e) => e.id));
+  if (!page.events.some((e) => ids.has(e.id))) return { timeline: page, replaced: true };
+  const fresh = page.events.filter((e) => !ids.has(e.id));
+  if (fresh.length === 0) return { timeline: current, replaced: false };
+  return { timeline: { events: [...fresh, ...current.events], nextCursor: current.nextCursor }, replaced: false };
+}
+
+/** Sonraki sayfayı ekler; canlı yenilemeyle zaten gelmiş olaylar tekrarlanmaz. */
+export function appendPage(current: Timeline, page: Timeline): Timeline {
+  const ids = new Set(current.events.map((e) => e.id));
+  return { events: [...current.events, ...page.events.filter((e) => !ids.has(e.id))], nextCursor: page.nextCursor };
 }
 
 interface Options {
@@ -65,6 +86,58 @@ export function useHistoryData(form: Pick<FormRow, 'id' | 'options'>, { active, 
 
   const formId = form.id;
   const options = form.options;
+
+  /**
+   * Canlı yenileme (başka cihazdaki işaret/kayıt, ön plana dönüş): ekrandaki veri yerinde tazelenir.
+   * Sessizdir: hata gösterilmez, ekrandaki veri kalır. Zaman çizelgesinde yüklenen sayfalar korunur.
+   */
+  const liveRefresh = () => {
+    if (view === 'summary') {
+      const request = summaryRequest.current;
+      const key = summaryKey;
+      getFormSummary({ id: formId, options }, range).then(
+        (value) => {
+          if (request !== summaryRequest.current) return;
+          setSummaryState({ key, value });
+          setSummaryFailure(null);
+        },
+        () => undefined,
+      );
+      return;
+    }
+    if (view !== 'list') return;
+    const loaded = timelineRef.current;
+    // İlk yükleme sürüyorsa o zaten güncel veriyi getirecek.
+    if (!loaded || loaded.key !== timelineKey) return;
+    const request = timelineRequest.current;
+    const key = timelineKey;
+    listHistory(formId, { range, studentId }).then(
+      (page) => {
+        const latest = timelineRef.current;
+        if (request !== timelineRequest.current || !latest || latest.key !== key) return;
+        const { timeline, replaced } = mergeTimeline(latest.value, { events: page.events, nextCursor: page.nextCursor });
+        if (timeline === latest.value) return;
+        // Liste değiştiyse süren "daha fazla" isteği eski imlece ait: sonucu yok sayılsın.
+        if (replaced) {
+          timelineRequest.current += 1;
+          setLoadingMore(false);
+          setLoadMoreError(null);
+        }
+        const next = { key, value: timeline };
+        timelineRef.current = next;
+        setTimelineState(next);
+        setTimelineFailure(null);
+      },
+      () => undefined,
+    );
+  };
+
+  useRealtimeRefresh({
+    name: 'history',
+    tables: [{ table: 'form_events', event: 'INSERT', filter: `form_id=eq.${formId}` }],
+    enabled: active && view !== 'day',
+    onChange: liveRefresh,
+  });
 
   useEffect(() => {
     if (!active || view !== 'summary') return;
@@ -115,11 +188,10 @@ export function useHistoryData(form: Pick<FormRow, 'id' | 'options'>, { active, 
     listHistory(formId, { range, studentId, cursor: current.value.nextCursor }).then(
       (page) => {
         setLoadingMore(false);
-        if (request !== timelineRequest.current) return;
-        const next = {
-          key: timelineKey,
-          value: { events: [...current.value.events, ...page.events], nextCursor: page.nextCursor },
-        };
+        const latest = timelineRef.current;
+        if (request !== timelineRequest.current || !latest || latest.key !== timelineKey) return;
+        // Bu arada canlı yenileme başa olay eklemiş olabilir: en son listeye eklenir.
+        const next = { key: timelineKey, value: appendPage(latest.value, page) };
         timelineRef.current = next;
         setTimelineState(next);
       },

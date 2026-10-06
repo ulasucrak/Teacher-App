@@ -36,6 +36,14 @@ export class SessionsApiError extends Error {
   }
 }
 
+/** Kayıt yok (başka cihazda silinmiş olabilir). */
+export class SessionNotFoundError extends SessionsApiError {
+  constructor() {
+    super('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.');
+    this.name = 'SessionNotFoundError';
+  }
+}
+
 const NETWORK_MESSAGE = 'İnternet bağlantısı yok. Bağlantınızı kontrol edip tekrar deneyin.';
 
 function isNetwork(error: PgError | Error): boolean {
@@ -184,7 +192,7 @@ export async function findSessionByDate(formId: string, sessionDate: string): Pr
 export async function getSession(sessionId: string): Promise<FormSessionRow> {
   const { data, error } = await supabase.from('form_sessions').select('*').eq('id', sessionId).maybeSingle();
   if (error) fail(error, 'Kayıt yüklenemedi. Tekrar deneyin.');
-  if (!data) throw new SessionsApiError('Kayıt bulunamadı. Silinmiş olabilir; kayıt listesine dönün.');
+  if (!data) throw new SessionNotFoundError();
   return toSession(data);
 }
 
