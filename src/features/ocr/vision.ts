@@ -6,10 +6,11 @@
  * ise piksel cinsinden ve SOL-ÜST orijinli kutu verir. Dönüşüm:
  *   left = x * W,  top = (1 - y - height) * H,  width = w * W,  height = h * H
  * Her gözlem tek satırlı ayrı bir blok olur (Vision blok kavramı sunmaz; parser satırları
- * dikey konuma göre yeniden birleştirir).
+ * dikey konuma göre yeniden birleştirir). Güven, aday okumalar (topCandidates) ve satır
+ * dörtgeni (cornerPoints, piksel ve sol-üst orijinli) de aktarılır.
  */
 import type { VisionRecognitionOptions, VisionRecognitionResult } from '../../../modules/vision-text-recognition';
-import type { OcrResult } from './parser';
+import type { OcrLine, OcrResult } from './parser';
 
 /**
  * Vision ayarları. macOS'ta Türkçe karakterli 20 adlık, 10 görüntülük (düz yazı, fotoğraf
@@ -36,7 +37,12 @@ export function visionToOcrResult(raw: VisionRecognitionResult): OcrResult {
         width: o.width * width,
         height: o.height * height,
       };
-      return { text: o.text, lines: [{ text: o.text, frame }] };
+      const line: OcrLine = { text: o.text, frame, confidence: o.confidence };
+      if (o.candidates && o.candidates.length > 0) line.candidates = o.candidates;
+      if (o.corners && o.corners.length === 4) {
+        line.cornerPoints = o.corners.map((c) => ({ x: c.x * width, y: (1 - c.y) * height }));
+      }
+      return { text: o.text, lines: [line] };
     });
   return { text: blocks.map((b) => b.text).join('\n'), blocks };
 }

@@ -134,8 +134,8 @@ describe('recognizePhoto (iOS: Apple Vision)', () => {
       ok: true,
       uri: 'file:///a.jpg',
       students: [
-        { number: '112', fullName: 'Selin Bayezit', warnings: [] },
-        { number: '245', fullName: 'Mehmet Kara', warnings: [] },
+        { number: '112', fullName: 'Selin Bayezit', warnings: [], confidence: 1 },
+        { number: '245', fullName: 'Mehmet Kara', warnings: [], confidence: 1 },
       ],
     });
   });

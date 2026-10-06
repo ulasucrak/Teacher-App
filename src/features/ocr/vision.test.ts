@@ -42,6 +42,50 @@ describe('visionToOcrResult', () => {
     expect(result.text).toBe('Ali Veli\nAyşe Kaya');
   });
 
+  it('güveni, aday okumaları ve köşe noktalarını (piksel, sol-üst orijin) aktarır', () => {
+    const [block] = visionToOcrResult({
+      width: 1000,
+      height: 2000,
+      observations: [
+        {
+          text: 'DOGAN',
+          confidence: 0.5,
+          x: 0.1,
+          y: 0.5,
+          width: 0.2,
+          height: 0.05,
+          candidates: [
+            { text: 'DOGAN', confidence: 0.5 },
+            { text: 'DOĞAN', confidence: 0.3 },
+          ],
+          corners: [
+            { x: 0.1, y: 0.55 },
+            { x: 0.3, y: 0.56 },
+            { x: 0.3, y: 0.51 },
+            { x: 0.1, y: 0.5 },
+          ],
+        },
+      ],
+    }).blocks;
+    const [line] = block.lines;
+    expect(line.confidence).toBe(0.5);
+    expect(line.candidates?.map((c) => c.text)).toEqual(['DOGAN', 'DOĞAN']);
+    expect(line.cornerPoints?.[0].x).toBeCloseTo(100, 6);
+    expect(line.cornerPoints?.[0].y).toBeCloseTo(900, 6);
+    expect(line.cornerPoints?.[1].y).toBeCloseTo(880, 6);
+    expect(line.cornerPoints?.[3].y).toBeCloseTo(1000, 6);
+  });
+
+  it('eski modül çıktısında (aday/köşe yok) yalnızca güveni aktarır', () => {
+    const [block] = visionToOcrResult({
+      width: 10,
+      height: 10,
+      observations: [{ text: 'a', confidence: 1, x: 0, y: 0, width: 1, height: 1 }],
+    }).blocks;
+    expect(block.lines[0]).not.toHaveProperty('candidates');
+    expect(block.lines[0]).not.toHaveProperty('cornerPoints');
+  });
+
   it('gözlem yoksa boş sonuç döner', () => {
     expect(visionToOcrResult({ width: 10, height: 10, observations: [] })).toEqual({ text: '', blocks: [] });
   });
@@ -61,8 +105,8 @@ describe('visionToOcrResult', () => {
       }),
     );
     expect(students).toEqual([
-      { number: '112', fullName: 'İrem Şahin', warnings: [] },
-      { number: '245', fullName: 'Ömer Güneş', warnings: [] },
+      { number: '112', fullName: 'İrem Şahin', warnings: [], confidence: 1 },
+      { number: '245', fullName: 'Ömer Güneş', warnings: [], confidence: 1 },
     ]);
   });
 });
