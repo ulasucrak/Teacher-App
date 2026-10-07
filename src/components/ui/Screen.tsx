@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import {
@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, layout, spacing } from '@/theme';
 
 import { IconButton } from './IconButton';
+import { currentWebPathname, screenParentHref } from './ScreenBack';
+import { backIconSize, desktopBarInset, useDesktopWeb } from './ScreenChrome';
 import { StickyFooter } from './StickyFooter';
 import { Text } from './Text';
 
@@ -29,9 +31,15 @@ export interface ScreenProps {
   subtitle?: string;
   /**
    * Geri düğmesi. `true` → router.back(); fonksiyon → özel davranış; `false` → yok.
-   * Varsayılan: geri gidilebiliyorsa göster.
+   * Varsayılan: geri gidilebiliyorsa göster. Web'de geçmiş yoksa (yenileme, doğrudan bağlantı)
+   * düğme yine görünür ve `fallbackHref` adresine gider.
    */
   back?: boolean | (() => void);
+  /**
+   * Web: geri gidilecek geçmiş yoksa gidilecek üst ekran. Verilmezse adresten çıkarılır
+   * (`/class/1/students` → `/class/1`, `/class/1` → `/`).
+   */
+  fallbackHref?: Href;
   /** Sağ üst: en fazla BİR öğe — genellikle "Diğer seçenekler" (⋯) `IconButton`. */
   headerRight?: ReactNode;
   /** Varsayılan üst çubuğun yerine özel başlık (ör. `WizardHeader`). */
@@ -59,6 +67,7 @@ export function Screen({
   largeTitle = false,
   subtitle,
   back,
+  fallbackHref,
   headerRight,
   header: customHeader,
   scroll = true,
@@ -73,17 +82,32 @@ export function Screen({
 }: ScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const desktopWeb = useDesktopWeb();
 
   const canGoBack = router.canGoBack();
-  const showBack = back === undefined ? canGoBack : Boolean(back);
-  const onBack = typeof back === 'function' ? back : () => router.back();
+  // Web'de sayfa yenilenince/bağlantıyla açılınca geçmiş yoktur; geri, mantıksal üst ekrana gider.
+  const parentHref: Href | null = isWeb && !canGoBack ? (fallbackHref ?? screenParentHref(currentWebPathname())) : null;
+  const showBack = back === undefined ? canGoBack || parentHref !== null : Boolean(back);
+  const onBack =
+    typeof back === 'function'
+      ? back
+      : () => {
+          if (router.canGoBack()) router.back();
+          else if (parentHref !== null) router.replace(parentHref);
+        };
   const showBar = showBack || Boolean(headerRight) || (Boolean(title) && !largeTitle);
 
   const bar = showBar ? (
-    <View style={[styles.bar, headerDivider && styles.barDivider]}>
+    <View style={[styles.bar, desktopWeb && styles.barDesktop, headerDivider && styles.barDivider]}>
       <View style={styles.side}>
         {showBack ? (
-          <IconButton icon="back" accessibilityLabel="Geri" onPress={onBack} testID="screen-back" />
+          <IconButton
+            icon="back"
+            accessibilityLabel="Geri"
+            onPress={onBack}
+            size={backIconSize}
+            testID="screen-back"
+          />
         ) : null}
       </View>
       <View style={styles.barTitle}>
@@ -152,6 +176,8 @@ export function Screen({
   );
 }
 
+const isWeb = Platform.OS === 'web';
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
@@ -161,6 +187,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.xs,
   },
+  barDesktop: { paddingTop: desktopBarInset },
   barDivider: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
   side: { minWidth: layout.minTouch * 2, flexDirection: 'row', alignItems: 'center' },
   sideRight: { justifyContent: 'flex-end' },

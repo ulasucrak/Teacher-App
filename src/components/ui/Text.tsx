@@ -1,4 +1,4 @@
-import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
+import { Platform, Text as RNText, type TextProps as RNTextProps, type TextStyle } from 'react-native';
 
 import { colors, fontScale, typography, type TextVariant } from '@/theme';
 
@@ -11,6 +11,27 @@ const toneColor: Record<TextTone, string> = {
   primary: colors.primary,
   danger: colors.danger,
 };
+
+/**
+ * Web: başlık, etiket ve sayı metinleri çift tıklamada seçilmesin (iOS'ta metin seçilemez).
+ * Gövde metni (`body`, `bodySmall`) kopyalanabilir kalır; `selectable` verilirse ona uyulur.
+ */
+const UNSELECTABLE_ON_WEB: ReadonlySet<TextVariant> = new Set<TextVariant>([
+  'display',
+  'title',
+  'heading',
+  'bodyStrong',
+  'label',
+  'caption',
+  'number',
+]);
+
+const noSelect: TextStyle = { userSelect: 'none' };
+
+/** Web'de bu varyant varsayılan olarak seçilemez mi? */
+export function isUnselectableOnWeb(variant: TextVariant, selectable?: boolean): boolean {
+  return selectable === undefined && UNSELECTABLE_ON_WEB.has(variant);
+}
 
 export interface TextProps extends RNTextProps {
   variant?: TextVariant;
@@ -28,12 +49,21 @@ export function Text({
   align,
   style,
   maxFontSizeMultiplier = fontScale.max,
+  selectable,
   ...rest
 }: TextProps) {
+  const unselectable = Platform.OS === 'web' && isUnselectableOnWeb(variant, selectable);
   return (
     <RNText
       maxFontSizeMultiplier={maxFontSizeMultiplier}
-      style={[typography[variant], { color: color ?? toneColor[tone] }, align ? { textAlign: align } : null, style]}
+      selectable={selectable}
+      style={[
+        typography[variant],
+        { color: color ?? toneColor[tone] },
+        align ? { textAlign: align } : null,
+        unselectable ? noSelect : null,
+        style,
+      ]}
       {...rest}
     />
   );

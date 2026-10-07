@@ -6,16 +6,18 @@ export type SymbolName = Exclude<SymbolViewProps['name'], string>;
 /**
  * Uygulamada kullanılan ikonlar: iOS'ta SF Symbols, Android'de Material Symbols.
  * Yeni ad eklerken iki platformu da verin; web, Android (Material Symbols) adını kullanır.
+ * `web`: SF Symbol'e Android adından daha çok benzeyen bir Material glifi varsa web için o çizilir
+ * (ör. `chevron.left` → ince ‹ `arrow_back_ios_new`, Android'deki ← `arrow_back` değil).
  */
 export const icons = {
-  back: { ios: 'chevron.left', android: 'arrow_back' },
+  back: { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back_ios_new' },
   search: { ios: 'magnifyingglass', android: 'search' },
   edit: { ios: 'pencil', android: 'edit' },
-  note: { ios: 'note.text', android: 'sticky_note_2' },
+  note: { ios: 'note.text', android: 'sticky_note_2', web: 'article' },
   check: { ios: 'checkmark', android: 'check' },
   close: { ios: 'xmark', android: 'close' },
   chevronDown: { ios: 'chevron.down', android: 'expand_more' },
-  chevronRight: { ios: 'chevron.right', android: 'chevron_right' },
+  chevronRight: { ios: 'chevron.right', android: 'chevron_right', web: 'arrow_forward_ios' },
   plus: { ios: 'plus', android: 'add' },
   camera: { ios: 'camera', android: 'photo_camera' },
   photo: { ios: 'photo', android: 'image' },
@@ -26,7 +28,7 @@ export const icons = {
   logout: { ios: 'rectangle.portrait.and.arrow.right', android: 'logout' },
   people: { ios: 'person.2', android: 'group' },
   person: { ios: 'person', android: 'person' },
-  book: { ios: 'book.closed', android: 'menu_book' },
+  book: { ios: 'book.closed', android: 'menu_book', web: 'book_2' },
   more: { ios: 'ellipsis', android: 'more_horiz' },
   trash: { ios: 'trash', android: 'delete' },
   eye: { ios: 'eye', android: 'visibility' },
@@ -37,7 +39,7 @@ export const icons = {
   keyboard: { ios: 'keyboard', android: 'keyboard' },
   copy: { ios: 'doc.on.doc', android: 'content_copy' },
   archive: { ios: 'archivebox', android: 'archive' },
-  calendar: { ios: 'calendar', android: 'calendar_today' },
+  calendar: { ios: 'calendar', android: 'calendar_today', web: 'calendar_month' },
   checklist: { ios: 'checklist', android: 'checklist' },
   list: { ios: 'list.bullet', android: 'format_list_bulleted' },
   settings: { ios: 'gearshape', android: 'settings' },
