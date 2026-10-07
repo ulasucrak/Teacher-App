@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 
 import { useToast } from '@/components/ui';
 import { useRealtimeRefresh, type RealtimeTableSpec } from '@/lib/realtime';
+import { useLeaveGuard } from '@/lib/useLeaveGuard';
 import type { FormEntryRow, FormRow, FormSessionRow, StudentRow } from '@/types/database';
 
 import {
@@ -202,24 +203,15 @@ export function useSessionFill(args: UseSessionFillArgs) {
   useEffect(() => {
     dirtyRef.current = dirtyCount;
   }, [dirtyCount]);
-  const allowLeaveRef = useRef(false);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowLeaveRef.current || dirtyRef.current === 0) return;
-      event.preventDefault();
-      const n = dirtyRef.current;
-      Alert.alert('Değişiklikler kaydedilmedi', `Çıkarsanız ${n} öğrencideki değişiklik kaybolur.`, [
-        { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Kaydetmeden çık',
-          style: 'destructive',
-          onPress: () => navigation.dispatch(event.data.action),
-        },
-      ]);
-    });
-    return unsubscribe;
-  }, [navigation]);
+  // Web'de tarayıcı geri tuşu ve yenileme de sorulur (bkz. useLeaveGuard.web).
+  const { leave } = useLeaveGuard({
+    dirty: dirtyCount > 0,
+    prompt: () => ({
+      title: 'Değişiklikler kaydedilmedi',
+      message: `Çıkarsanız ${dirtyRef.current} öğrencideki değişiklik kaybolur.`,
+      confirmText: 'Kaydetmeden çık',
+    }),
+  });
 
   // iOS'ta kaydırarak geri dönüş beforeRemove ile durdurulamaz: değişiklik varken kapalı.
   useEffect(() => {
@@ -318,16 +310,16 @@ export function useSessionFill(args: UseSessionFillArgs) {
       setDeleting(true);
       try {
         await deleteSession(session.id);
-        if (leaving) allowLeaveRef.current = true;
         toast.show('Kayıt silindi');
-        onDeleted();
+        if (leaving) leave(onDeleted);
+        else onDeleted();
       } catch (error) {
         toast.show(toUserMessage(error, 'Kayıt silinemedi. Tekrar deneyin.'), 'error');
       } finally {
         setDeleting(false);
       }
     },
-    [data, toast],
+    [data, leave, toast],
   );
 
   return {

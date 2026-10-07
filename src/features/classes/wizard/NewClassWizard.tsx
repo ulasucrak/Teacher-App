@@ -1,6 +1,6 @@
-import { Stack, useNavigation, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, BackHandler, StyleSheet, View } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { BackHandler, StyleSheet, View } from 'react-native';
 
 import {
   Banner,
@@ -18,6 +18,7 @@ import { ModeChoiceField, PRESETS, type ModeChoice, type PresetId } from '@/feat
 import { StudentCollectorView } from '@/features/ocr/ui/StudentCollectorView';
 import { useStudentCollector } from '@/features/ocr/ui/useStudentCollector';
 import { normalizeStudentName, type NewStudent } from '@/features/students';
+import { useLeaveGuard } from '@/lib/useLeaveGuard';
 import { spacing } from '@/theme';
 
 import { CLASS_NAME_MAX, deriveClassParts, validateClassDraft, type ClassDraftErrors } from '../model';
@@ -38,7 +39,6 @@ interface Failure {
  */
 export function NewClassWizard() {
   const router = useRouter();
-  const navigation = useNavigation();
   const toast = useToast();
   const collector = useStudentCollector();
 
@@ -54,34 +54,22 @@ export function NewClassWizard() {
   const [failure, setFailure] = useState<Failure | null>(null);
   const [progress, setProgress] = useState<SetupProgress>(emptyProgress);
   const [students, setStudents] = useState<NewStudent[]>([]);
-  const allowLeave = useRef(false);
 
   const dirty = name.trim().length > 0 || collector.dirty;
   const created = progress.classRow;
 
-  // Gezinme koruması: girilen veri varken çıkışta onay.
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowLeave.current || !dirty) return;
-      event.preventDefault();
-      Alert.alert(
-        created ? 'Kurulum yarıda kalsın mı?' : 'Yeni sınıf bırakılsın mı?',
-        created ? `${created.name} oluşturuldu; eklenmeyenler kaybolur.` : 'Girdiğiniz bilgiler kaydedilmez.',
-        [
-          { text: 'Vazgeç', style: 'cancel' },
-          {
-            text: 'Çık',
-            style: 'destructive',
-            onPress: () => {
-              allowLeave.current = true;
-              navigation.dispatch(event.data.action);
-            },
-          },
-        ],
-      );
-    });
-    return unsubscribe;
-  }, [navigation, dirty, created]);
+  // Gezinme koruması: girilen veri varken çıkışta onay (web'de tarayıcı geri tuşu ve yenileme dahil).
+  const { leave } = useLeaveGuard({
+    dirty,
+    prompt: () =>
+      created
+        ? {
+            title: 'Kurulum yarıda kalsın mı?',
+            message: `${created.name} oluşturuldu; eklenmeyenler kaybolur.`,
+            confirmText: 'Çık',
+          }
+        : { title: 'Yeni sınıf bırakılsın mı?', message: 'Girdiğiniz bilgiler kaydedilmez.', confirmText: 'Çık' },
+  });
 
   // Android geri tuşu 2. ve 3. adımda bir önceki adıma döner (sınıf henüz oluşturulmadıysa).
   useEffect(() => {
@@ -99,11 +87,8 @@ export function NewClassWizard() {
   };
 
   const goToClass = useCallback(
-    (classId: string) => {
-      allowLeave.current = true;
-      router.replace(`/class/${classId}`);
-    },
-    [router],
+    (classId: string) => leave(() => router.replace(`/class/${classId}`)),
+    [leave, router],
   );
 
   const validated = () => {
