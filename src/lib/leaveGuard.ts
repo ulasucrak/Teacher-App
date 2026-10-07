@@ -1,4 +1,4 @@
-import { Alert } from 'react-native';
+import { Alert, type AlertButton } from 'react-native';
 
 /**
  * Kaydedilmemiş değişiklik koruması — ortak parçalar.
@@ -37,23 +37,24 @@ export const DEFAULT_CANCEL_TEXT = 'Vazgeç';
 
 /** Uygulamanın Alert'i ile (web'de uygulama içi AlertDialog) çıkış onayı sorar. */
 export function showLeavePrompt(prompt: LeavePrompt, onConfirm: () => void, onDismiss?: () => void): void {
-  Alert.alert(
-    prompt.title,
-    prompt.message,
-    [
-      { text: prompt.cancelText ?? DEFAULT_CANCEL_TEXT, style: 'cancel', onPress: onDismiss },
-      {
-        text: prompt.confirmText,
-        style: 'destructive',
-        onPress: () => {
-          onDismiss?.();
-          onConfirm();
-        },
-      },
-    ],
-    // Native davranış değişmesin: seçenek yalnızca web kancası (onDismiss) için verilir.
-    onDismiss ? { cancelable: true, onDismiss } : undefined,
-  );
+  const cancel: AlertButton = { text: prompt.cancelText ?? DEFAULT_CANCEL_TEXT, style: 'cancel' };
+  const confirm: AlertButton = {
+    text: prompt.confirmText,
+    style: 'destructive',
+    onPress: () => {
+      onDismiss?.();
+      onConfirm();
+    },
+  };
+  if (!onDismiss) {
+    // Native: önceki Alert çağrısıyla birebir aynı (Android'de dışarı dokunma kapatmaz).
+    Alert.alert(prompt.title, prompt.message, [cancel, confirm]);
+    return;
+  }
+  Alert.alert(prompt.title, prompt.message, [{ ...cancel, onPress: onDismiss }, confirm], {
+    cancelable: true,
+    onDismiss,
+  });
 }
 
 // ---------------------------------------------------------------------------- web

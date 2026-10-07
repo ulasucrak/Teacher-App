@@ -47,7 +47,7 @@ describe('useLeaveGuard (native)', () => {
     await renderHook(() => useLeaveGuard({ dirty: true, prompt }));
     const event = attemptLeave();
     expect(event.preventDefault).toHaveBeenCalled();
-    expect(alert).toHaveBeenCalledWith('Çıkılsın mı?', 'Kaybolur.', expect.any(Array), undefined);
+    expect(alert).toHaveBeenCalledWith('Çıkılsın mı?', 'Kaybolur.', expect.any(Array));
     buttons()[0].onPress?.();
     expect(mockNavigation.dispatch).not.toHaveBeenCalled();
     buttons()[1].onPress?.();

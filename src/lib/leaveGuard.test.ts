@@ -161,10 +161,10 @@ describe('showLeavePrompt', () => {
     const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
     const onConfirm = jest.fn();
     showLeavePrompt({ title: 'Başlık', message: 'Mesaj', confirmText: 'Çık' }, onConfirm);
-    const [title, message, buttons, options] = alert.mock.calls[0];
+    expect(alert.mock.calls[0]).toHaveLength(3);
+    const [title, message, buttons] = alert.mock.calls[0];
     expect(title).toBe('Başlık');
     expect(message).toBe('Mesaj');
-    expect(options).toBeUndefined();
     expect(buttons?.map((b) => [b.text, b.style])).toEqual([
       ['Vazgeç', 'cancel'],
       ['Çık', 'destructive'],
