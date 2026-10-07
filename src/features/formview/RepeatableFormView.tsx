@@ -11,6 +11,9 @@ import { filterStudents } from '@/features/sessions/students';
 import { colors, layout, spacing } from '@/theme';
 
 import type { FormViewProps } from './DailyFormView';
+import { ClassroomView } from '@/features/classroom/ClassroomView';
+import { requestPresentationFullscreen } from '@/features/classroom/presentation';
+
 import { DayBar } from './DayBar';
 import { FormShell, type FormTab } from './FormShell';
 import { HistoryPane } from './HistoryPane';
@@ -32,6 +35,12 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
 
   const [tab, setTab] = useState<FormTab>(initialTab);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [classroomOpen, setClassroomOpen] = useState(false);
+  const closeClassroom = useCallback(() => setClassroomOpen(false), []);
+  const openClassroom = () => {
+    requestPresentationFullscreen();
+    setClassroomOpen(true);
+  };
   const [query, setQuery] = useState('');
 
   // Geçmişten ya da düzenlemeden dönünce sayılar güncel görünsün.
@@ -48,6 +57,8 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
     return filterStudents(items, query).map((item) => item.row);
   }, [rows, query]);
   const dayLabel = board.day === board.today ? 'Bugün' : formatShortDate(board.day);
+  // Hiçbir öğrencinin numarası yoksa boş numara sütunu ayrılmaz.
+  const hasNumbers = useMemo(() => (rows ? rows.some((r) => Boolean(r.number?.trim())) : true), [rows]);
   const dayMarks = useMemo(() => (rows ? totalCount(sumCounts(rows.map((r) => r.dayCounts))) : 0), [rows]);
 
   const renderItem: ListRenderItem<StudentTally> = ({ item, index }) => (
@@ -56,6 +67,7 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
       index={index}
       options={form.options}
       dayLabel={dayLabel}
+      showNumbers={hasNumbers}
       undoing={board.undoingIds.has(item.studentId)}
       onMark={board.mark}
       onUndo={board.undoStudent}
@@ -80,18 +92,20 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
           keyExtractor={(r) => r.studentId}
           renderItem={renderItem}
           ListHeaderComponent={
-            <View style={styles.listHeader}>
-              {board.loadError ? <Banner kind="error" message={board.loadError} /> : null}
-              {rows.length >= MARK_SEARCH_MIN_STUDENTS ? (
-                <SearchField
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder="Ad ya da numara"
-                  accessibilityLabel="Öğrenci ara"
-                  testID="mark-search"
-                />
-              ) : null}
-            </View>
+            board.loadError || rows.length >= MARK_SEARCH_MIN_STUDENTS ? (
+              <View style={styles.listHeader}>
+                {board.loadError ? <Banner kind="error" message={board.loadError} /> : null}
+                {rows.length >= MARK_SEARCH_MIN_STUDENTS ? (
+                  <SearchField
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder="Ad ya da numara"
+                    accessibilityLabel="Öğrenci ara"
+                    testID="mark-search"
+                  />
+                ) : null}
+              </View>
+            ) : null
           }
           ListEmptyComponent={
             rows.length === 0 ? (
@@ -133,7 +147,7 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
   }
 
   return (
-    <FormShell title={form.title} tab={tab} onTab={setTab} onMore={() => setMenuOpen(true)} testID="form-screen">
+    <FormShell title={form.title} tab={tab} onTab={setTab} onMore={() => setMenuOpen(true)} onClassroom={openClassroom} testID="form-screen">
       {tab === 'mark' ? (
         <>
           <DayBar
@@ -154,6 +168,7 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
           setTab('mark');
         }}
       />
+      {classroomOpen ? <ClassroomView form={form} board={board} day={board.day} onDay={board.changeDay} onExit={closeClassroom} /> : null}
       <OverflowMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -173,7 +188,7 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
 }
 
 const styles = StyleSheet.create({
-  listHeader: { paddingHorizontal: layout.pageX, gap: spacing.md, paddingBottom: spacing.xs },
+  listHeader: { paddingHorizontal: layout.pageX, paddingTop: spacing.xs, gap: spacing.md, paddingBottom: spacing.xs },
   stateWrap: { gap: spacing.md, paddingTop: spacing.sm, paddingHorizontal: layout.pageX },
   padded: { paddingHorizontal: layout.pageX, paddingVertical: spacing.lg },
   listContent: { borderTopWidth: layout.hairline, borderTopColor: colors.rule, paddingBottom: spacing.huge + spacing.xxxl },

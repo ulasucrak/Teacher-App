@@ -744,6 +744,30 @@ function singleNumbersAreOrdinals(rows: RawRow[]): boolean {
 }
 
 /**
+ * Yapıştırılan / yazılan düz listede (`ocr: false`) tek baştaki sayı sıra numarası mı okul numarası mı?
+ * Fotoğraf tablosundaki "ardışık sayılar sıra numarasıdır" sezgisi burada KULLANILMAZ: öğretmenin
+ * e-Okul'dan kopyaladığı "123 Ali" / "124 Ayşe" listesinde ardışık okul numaraları çok yaygındır.
+ * Kural: yalnızca noktalama ile yazılmış numaralandırma ("1.", "1)", "1 -") liste sırasıdır; çıplak
+ * sayı ("1 Ali", "123<TAB>Ali") okul numarasıdır. Sıra numarası sayılması için ayrıca
+ * - en az bir satırda noktalama bulunmalı ve tüm tek sayılar en çok 2 basamaklı olmalı,
+ * - tek satırlık listede bu yeter ("5. Ali"), birden çok satırda sayılar ardışık artmalı (1,2,3 …).
+ * Böylece "1. Ali / 2) Ayşe / 3 Can" numaralı liste sayılır (son satırda noktalama unutulmuştur),
+ * "512 - Ali / 513 - Ayşe" ise (3 basamak) okul numarası kalır. Numara satırda düzenlenebilir.
+ */
+function plainSinglesAreOrdinals(rows: RawRow[]): boolean {
+  const singles = rows.filter((r) => r.numbers.length === 1);
+  if (!singles.some((r) => r.punctuatedLead)) return false;
+  if (singles.some((r) => r.numbers[0].length > 2)) return false;
+  if (singles.length === 1) return true;
+  const values = singles.map((r) => Number(r.numbers[0]));
+  let steps = 0;
+  for (let i = 1; i < values.length; i += 1) {
+    if (values[i] === values[i - 1] + 1) steps += 1;
+  }
+  return steps / (values.length - 1) >= 0.6;
+}
+
+/**
  * İki sayılı (S.No + Okul No) tabloda tek sayılı satır: sıra numarası okunmamış olabilir
  * (Vision tek haneli hücreleri arka arkaya birkaç satırda atlayabilir). En yakın iki sayılı
  * satırlardan (yukarıda ve aşağıda, k satır uzakta) beklenen sıra numarası hesaplanır:
@@ -801,12 +825,12 @@ export function parseCellRows(rows: RowCell[][], options: ParseOptions = {}): Pa
   const asciiCaps = !ocr && !rows.some((cells) => cells.some((c) => TURKISH_LETTERS_RE.test(c.text)));
   const context: RowContext = { ocr, dotAware, asciiCaps };
   const raw = rows.map((cells) => parseRow(cells, context)).filter((r): r is RawRow => r !== null);
-  const singlesAreOrdinals = singleNumbersAreOrdinals(raw);
+  const singlesAreOrdinals = ocr ? singleNumbersAreOrdinals(raw) : plainSinglesAreOrdinals(raw);
 
   const seen = new Set<string>();
   const students: ParsedStudent[] = [];
   for (const [index, row] of raw.entries()) {
-    const ordinals = singlesAreOrdinals && !(row.numbers.length === 1 && isMissedOrdinalRow(raw, index));
+    const ordinals = singlesAreOrdinals && !(ocr && row.numbers.length === 1 && isMissedOrdinalRow(raw, index));
     const number = schoolNumberOf(row, ordinals);
 
     const fullName = toTurkishTitleCase(row.nameTokens.map((t) => t.text).join(' '));

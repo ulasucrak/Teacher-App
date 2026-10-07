@@ -66,6 +66,8 @@ export function StudentsScreen({ classId }: StudentsScreenProps) {
   const all = useMemo(() => students.data ?? [], [students.data]);
   const visible = useMemo(() => filterStudents(all, query), [all, query]);
   const total = all.length;
+  // Hiçbir öğrencinin numarası yoksa boş numara sütunu ayrılmaz (adlar sola yaslı, boşluk israfı yok).
+  const hasNumbers = useMemo(() => all.some((s) => Boolean(s.number?.trim())), [all]);
 
   const openAdd = (method: AddMethod) => router.push(`/class/${classId}/import?method=${method}`);
 
@@ -153,7 +155,7 @@ export function StudentsScreen({ classId }: StudentsScreenProps) {
             <ListRow
               title={item.full_name}
               number={item.number}
-              ruled
+              ruled={hasNumbers}
               showChevron={false}
               onPress={
                 selecting ? () => toggle(item.id) : () => setEditor((e) => ({ key: e.key + 1, open: true, student: item }))

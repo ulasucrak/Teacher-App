@@ -22,6 +22,8 @@ export function AccountScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const busy = actions.pending !== null;
+  // Ekranda sarı yalnızca değişiklik varken: değişmemiş ad için "kaydet" sessiz (ikincil) durur.
+  const nameChanged = fullName.trim() !== storedName.trim();
 
   const save = async () => {
     setProfileError(null);
@@ -49,7 +51,7 @@ export function AccountScreen() {
         <TextField label="Ad soyad" value={fullName} onChangeText={(value) => { setNameDraft(value); setProfileError(null); }}
           autoCapitalize="words" autoComplete="name" textContentType="name" editable={!busy} testID="account-name" />
         {profileError ? <Banner kind="error" message={profileError} /> : null}
-        <Button label="Ad soyadı kaydet" onPress={() => void save()} loading={actions.pending === 'profile'} disabled={busy}
+        <Button label="Ad soyadı kaydet" variant={nameChanged ? 'primary' : 'secondary'} onPress={() => void save()} loading={actions.pending === 'profile'} disabled={busy}
           testID="account-save-profile" />
       </View>
       <View style={styles.divider} />
@@ -61,7 +63,7 @@ export function AccountScreen() {
           disabled={busy} loading={actions.pending === 'logout'} testID="account-logout" />
         <SectionHeader title="Hesabı silme" />
         <Text tone="muted">Hesabınızı sildiğinizde tüm sınıflarınız ve kayıtlarınız kalıcı olarak silinir.</Text>
-        <Button label="Hesabımı sil" icon="trash" variant="ghost" disabled={busy}
+        <Button label="Hesabımı sil" icon="trash" variant="ghost" danger disabled={busy}
           style={styles.deleteButton} onPress={() => { setDeleteError(null); setDeleteOpen(true); }} testID="account-delete" />
       </View>
       <DeleteAccountConfirmation visible={deleteOpen} loading={actions.pending === 'delete'} error={deleteError}

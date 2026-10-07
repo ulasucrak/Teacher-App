@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { IconButton, Screen, SegmentedTabs, type SegmentedTab } from '@/components/ui';
+import { Button, IconButton, Screen, SegmentedTabs, type SegmentedTab } from '@/components/ui';
 import { layout, spacing } from '@/theme';
 
 export type FormTab = 'mark' | 'history';
@@ -22,6 +22,7 @@ interface FormShellProps {
   tab: FormTab;
   onTab: (tab: FormTab) => void;
   onMore: () => void;
+  onClassroom?: () => void;
   /** Alt eylem çubuğu (yalnızca "İşaretle" sekmesinde anlamlıysa verin). */
   footer?: ReactNode;
   testID: string;
@@ -32,7 +33,7 @@ interface FormShellProps {
  * Form ekranının çerçevesi: üst çubukta form adı ve "⋯", altında "İşaretle | Geçmiş" sekmeleri.
  * Günlük ve birikimli görünümler aynı çerçeveyi kullanır.
  */
-export function FormShell({ title, tab, onTab, onMore, footer, testID, children }: FormShellProps) {
+export function FormShell({ title, tab, onTab, onMore, onClassroom, footer, testID, children }: FormShellProps) {
   return (
     <Screen
       title={title}
@@ -46,13 +47,27 @@ export function FormShell({ title, tab, onTab, onMore, footer, testID, children 
       }
     >
       <View style={styles.tabs}>
-        <SegmentedTabs
-          tabs={FORM_TABS}
-          value={tab}
-          onChange={onTab}
-          accessibilityLabel="Form bölümleri"
-          testIDPrefix="form-tab"
-        />
+        <View style={styles.tabTrack}>
+          <SegmentedTabs
+            tabs={FORM_TABS}
+            value={tab}
+            onChange={onTab}
+            accessibilityLabel="Form bölümleri"
+            testIDPrefix="form-tab"
+          />
+        </View>
+        {onClassroom ? (
+          <Button
+            label="Sınıf modu"
+            icon="people"
+            variant="ghost"
+            size="sm"
+            fullWidth={false}
+            onPress={onClassroom}
+            accessibilityHint="Formu projeksiyon için tam ekran ızgarada açar"
+            testID="form-classroom"
+          />
+        ) : null}
       </View>
       {children}
     </Screen>
@@ -60,5 +75,6 @@ export function FormShell({ title, tab, onTab, onMore, footer, testID, children 
 }
 
 const styles = StyleSheet.create({
-  tabs: { paddingHorizontal: layout.pageX, paddingVertical: spacing.md },
+  tabs: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: layout.pageX, paddingVertical: spacing.md },
+  tabTrack: { flex: 1 },
 });

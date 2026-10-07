@@ -8,6 +8,7 @@ import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 
 export type ToastKind = 'success' | 'error' | 'info';
+export type ToastTarget = (message: string, kind: ToastKind) => void;
 
 interface ToastState {
   id: number;
@@ -18,6 +19,13 @@ interface ToastState {
 interface ToastContextValue {
   /** Kısa onay: eylemle aynı fiil ("Kaydet" → "Kaydedildi"). */
   show: (message: string, kind?: ToastKind) => void;
+  /**
+   * Route notifications exclusively to this target until cleanup. The latest
+   * registration wins; removing it restores the previous target. The target
+   * owns presentation, dismissal and accessibility announcements. Existing
+   * root notifications are cleared on registration and are never replayed.
+   */
+  routeTo: (target: ToastTarget) => () => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -31,8 +39,23 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [opacity] = useState(() => new Animated.Value(0));
   const insets = useSafeAreaInsets();
   const counter = useRef(0);
+  const targets = useRef<{ notify: ToastTarget }[]>([]);
+
+  const routeTo = useCallback((notify: ToastTarget) => {
+    const registration = { notify };
+    targets.current.push(registration);
+    setToast(null);
+    return () => {
+      targets.current = targets.current.filter((target) => target !== registration);
+    };
+  }, []);
 
   const show = useCallback((message: string, kind: ToastKind = 'success') => {
+    const target = targets.current[targets.current.length - 1];
+    if (target) {
+      target.notify(message, kind);
+      return;
+    }
     counter.current += 1;
     setToast({ id: counter.current, message, kind });
     AccessibilityInfo.announceForAccessibility(message);
@@ -52,7 +75,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [toast, opacity]);
 
-  const value = useMemo(() => ({ show }), [show]);
+  const value = useMemo(() => ({ show, routeTo }), [show, routeTo]);
 
   return (
     <ToastContext.Provider value={value}>

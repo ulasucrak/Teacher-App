@@ -158,6 +158,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     minHeight: layout.minTouch + spacing.xs,
+    // Uzun sınıf adı iki satıra sarınca ayraca yapışmasın.
+    paddingVertical: spacing.sm,
     borderBottomWidth: layout.hairline,
     borderBottomColor: colors.rule,
   },

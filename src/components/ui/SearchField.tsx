@@ -1,5 +1,5 @@
-import type { Ref } from 'react';
-import { StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useState, type Ref } from 'react';
+import { Platform, StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { colors, fontScale, iconSize, layout, radii, spacing, typography } from '@/theme';
 
@@ -33,8 +33,9 @@ export function SearchField({
   ref,
   testID,
 }: SearchFieldProps) {
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={[styles.wrap, style]}>
+    <View style={[styles.wrap, focused && styles.wrapFocused, style]}>
       <Icon name="search" size={iconSize.md} color={colors.textMuted} />
       <TextInput
         ref={ref}
@@ -54,6 +55,8 @@ export function SearchField({
         returnKeyType="search"
         clearButtonMode="never"
         onSubmitEditing={onSubmitEditing}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={styles.input}
       />
       {value ? (
@@ -70,6 +73,9 @@ export function SearchField({
   );
 }
 
+/** Web: odak kapsayıcının kenarıyla gösterilir; tarayıcının iç çerçevesi kaldırılır. */
+const noBrowserOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as object;
+
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
@@ -77,9 +83,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: layout.minTouch,
     borderRadius: radii.full,
+    // Odak: TextField ile aynı dil (beyaz zemin + 2 px mavi kenar); kenar hep ayrılı, odakta yer değişmez.
+    borderWidth: layout.inputBorderFocus,
+    borderColor: 'transparent',
     backgroundColor: colors.surfaceMuted,
-    paddingLeft: spacing.lg,
+    paddingLeft: spacing.lg - layout.inputBorderFocus,
     paddingRight: spacing.xxs,
   },
-  input: { ...typography.body, flex: 1, color: colors.text, paddingVertical: spacing.sm },
+  wrapFocused: { backgroundColor: colors.surface, borderColor: colors.primary },
+  input: { ...typography.body, flex: 1, color: colors.text, paddingVertical: spacing.sm, ...noBrowserOutline },
 });

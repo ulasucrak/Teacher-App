@@ -396,19 +396,19 @@ Tüm dokunulabilir bileşenler `testID` alır (liste içerenler `testIDPrefix` �
 | `WizardHeader` / `Stepper` | Sihirbaz adımları | Gerçek sıra olduğu için numaralı ("Adım 2 / 3") |
 | `BottomActionBar` | Görev ekranının alt eylemi | `primary` (sarı), `secondary` (sol), `hint` |
 | `Fab` | Liste ekranının ana eylemi | Her zaman etiketli; `footer` ile birlikte kullanılmaz |
-| `Button` | Eylemler | `primary` sarı (ekranda bir kez), `secondary` sıra grisi, `ghost` mavi metin, `destructive` kırmızı (yalnızca onayda) |
+| `Button` | Eylemler | `primary` sarı (ekranda bir kez), `secondary` sıra grisi, `ghost` mavi metin, `destructive` kırmızı (yalnızca onayda); `danger` ghost/secondary'nin metnini kırmızı yapar (onaya götüren giriş eylemi: "Hesabımı sil") |
 | `IconButton` | Geri, "⋯", satır içi | 48 pt, zorunlu `accessibilityLabel`, `variant="tonal"` |
 | `OverflowMenu` | İkincil eylemler | Eylem panel kapanınca çalışır |
 | `ConfirmSheet` | Geri alınamaz eylem onayı | `confirmLabel` eylem adı, `loading` |
 | `Sheet` | Seçici / panel | `description`, `onDismissed`, kapat `${testID}-close` |
-| `ListRow` | Liste satırı | `number`, `leading`, `trailing`, `children`, `divider`, `onLongPress` |
+| `ListRow` | Liste satırı | `number`, `leading`, `trailing`, `action` ("⋯", satırın kardeşi; mürekkebi içerik sağ kenarına hizalı), `children`, `divider`, `onLongPress` |
 | `IconTile` | Satır başı / boş durum ikonu | `tone` isteğe bağlı |
 | `SectionHeader` | Bölüm başlığı | Başlık + sayı + tek hafif eylem |
-| `SearchField` | Liste araması | Etiketsiz hap; `${testID}-clear` |
+| `SearchField` | Liste araması | Etiketsiz hap; odakta beyaz + 2 px mavi kenar (TextField ile aynı); `${testID}-clear` |
 | `TextField` | Form alanı | Sıra dolgu; odakta beyaz + mavi kenar; `multiline` ≥ 3 satır |
 | `SelectField` | Seçici alan | Sheet açar |
 | `ChipGroup` | Satır içi seçenekler | Kompakt, sarar; tek ya da `multiple` seçim; ton isteğe bağlı |
-| `SegmentedChoice` | 2–4 seçenekli değer | radiogroup, tonlu dolgu |
+| `SegmentedChoice` | 2–4 seçenekli değer | radiogroup, tonlu dolgu; geniş alanda eşit sütun (satırlar alt alta hizalı), dar alanda içeriğe göre genişler ve sığmazsa sarar — etiket asla "Gelm…" diye kesilmez |
 | `OptionChip` / `OptionGrid` | Eşit sütunlu seçenek ızgarası | Düzenleme önizlemesi; doldurmada `ChipGroup` tercih edin |
 | `SegmentedTabs` | Görünüm değiştirme | tablist |
 | `Chip` | Filtre / tarih çipi | Hap; seçili = kurşun dolgu |
@@ -430,6 +430,16 @@ sütununu ayırır (kırmızı çizgi yok). `colors.marginRule`, `layout.marginR
 - `Stepper` `progressbar` rolüyle "Adım 2 / 3: Öğrenciler" okur.
 - Giriş alanları dolgulu olsa da görünür etiketlidir; odak ve hata 2 px kenarla gösterilir.
 
+### Web / laptop notları
+
+- Masaüstünde uygulama 720 px'lik ortalı çerçevededir (`AppFrame`); çerçeve içindeki dar sütunlar
+  (giriş, kayıt) çerçevenin ortasında durur, sola yaslı kalmaz.
+- Klavye odağı: tüm etkileşimli öğelerde içeri alınmış 2 px `tukenmez` halka (`public/index.html`);
+  metin alanları halka yerine kendi 2 px kenarıyla odağı gösterir, tarayıcının iç çerçevesi kapalıdır.
+- Panel (sheet / menü) satırlarında ayraç düz kalır; yuvarlak vurgu yalnızca basılıyken görünür.
+- Numarası olmayan sınıf listesinde boş numara sütunu ayrılmaz.
+- Telefon tarayıcısında dokunma gecikmesi (`touch-action: manipulation`) ve gri vurgu kapalıdır.
+
 ## 12. Yapılmayacaklar
 
 - Ekranda birden fazla sarı öğe; sarıyı metin ya da ikon rengi yapmak.
@@ -441,3 +451,75 @@ sütununu ayırır (kırmızı çizgi yok). `colors.marginRule`, `layout.marginR
 - 48 pt'den küçük dokunma alanı; yalnızca ikonlu FAB.
 - Durumu yalnızca renkle anlatmak.
 - Tema dışında hex, font adı, sihirli sayı.
+
+## Sınıf modu
+
+Öğretmen laptop ekranını projeksiyona ya da etkileşimli tahtaya yansıtıp işaretlemeyi sınıfın
+önünde yapar. Kalem kutusu dili aynen geçerlidir (beyaz kâğıt, kurşun metin, Bricolage başlık,
+Atkinson metin, boya kalemleri yalnız seçenek anlamı, tek sarı eylem); yalnız ölçek ve yoğunluk
+projeksiyona göre ayarlanır. Kod: `src/features/classroom/`.
+
+**Giriş.** Form ekranında "İşaretle | Geçmiş" sekmelerinin sağında `ghost` "Sınıf modu" (`people`
+ikonu, küçük boy). Ayrı satır tutmaz. Web'de destek varsa tam ekran açılır; "Sınıf modundan çık"
+(dar ekranda "Çık") ve Esc normal forma döner. Aynı hook örneği kullanılır: seçili gün,
+kaydedilmemiş taslak ve geri alma ortaktır.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Artı / eksi  ‹ Bugün ›  40 öğrenci  + 7 Artı  − 2 Eksi  (⌕ Ad…)  [✕ Çık] │
+├──────────────────────────────────────────────────────────────────────────┤
+│ ┌────────────────────────────┐ ┌────────────────────────────┐ ┌──────── │
+│ │ Ayşe Yılmaz            +3  │ │ Mehmet Kaya       (+1)  +1 │ │ …       │
+│ │ No 1101  Bugün: 3 Artı net │ │ No 1102  Bugün: 1 Artı net │ │         │
+│ │ [+ Artı ❸] [− Eksi ⓪]  (↶) │ │ [+ Artı ❶] [− Eksi ⓪]  (↶) │ │         │
+│ └────────────────────────────┘ └────────────────────────────┘ └──────── │
+├──────────────────────────────────────────────────────────────────────────┤
+│ [ (+) Mehmet Kaya, bir adım daha                ]  [↶ Geri al] [Kaydet]  │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+**Okunabilirlik (arka sıra).** Öğrenci adı 28 pt Atkinson Bold (en fazla 2 satır, kesilmez), net
+puan `display` 34 pt Bricolage, seçenek etiketi 19 pt, kutlama şeridi `title` 28 pt. Numara ve
+günün sayıları 15 pt soluk: öğretmen içindir. Kurşun/beyaz 16:1, ton metinleri beyaz üstünde
+≥ 5.5:1. Projektörün soldurduğu açık zeminlere anlam yüklenmez: kart kenarı `border` (3.38:1),
+düğme kenarı 2 px ton rengi.
+
+**Kart.** Satır 1: ad + sağda net ("net" alt yazısı; puansız birikimli formda "toplam"). Satır 2:
+"No 1101" + yalnız o gün işaret varsa "Bugün: 2 Artı, 1 Eksi" ("işaret yok" kartlarda tekrar
+etmez). Satır 3: seçenek düğmeleri (48 pt, eşit genişlikte büyür) + birikimlide öğrencinin o
+günkü son işaretini geri alan `tonal` ↶. Kaldırılmış seçenek sayısı varsa satır 2'de yazılır.
+
+**Seçenek düğmesi = [ton işareti] Etiket [yuva].** Düğmeler çerçevelidir (beyaz zemin, 2 px ton
+kenarı, ton renginde metin); 40 kartta 80 dolgulu kırmızı/yeşil düğme hem kalabalık hem
+cezalandırıcı görünüyordu. Dolgu yalnız **durumu** gösterir:
+- Birikimli: yuvada toplam sayı rozeti; sayı varsa dolgulu ton + beyaz rakam, sıfırsa halka.
+- Günlük (radio): seçili düğme dolgulu ve ton işaretinin yerinde ✓; genişlik değişmez.
+
+**Ton işaretleri** (`ToneMark`, çizgiyle çizilir): olumlu `+`, olumsuz `−`, uyarı `!`, nötr `○`.
+Ton renk görülmeden de ayrılır (renk körlüğü, soluk projektör). Başlıktaki sınıf özeti de aynı
+işaretleri kullanır. Sıralama, sıralı liste ya da "en iyiler" yok.
+
+**Yoğunluk.** Sütun sayısı seçenek düğmelerinin tek satıra sığdığı en dar karttan hesaplanır
+(`layout.ts`; kart 280–420 pt, en fazla 6 sütun). 40 öğrencili artı/eksi: 1920×1080'de 5 sütun,
+30 öğrenci kaydırmadan görünür; 1280×720'de 3 sütun, 12 öğrenci; telefonda tek sütun. Kalanlar
+kaydırma ve her zaman açık arama ile. Başlık tek satır, alt çubuk sabit yükseklikte; bildirim
+ızgarayı itmez.
+
+**Geri bildirim ve hareket** (yalnız işaretlenen kart hareket eder):
+- Her işarette kart kısa süre vurgulanır (opaklık; olumluda yeşil zemin + kenar, diğerlerinde
+  kurşun kenar — eksi kırmızı yanıp sönmez).
+- Olumlu işarette netin solunda "+1" / "+0,5" çipi belirir, yavaşça yükselip söner (~1,2 sn) ve
+  net sayısı bir kez yaylanır (spring). Hızlı ardışık dokunuş önceki hareketi keser; sayılar her
+  zaman veriden gelir, animasyon sonucu beklenmez.
+- Hareketi azalt açıksa yükselme ve yaylanma yok; yalnız vurgu (opaklık) ve şerit.
+
+**Alt şerit: tek canlı bölge.** Öncelik: hata (kırmızı dolgu, kapatılana kadar kalır) › kutlama
+(yeşil dolgu, `+` işareti, 28 pt "Ayşe Yılmaz, bir adım daha" / "…, emeğine sağlık" / "…, böyle
+devam"; çocuğa "sen" diye, ünlemsiz) › bildirim (kurşun dolgu: "Ali: Eksi eklendi",
+"Kaydedildi") › boşta "Her adım ilerlemedir". Olumlu işaretin ayrıca "eklendi" bildirimi
+gösterilmez. Sağda "Geri al" (son işaret / son seçim) ve günlük formda kaydedilmemiş sayısı +
+sarı "Kaydet" (ekrandaki tek sarı öğe). Birikimli işaretler anında kaydedilir.
+
+**Yapılmayacaklar.** Dolgulu düğme duvarı; anlamı yalnız renkle vermek; birden fazla kartı ya da
+sürekli hareket ettirmek; ızgarayı iten üst bildirim; "işaret yok" gibi her kartta aynı metin;
+öğrencileri puana göre sıralamak.

@@ -29,7 +29,7 @@ export function DayBar({ value, onChange, trailing, trailingLabel, testIDPrefix 
   return (
     <View style={styles.row}>
       <IconButton
-        icon="back"
+        icon="chevronLeft"
         accessibilityLabel="Önceki gün"
         onPress={() => onChange(addDays(value, -1))}
         color={colors.primary}

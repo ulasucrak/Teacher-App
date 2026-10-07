@@ -15,6 +15,7 @@ export const icons = {
   check: { ios: 'checkmark', android: 'check' },
   close: { ios: 'xmark', android: 'close' },
   chevronDown: { ios: 'chevron.down', android: 'expand_more' },
+  chevronLeft: { ios: 'chevron.left', android: 'chevron_left' },
   chevronRight: { ios: 'chevron.right', android: 'chevron_right' },
   plus: { ios: 'plus', android: 'add' },
   camera: { ios: 'camera', android: 'photo_camera' },

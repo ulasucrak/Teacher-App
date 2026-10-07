@@ -224,6 +224,7 @@ export function ClassDetailScreen() {
         <View style={styles.students}>
           <ListRow
             title="Öğrenciler"
+            subtitle={c.studentCount === 0 ? 'Henüz öğrenci yok' : undefined}
             leading={<IconTile icon="people" />}
             trailing={
               <Text variant="number" tone="muted" testID="class-student-count">

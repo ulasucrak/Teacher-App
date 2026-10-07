@@ -31,6 +31,11 @@ export interface ButtonProps {
   /** Varsayılan: true (formlarda ve alt çubukta tam genişlik). */
   fullWidth?: boolean;
   size?: 'md' | 'sm';
+  /**
+   * `ghost` / `secondary` için kırmızı metin ve ikon: onaya götüren yıkıcı giriş eylemi
+   * ("Hesabımı sil"). Asıl kırmızı dolgu (`destructive`) yalnızca onay adımında kalır.
+   */
+  danger?: boolean;
   accessibilityHint?: string;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
@@ -66,13 +71,15 @@ export function Button({
   disabled = false,
   fullWidth = true,
   size = 'md',
+  danger = false,
   accessibilityHint,
   accessibilityLabel,
   style,
   testID,
 }: ButtonProps) {
   const inactive = disabled || loading;
-  const palette = disabled ? disabledColors[variant] : variantColors[variant];
+  const base = disabled ? disabledColors[variant] : variantColors[variant];
+  const palette = danger && !disabled && (variant === 'ghost' || variant === 'secondary') ? { ...base, fg: colors.danger } : base;
 
   return (
     <Pressable

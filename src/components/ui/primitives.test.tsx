@@ -77,6 +77,15 @@ describe('SegmentedChoice', () => {
     const style = StyleSheet.flatten(screen.getByTestId('seg-present').props.style);
     expect(style.minHeight).toBeGreaterThanOrEqual(44);
   });
+
+  it('never truncates labels with an ellipsis on one line: wraps to a second line instead', async () => {
+    await render(<SegmentedChoice options={attendance} value={null} onChange={jest.fn()} testIDPrefix="seg" />);
+    const label = screen.getByText('Gelmedi');
+    expect(label.props.numberOfLines).toBe(2);
+    expect(label.props.adjustsFontSizeToFit).toBeFalsy();
+    const track = StyleSheet.flatten(screen.getByTestId('seg-present').parent?.props.style);
+    expect(track.flexWrap).toBe('wrap');
+  });
 });
 
 describe('OverflowMenu', () => {

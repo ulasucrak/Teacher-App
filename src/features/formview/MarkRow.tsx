@@ -13,6 +13,8 @@ export interface MarkRowProps {
   options: readonly FormOption[];
   undoing: boolean;
   dayLabel?: string;
+  /** false: hiçbir öğrencinin numarası yok; numara sütunu ayrılmaz. */
+  showNumbers?: boolean;
   onMark: (studentId: string, optionKey: string) => void;
   onUndo: (studentId: string) => void;
 }
@@ -22,7 +24,7 @@ export interface MarkRowProps {
  * seçenek için büyük bir "işaret ver" düğmesi. Tek dokunuş = bir işaret; yanındaki ok son
  * işareti geri alır. `memo`: yalnızca sayısı değişen satır yeniden çizilir.
  */
-export const MarkRow = memo(function MarkRow({ student, index, options, undoing, dayLabel = 'Bugün', onMark, onUndo }: MarkRowProps) {
+export const MarkRow = memo(function MarkRow({ student, index, options, undoing, dayLabel = 'Bugün', showNumbers = true, onMark, onUndo }: MarkRowProps) {
   const testID = `mark-row-${index}`;
   const dayTotal = totalCount(student.dayCounts);
   const total = totalCount(student.counts);
@@ -31,13 +33,15 @@ export const MarkRow = memo(function MarkRow({ student, index, options, undoing,
   return (
     <View style={styles.row} testID={testID}>
       <View style={styles.head}>
-        <View style={styles.numberCol}>
-          {student.number ? (
-            <Text variant="number" tone="muted" align="right" numberOfLines={1} maxFontSizeMultiplier={1.2}>
-              {student.number}
-            </Text>
-          ) : null}
-        </View>
+        {showNumbers ? (
+          <View style={styles.numberCol}>
+            {student.number ? (
+              <Text variant="number" tone="muted" align="right" numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                {student.number}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         <View style={styles.titles}>
           <Text variant="bodyStrong" numberOfLines={1} testID={`${testID}-name`}>
             {student.fullName}
@@ -72,7 +76,7 @@ export const MarkRow = memo(function MarkRow({ student, index, options, undoing,
           </Text>
         </View>
       </View>
-      <View style={styles.actions}>
+      <View style={[styles.actions, !showNumbers && styles.actionsFlush]}>
         <View style={styles.buttons} accessibilityRole="toolbar" accessibilityLabel={`${student.fullName} için işaretler`}>
           {options.map((option) => (
             <MarkButton
@@ -164,6 +168,7 @@ const styles = StyleSheet.create({
   titles: { flex: 1, gap: spacing.xxs },
   net: { minWidth: layout.minTouch, marginLeft: spacing.sm },
   actions: { flexDirection: 'row', alignItems: 'center', marginLeft: INDENT, marginTop: spacing.sm, gap: spacing.xs },
+  actionsFlush: { marginLeft: 0 },
   buttons: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   markButton: {
     flexGrow: 1,

@@ -129,9 +129,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     marginHorizontal: -spacing.sm,
     paddingHorizontal: spacing.sm,
-    borderRadius: radii.sm,
   },
   divider: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
-  pressed: { backgroundColor: colors.surfaceMuted },
+  // Ayraç düz kalsın diye yuvarlak vurgu yalnızca basılıyken.
+  pressed: { backgroundColor: colors.surfaceMuted, borderRadius: radii.sm, borderBottomColor: 'transparent' },
   texts: { flex: 1, gap: spacing.xxs },
 });

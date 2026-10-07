@@ -1,5 +1,6 @@
 import { useState, type Ref } from 'react';
 import {
+  Platform,
   StyleSheet,
   TextInput,
   View,
@@ -114,6 +115,9 @@ export function TextField({
   );
 }
 
+/** Web: odak zaten kapsayıcının 2 px mavi kenarıyla gösterilir; tarayıcının iç çerçevesi çift çizgi yapar. */
+const noBrowserOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as object;
+
 const styles = StyleSheet.create({
   container: { gap: spacing.xs + spacing.xxs },
   inputWrap: {
@@ -135,6 +139,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text,
     paddingVertical: spacing.md,
+    ...noBrowserOutline,
   },
   inputMultiline: { paddingTop: spacing.md, paddingRight: spacing.md },
   message: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },

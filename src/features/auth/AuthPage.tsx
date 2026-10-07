@@ -66,7 +66,8 @@ function AppMark() {
 const styles = StyleSheet.create({
   content: { paddingTop: spacing.lg },
   contentHome: { paddingTop: spacing.huge + spacing.xl },
-  heading: { gap: spacing.sm, marginBottom: spacing.xxxl, maxWidth: layout.readableWidth },
+  // Geniş (masaüstü) çerçevede okunur sütun ortada durur; dar ekranda tam genişliktir.
+  heading: { gap: spacing.sm, marginBottom: spacing.xxxl, width: '100%', maxWidth: layout.readableWidth, alignSelf: 'center' },
   mark: {
     width: layout.iconBox,
     height: layout.iconBox,
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
-  body: { gap: spacing.lg, maxWidth: layout.readableWidth },
+  body: { gap: spacing.lg, width: '100%', maxWidth: layout.readableWidth, alignSelf: 'center' },
   switch: {
     flexDirection: 'row',
     flexWrap: 'wrap',
