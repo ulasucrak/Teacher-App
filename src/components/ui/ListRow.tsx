@@ -17,6 +17,12 @@ export interface ListRowProps {
   ruled?: boolean;
   leading?: ReactNode;
   trailing?: ReactNode;
+  /**
+   * Satırın sağında, satırın DIŞINDA (kardeş olarak) çizilen etkileşimli öğe (ör. "⋯" düğmesi).
+   * Basılabilir satırın içine düğme koymak web'de iç içe <button> üretir; bunun yerine buraya koyun.
+   * `minTouch` genişliğinde bir kutuya yerleşir; `trailing` içinde aynı genişlikte boşluk (`ListRowActionSpacer`) ayırın.
+   */
+  action?: ReactNode;
   /** Başlık satırının altına gelen içerik (örn. seçenek çipleri). */
   children?: ReactNode;
   onPress?: () => void;
@@ -41,6 +47,7 @@ export function ListRow({
   ruled,
   leading,
   trailing,
+  action,
   children,
   onPress,
   onLongPress,
@@ -89,7 +96,7 @@ export function ListRow({
   );
 
   if (onPress || onLongPress) {
-    return (
+    const pressable = (
       <Pressable
         testID={testID}
         onPress={onPress}
@@ -102,6 +109,15 @@ export function ListRow({
         {body}
       </Pressable>
     );
+    if (!action) return pressable;
+    return (
+      <View style={styles.actionHost}>
+        {pressable}
+        <View style={[styles.action, divider && styles.actionAboveDivider]}>
+          {action}
+        </View>
+      </View>
+    );
   }
   return (
     <View style={[styles.row, style]} testID={testID}>
@@ -110,7 +126,25 @@ export function ListRow({
   );
 }
 
+/** `action` düğmesinin kapladığı yeri `trailing` içinde ayırır (satır düzeni değişmez). */
+export function ListRowActionSpacer() {
+  return <View style={styles.actionSpacer} />;
+}
+
 const styles = StyleSheet.create({
+  actionHost: { position: 'relative' },
+  action: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: layout.pageX / 2,
+    width: layout.minTouch,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'box-none',
+  },
+  actionAboveDivider: { bottom: layout.hairline },
+  actionSpacer: { width: layout.minTouch, marginRight: -layout.pageX / 2 },
   row: { backgroundColor: colors.surface, minHeight: layout.rowHeight },
   pressed: { backgroundColor: colors.surfaceMuted },
   inner: { flexDirection: 'row', paddingLeft: layout.pageX },

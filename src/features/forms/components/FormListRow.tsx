@@ -1,8 +1,8 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { Badge, IconButton, IconTile, ListRow } from '@/components/ui';
+import { Badge, IconButton, IconTile, ListRow, ListRowActionSpacer } from '@/components/ui';
 import { formatCompactDate } from '@/features/sessions/date';
-import { colors, iconSize, layout, spacing } from '@/theme';
+import { colors, iconSize, spacing } from '@/theme';
 import type { FormMode } from '@/types/database';
 
 import type { FormListItem } from '../api';
@@ -57,21 +57,23 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
               <Badge label={formModeLabels.repeatable} testID={`${testID}-mode`} />
             </View>
           ) : null}
-          <View style={styles.trailing}>
-          {busy ? (
-            <ActivityIndicator color={colors.primary} testID={`${testID}-busy`} />
-          ) : (
-            <IconButton
-              icon="more"
-              size={iconSize.lg}
-              color={colors.textMuted}
-              accessibilityLabel={`${form.title} için diğer seçenekler`}
-              onPress={onMore}
-              testID={`${testID}-more`}
-            />
-          )}
-          </View>
+          <ListRowActionSpacer />
         </View>
+      }
+      // "⋯" düğmesi basılabilir satırın içine konmaz (web'de iç içe <button> olur); kardeş olarak çizilir.
+      action={
+        busy ? (
+          <ActivityIndicator color={colors.primary} testID={`${testID}-busy`} />
+        ) : (
+          <IconButton
+            icon="more"
+            size={iconSize.lg}
+            color={colors.textMuted}
+            accessibilityLabel={`${form.title} için diğer seçenekler`}
+            onPress={onMore}
+            testID={`${testID}-more`}
+          />
+        )
       }
     />
   );
@@ -80,5 +82,4 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
 const styles = StyleSheet.create({
   badge: { alignSelf: 'center' },
   trailingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  trailing: { width: layout.minTouch, alignItems: 'center', justifyContent: 'center', marginRight: -layout.pageX / 2 },
 });

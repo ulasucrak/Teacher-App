@@ -29,7 +29,7 @@ export type { SymbolName } from './iconMap';
 export { SymbolIcon } from './SymbolIcon';
 export { IconButton } from './IconButton';
 export { IconTile } from './IconTile';
-export { ListRow } from './ListRow';
+export { ListRow, ListRowActionSpacer } from './ListRow';
 export type { ListRowProps } from './ListRow';
 export { LoadingState } from './LoadingState';
 export { OptionChip } from './OptionChip';
