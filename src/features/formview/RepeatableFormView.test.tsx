@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 
 import { Providers } from '@/features/forms/test-utils';
 import * as history from '@/features/history';
-import { todayIso } from '@/features/sessions/date';
+import { addDays, formatShortDate, todayIso } from '@/features/sessions/date';
 import type { FormMarkRow } from '@/types/database';
 
 import { plusMinusForm, tally } from './fixtures';
@@ -73,7 +73,38 @@ describe('RepeatableFormView', () => {
     expect(screen.getByTestId('mark-row-0-net')).toHaveTextContent('+3');
     expect(screen.getByTestId('mark-row-1-empty')).toHaveTextContent('Henüz işaret yok');
     expect(screen.getByTestId('mark-row-1-net')).toHaveTextContent('0');
-    expect(screen.getByTestId('mark-today-total')).toHaveTextContent('1 işaret');
+    expect(screen.getByTestId('mark-day-trailing')).toHaveTextContent('1 işaret');
+  });
+
+  it('selects a past day from the calendar and marks and undoes on that day', async () => {
+    await renderView();
+    expect(screen.getByTestId('mark-day-next')).toBeDisabled();
+    const past = addDays(todayIso(), -3);
+    await fireEvent.press(screen.getByTestId('mark-day-pick'));
+    await fireEvent.press(await screen.findByTestId(`calendar-day-${past}`));
+    await screen.findByTestId('mark-row-0');
+
+    expect(mocked.getTallies).toHaveBeenLastCalledWith('f2', { day: past });
+    expect(screen.getByTestId('mark-row-0-day')).toHaveTextContent(`${formatShortDate(past)}: 1 Artı`);
+    await fireEvent.press(screen.getByTestId('mark-row-1-eksi'));
+    expect(mocked.addMark).toHaveBeenLastCalledWith({ formId: 'f2', studentId: 's2', optionKey: 'eksi', markDate: past });
+    await fireEvent.press(screen.getByTestId('mark-row-0-undo'));
+    expect(mocked.undoLastMark).toHaveBeenLastCalledWith({ formId: 'f2', studentId: 's1', markDate: past });
+    await fireEvent.press(await screen.findByRole('button', { name: 'Geri al' }));
+    expect(mocked.removeMark).toHaveBeenCalledWith('m1');
+  });
+
+  it.each([true, false])('opens a repeatable history day for editing (empty: %s)', async (empty) => {
+    mocked.getFormSummary.mockResolvedValue(history.summarizeForm(
+      empty ? [] : [tally({ studentId: 's1', fullName: 'Ali', counts: { arti: 1 } })], plusMinusForm.options,
+    ));
+    await render(<RepeatableFormView classId="c1" form={plusMinusForm} initialTab="history" />, { wrapper: Providers });
+    await fireEvent.press(screen.getByTestId('history-view-day'));
+    await fireEvent.press(screen.getByTestId('review-day-prev'));
+    await fireEvent.press(await screen.findByTestId(empty ? 'day-edit-empty' : 'day-edit'));
+    await screen.findByTestId('mark-row-0');
+    expect(mocked.getTallies).toHaveBeenLastCalledWith('f2', { day: addDays(todayIso(), -1) });
+    expect(screen.getByTestId('mark-day-label')).toHaveTextContent(/^Dün, /);
   });
 
   it('adds a mark with one tap, updates counts at once and offers to undo it', async () => {
@@ -107,7 +138,7 @@ describe('RepeatableFormView', () => {
     expect(mocked.addMark).toHaveBeenCalledTimes(3);
     expect(screen.getByTestId('mark-row-1-day')).toHaveTextContent('Bugün: 1 Artı, 2 Eksi');
     expect(screen.getByTestId('mark-row-1-net')).toHaveTextContent('−1');
-    expect(screen.getByTestId('mark-today-total')).toHaveTextContent('4 işaret');
+    expect(screen.getByTestId('mark-day-trailing')).toHaveTextContent('4 işaret');
   });
 
   it('rolls the count back and says why when the server rejects the mark', async () => {

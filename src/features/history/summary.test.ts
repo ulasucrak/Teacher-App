@@ -16,6 +16,11 @@ const plusMinus: FormOption[] = [
   { key: 'arti', label: 'Artı', tone: 'positive', score: 1 },
   { key: 'eksi', label: 'Eksi', tone: 'negative', score: -1 },
 ];
+const sozlu: FormOption[] = [
+  { key: 'arti', label: 'Artı', tone: 'positive', score: 1 },
+  { key: 'yarim_arti', label: 'Yarım artı', tone: 'positive', score: 0.5 },
+  { key: 'eksi', label: 'Eksi', tone: 'negative', score: -1 },
+];
 const attendance: FormOption[] = [
   { key: 'var', label: 'Var', tone: 'positive' },
   { key: 'yok', label: 'Yok', tone: 'negative' },
@@ -117,6 +122,16 @@ describe('summarizeForm', () => {
     expect(summary.net).toBeNull();
     expect(summary.students[0]?.net).toBeNull();
     expect(summary.total).toBe(20);
+  });
+
+  it('shows a decimal net for the oral (artı / yarım artı / eksi) form', () => {
+    const summary = summarizeForm([tally('ali', { arti: 2, yarim_arti: 3, eksi: 1 }), tally('ayse', { yarim_arti: 1 })], sozlu);
+    expect(summary.scored).toBe(true);
+    expect(summary.students.map((s) => s.net)).toEqual([2.5, 0.5]);
+    expect(summary.net).toBe(3);
+    expect(formatNet(summary.students[0]?.net ?? 0)).toBe('+2,5');
+    expect(formatNet(summary.students[1]?.net ?? 0)).toBe('+0,5');
+    expect(formatCounts(summary.totals, sozlu)).toBe('2 Artı, 4 Yarım artı, 1 Eksi');
   });
 
   it('sums counts', () => {

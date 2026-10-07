@@ -13,7 +13,8 @@ export interface FormPreset {
   options: readonly FormOption[];
   /**
    * Şablon "Birikimli" eklenirse bu puanlar seçeneklere yazılır (seçenek anahtarı → puan); net
-   * böylece hemen anlamlı olur. Sayılar yeterli olan şablonlarda (yoklama, sözlü) yoktur.
+   * böylece hemen anlamlı olur. Sayılar yeterli olan şablonlarda (yoklama) yoktur. Seçeneğin
+   * kendi `score` alanı varsa (sözlü, artı/eksi) o her türde korunur.
    * Puanlar sonradan form düzenlemede değiştirilebilir ya da silinebilir.
    */
   repeatableScores?: Readonly<Record<string, number>>;
@@ -21,8 +22,9 @@ export interface FormPreset {
 
 /**
  * Hazır form şablonları. Anahtarlar sabit ve ASCII'dir; kopyalanan formlarda da aynı kalır.
- * Puan yalnızca toplamın anlamlı olduğu şablonda var (artı +1, eksi −1 → net). Yoklama, ödev
- * ve katılımda sayılar ("18 Geldi, 2 Gelmedi") yeterli; sözlü notlarını toplamak anlamsız.
+ * Puan, toplamın anlamlı olduğu şablonlarda var: artı/eksi (+1, −1) ve sözlü (artı +1,
+ * yarım artı +0,5, eksi −1); Geçmiş ve Özet'te net puan olarak görünür. Yoklama, ödev ve
+ * katılımda sayılar ("18 Geldi, 2 Gelmedi") yeterli.
  */
 export const PRESETS: readonly FormPreset[] = [
   {
@@ -55,14 +57,12 @@ export const PRESETS: readonly FormPreset[] = [
   {
     id: 'sozlu',
     title: 'Sözlü',
-    summary: '5 ile 1 arasında sözlü notu',
+    summary: 'Sözlüde artı, yarım artı ya da eksi verin',
     mode: 'daily',
     options: [
-      { key: 'puan_5', label: '5', tone: 'positive' },
-      { key: 'puan_4', label: '4', tone: 'positive' },
-      { key: 'puan_3', label: '3', tone: 'neutral' },
-      { key: 'puan_2', label: '2', tone: 'warning' },
-      { key: 'puan_1', label: '1', tone: 'negative' },
+      { key: 'arti', label: 'Artı', tone: 'positive', score: 1 },
+      { key: 'yarim_arti', label: 'Yarım artı', tone: 'positive', score: 0.5 },
+      { key: 'eksi', label: 'Eksi', tone: 'negative', score: -1 },
     ],
   },
   {

@@ -18,8 +18,8 @@ interface HistoryDayProps {
   onRetry: () => void;
   /** O günün zaman çizelgesi (tüm sınıf ya da tek öğrenci). */
   onOpenList: (studentId?: { id: string; name: string }) => void;
-  /** Günlük formda günü İşaretle sekmesinde aç. */
-  onEditDay: () => void;
+  /** Günü İşaretle sekmesinde aç. */
+  onEditDay?: () => void;
 }
 
 /** Günün öğrenci başına değeri (günlük) ya da sayıları ve neti (birikimli). */
@@ -48,9 +48,9 @@ export function HistoryDay({ mode, options, day, review, error, onRetry, onOpenL
           icon="calendar"
           title="Bu günde kayıt yok"
           description={daily ? 'O gün yoklama alınmamış ya da form doldurulmamış.' : 'O gün kimseye işaret verilmemiş.'}
-          actionLabel={daily ? 'Bu günü işaretle' : undefined}
+          actionLabel={onEditDay ? 'Bu günü işaretle' : undefined}
           actionIcon="edit"
-          onAction={daily ? onEditDay : undefined}
+          onAction={onEditDay}
           actionTestID="day-edit-empty"
           testID="day-empty"
         />
@@ -139,7 +139,7 @@ export function HistoryDay({ mode, options, day, review, error, onRetry, onOpenL
           onPress={() => onOpenList()}
           testID="day-open-list"
         />
-        {daily ? (
+        {onEditDay ? (
           <Button
             label="Bu günü düzenle"
             icon="edit"

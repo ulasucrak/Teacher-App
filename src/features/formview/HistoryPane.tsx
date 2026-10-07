@@ -25,7 +25,7 @@ interface HistoryPaneProps {
   form: FormRow;
   /** Sekme görünürken true; durum (dönem, gün, süzgeç) sekmeler arası geçişte korunur. */
   active: boolean;
-  /** Günlük formda "Bu günü düzenle": günü İşaretle sekmesinde açar. */
+  /** "Bu günü düzenle": günü İşaretle sekmesinde açar. */
   onEditDay?: (day: string) => void;
 }
 
@@ -89,7 +89,7 @@ export function HistoryPane({ form, active, onEditDay }: HistoryPaneProps) {
           error={dayReview.error}
           onRetry={dayReview.retry}
           onOpenList={(who) => openList({ from: day, to: day }, who ?? null)}
-          onEditDay={() => onEditDay?.(day)}
+          onEditDay={onEditDay ? () => onEditDay(day) : undefined}
         />
       ) : (
         <HistoryTimeline

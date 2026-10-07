@@ -6,11 +6,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Banner, Button, EmptyState, LoadingState, OverflowMenu, SearchField, Text } from '@/components/ui';
 import { totalCount, sumCounts, type StudentTally } from '@/features/history';
 import { UndoBar } from '@/features/sessions/components/UndoBar';
-import { formatDayLabel } from '@/features/sessions/date';
+import { formatShortDate } from '@/features/sessions/date';
 import { filterStudents } from '@/features/sessions/students';
 import { colors, layout, spacing } from '@/theme';
 
 import type { FormViewProps } from './DailyFormView';
+import { DayBar } from './DayBar';
 import { FormShell, type FormTab } from './FormShell';
 import { HistoryPane } from './HistoryPane';
 import { MarkRow } from './MarkRow';
@@ -46,13 +47,15 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
     const items = rows.map((row) => ({ row, number: row.number, full_name: row.fullName }));
     return filterStudents(items, query).map((item) => item.row);
   }, [rows, query]);
-  const todayMarks = useMemo(() => (rows ? totalCount(sumCounts(rows.map((r) => r.dayCounts))) : 0), [rows]);
+  const dayLabel = board.day === board.today ? 'Bugün' : formatShortDate(board.day);
+  const dayMarks = useMemo(() => (rows ? totalCount(sumCounts(rows.map((r) => r.dayCounts))) : 0), [rows]);
 
   const renderItem: ListRenderItem<StudentTally> = ({ item, index }) => (
     <MarkRow
       student={item}
       index={index}
       options={form.options}
+      dayLabel={dayLabel}
       undoing={board.undoingIds.has(item.studentId)}
       onMark={board.mark}
       onUndo={board.undoStudent}
@@ -70,17 +73,8 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
   } else if (!rows) {
     marking = <LoadingState label="Öğrenciler yükleniyor" />;
   } else {
-    const dateLabel = formatDayLabel(board.today);
     marking = (
       <>
-        <View style={styles.metaRow}>
-          <Text variant="label" tone="muted" accessibilityLabel={`Tarih: ${dateLabel}`} testID="mark-date">
-            {dateLabel}
-          </Text>
-          <Text variant="number" tone="muted" accessibilityLabel={`Bugün ${todayMarks} işaret verildi`} testID="mark-today-total">
-            {`${todayMarks} işaret`}
-          </Text>
-        </View>
         <FlatList
           data={visible}
           keyExtractor={(r) => r.studentId}
@@ -140,8 +134,26 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
 
   return (
     <FormShell title={form.title} tab={tab} onTab={setTab} onMore={() => setMenuOpen(true)} testID="form-screen">
-      {tab === 'mark' ? marking : null}
-      <HistoryPane form={form} active={tab === 'history'} />
+      {tab === 'mark' ? (
+        <>
+          <DayBar
+            value={board.day}
+            onChange={board.changeDay}
+            testIDPrefix="mark-day"
+            trailing={rows ? `${dayMarks} işaret` : undefined}
+            trailingLabel={`${dayLabel} ${dayMarks} işaret verildi`}
+          />
+          {marking}
+        </>
+      ) : null}
+      <HistoryPane
+        form={form}
+        active={tab === 'history'}
+        onEditDay={(day) => {
+          board.changeDay(day);
+          setTab('mark');
+        }}
+      />
       <OverflowMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -161,14 +173,6 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
 }
 
 const styles = StyleSheet.create({
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingHorizontal: layout.pageX,
-    paddingBottom: spacing.sm,
-  },
   listHeader: { paddingHorizontal: layout.pageX, gap: spacing.md, paddingBottom: spacing.xs },
   stateWrap: { gap: spacing.md, paddingTop: spacing.sm, paddingHorizontal: layout.pageX },
   padded: { paddingHorizontal: layout.pageX, paddingVertical: spacing.lg },

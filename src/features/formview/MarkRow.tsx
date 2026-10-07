@@ -12,16 +12,17 @@ export interface MarkRowProps {
   index: number;
   options: readonly FormOption[];
   undoing: boolean;
+  dayLabel?: string;
   onMark: (studentId: string, optionKey: string) => void;
   onUndo: (studentId: string) => void;
 }
 
 /**
- * Birikimli formda öğrenci satırı: ad, bugünkü ve toplam sayılar, net (puanlı formda) ve her
+ * Birikimli formda öğrenci satırı: ad, seçili günün ve toplam sayılar, net (puanlı formda) ve her
  * seçenek için büyük bir "işaret ver" düğmesi. Tek dokunuş = bir işaret; yanındaki ok son
  * işareti geri alır. `memo`: yalnızca sayısı değişen satır yeniden çizilir.
  */
-export const MarkRow = memo(function MarkRow({ student, index, options, undoing, onMark, onUndo }: MarkRowProps) {
+export const MarkRow = memo(function MarkRow({ student, index, options, undoing, dayLabel = 'Bugün', onMark, onUndo }: MarkRowProps) {
   const testID = `mark-row-${index}`;
   const dayTotal = totalCount(student.dayCounts);
   const total = totalCount(student.counts);
@@ -48,7 +49,7 @@ export const MarkRow = memo(function MarkRow({ student, index, options, undoing,
           ) : (
             <>
               <Text variant="caption" tone="muted" numberOfLines={2} testID={`${testID}-day`}>
-                {`Bugün: ${formatCounts(student.dayCounts, options, 'işaret yok')}`}
+                {`${dayLabel}: ${formatCounts(student.dayCounts, options, 'işaret yok')}`}
               </Text>
               <Text variant="caption" tone="muted" numberOfLines={2} testID={`${testID}-total`}>
                 {`Toplam: ${formatCounts(student.counts, options)}`}
@@ -79,6 +80,7 @@ export const MarkRow = memo(function MarkRow({ student, index, options, undoing,
               option={option}
               count={student.dayCounts[option.key] ?? 0}
               studentName={student.fullName}
+              dayLabel={dayLabel}
               onPress={() => onMark(student.studentId, option.key)}
               testID={`${testID}-${option.key}`}
             />
@@ -92,7 +94,7 @@ export const MarkRow = memo(function MarkRow({ student, index, options, undoing,
           <IconButton
             icon="undo"
             accessibilityLabel={`${student.fullName}: son işareti geri al`}
-            accessibilityHint="Bugün verilen son işareti siler"
+            accessibilityHint={`${dayLabel} verilen son işareti siler`}
             onPress={() => onUndo(student.studentId)}
             disabled={dayTotal === 0}
             color={colors.textMuted}
@@ -106,14 +108,15 @@ export const MarkRow = memo(function MarkRow({ student, index, options, undoing,
 
 interface MarkButtonProps {
   option: FormOption;
-  /** Bugün bu seçenekle verilen işaret sayısı. */
+  /** Seçili günde bu seçenekle verilen işaret sayısı. */
   count: number;
   studentName: string;
+  dayLabel: string;
   onPress: () => void;
   testID: string;
 }
 
-function MarkButton({ option, count, studentName, onPress, testID }: MarkButtonProps) {
+function MarkButton({ option, count, studentName, dayLabel, onPress, testID }: MarkButtonProps) {
   const t = tones[option.tone];
   return (
     <Pressable
@@ -121,7 +124,7 @@ function MarkButton({ option, count, studentName, onPress, testID }: MarkButtonP
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${studentName}: ${option.label}`}
-      accessibilityHint={count > 0 ? `Bugün ${count} kez verildi` : 'Bir işaret ekler'}
+      accessibilityHint={count > 0 ? `${dayLabel} ${count} kez verildi` : 'Bir işaret ekler'}
       style={({ pressed }) => [styles.markButton, { backgroundColor: pressed ? t.solid : t.soft }]}
     >
       {({ pressed }) => {
