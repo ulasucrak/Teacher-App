@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { isHovered } from '@/lib/platform';
 import { colors, layout, radii, spacing } from '@/theme';
 
 export interface CardProps {
@@ -42,7 +43,11 @@ export function Card({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      style={({ pressed }) => [...base, pressed && styles.pressed]}
+      style={(state) => [
+        ...base,
+        !state.pressed && isHovered(state) && (variant === 'muted' ? styles.hoveredMuted : styles.hovered),
+        state.pressed && styles.pressed,
+      ]}
     >
       {children}
     </Pressable>
@@ -54,4 +59,7 @@ const styles = StyleSheet.create({
   outlined: { backgroundColor: colors.surface, borderWidth: layout.hairline, borderColor: colors.rule },
   muted: { backgroundColor: colors.surfaceMuted },
   pressed: { backgroundColor: colors.rule },
+  /** Yalnızca web (fare). */
+  hovered: { backgroundColor: colors.surfaceMuted },
+  hoveredMuted: { filter: 'brightness(0.98)' },
 });

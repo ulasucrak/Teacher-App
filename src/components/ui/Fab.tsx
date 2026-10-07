@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 
+import { isHovered, isWeb } from '@/lib/platform';
 import { colors, elevation, iconSize, layout, radii, spacing } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
@@ -29,9 +30,12 @@ export function Fab({ label, onPress, icon = 'plus', disabled = false, accessibi
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.fab,
-        { backgroundColor: disabled ? colors.surfaceMuted : pressed ? colors.accentPressed : colors.accent },
+        { backgroundColor: disabled ? colors.surfaceMuted : state.pressed ? colors.accentPressed : colors.accent },
+        // Web: üstüne gelince hafif koyulaşır, basınca hafifçe küçülür (iOS'taki dokunma hissi).
+        !disabled && !state.pressed && isHovered(state) && styles.hovered,
+        !disabled && isWeb && state.pressed && styles.webPressed,
       ]}
     >
       <Icon name={icon} size={iconSize.lg} color={disabled ? colors.textMuted : colors.onAccent} />
@@ -43,6 +47,8 @@ export function Fab({ label, onPress, icon = 'plus', disabled = false, accessibi
 }
 
 const styles = StyleSheet.create({
+  hovered: { filter: 'brightness(0.96)' },
+  webPressed: { transform: [{ scale: 0.97 }] },
   fab: {
     ...elevation.floating,
     flexDirection: 'row',

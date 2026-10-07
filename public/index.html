@@ -134,27 +134,35 @@
         background: transparent;
       }
 
+      /* Fareyle üstüne gelme / basma geri bildirimi (Pressable stilleri) yumuşak geçsin. */
+      [role='button'],
+      [role='radio'],
+      [role='tab'],
+      [role='checkbox'],
+      [role='switch'] {
+        transition:
+          background-color 100ms ease-out,
+          filter 100ms ease-out;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        [role='button'],
+        [role='radio'],
+        [role='tab'],
+        [role='checkbox'],
+        [role='switch'] {
+          transition: none;
+        }
+      }
+
       /* Masaüstü çerçevesi — sayılar src/components/ui/AppFrame.web.tsx (appFrame) ile aynı:
-         sütun 520px, çerçeve ≥600px genişlikte, yüzen kart (24px boşluk, 28px köşe) ≥720px yükseklikte. */
+         sütun 520px, çerçeve ≥600px genişlikte, yüzen kart (24px boşluk, 28px köşe) ≥720px yükseklikte.
+         RN Modal'lar (Sheet, AlertDialog) body'ye taşınır ve tüm pencereyi kaplar: perde bütün
+         sayfayı karartır; Sheet paneli kendini AppFrame.web.tsx `overlayColumnStyle` ile sütuna
+         yerleştirir (burada modal kutusu sütuna sıkıştırılmaz). */
       @media (min-width: 600px) {
         html,
         body {
           background-color: #f2f3f5;
-        }
-        /* RN Modal (sheet, onay) body'ye taşınır; uygulama sütununun dışına taşmasın. */
-        body > div:not(#root) [role='dialog'][aria-modal='true'] {
-          left: calc(50% - 260px) !important;
-          right: auto !important;
-          width: 520px !important;
-          overflow: hidden;
-        }
-      }
-      @media (min-width: 600px) and (min-height: 720px) {
-        body > div:not(#root) [role='dialog'][aria-modal='true'] {
-          top: 24px !important;
-          bottom: 24px !important;
-          height: auto !important;
-          border-radius: 28px;
         }
       }
     </style>
