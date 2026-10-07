@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet } from 'react-native';
 
-import { colors, iconSize, layout, radii, spacing } from '@/theme';
+import { colors, iconSize, layout, radii, spacing, useReducedMotion } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
+import { isHovered, webPressFeedback } from './SegmentedChoice.interaction';
 import { Text } from './Text';
 
 export interface ChipProps {
@@ -16,6 +17,7 @@ export interface ChipProps {
 
 /** Filtre / etiket çipi (hap şeklinde; ton renkli seçenek çiplerinden ayrışır). */
 export function Chip({ label, selected = false, onPress, icon, accessibilityLabel, testID }: ChipProps) {
+  const reducedMotion = useReducedMotion();
   const fg = selected ? colors.textInverse : colors.text;
   return (
     <Pressable
@@ -26,10 +28,11 @@ export function Chip({ label, selected = false, onPress, icon, accessibilityLabe
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ selected }}
       hitSlop={4}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.chip,
         selected ? styles.selected : styles.unselected,
-        pressed && !selected && styles.pressed,
+        (state.pressed || (onPress && isHovered(state))) && !selected && styles.pressed,
+        onPress && webPressFeedback(state.pressed, reducedMotion),
       ]}
     >
       {icon ? <Icon name={icon} size={iconSize.sm} color={fg} /> : null}

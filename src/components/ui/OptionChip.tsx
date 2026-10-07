@@ -5,7 +5,9 @@ import { selectionHaptic } from '@/lib/haptics';
 import { colors, fontScale, iconSize, layout, motion, radii, spacing, tones, type ToneName, useReducedMotion } from '@/theme';
 
 import { selectionA11y } from './a11y';
+import { useFitText } from './fitText';
 import { Icon } from './Icon';
+import { isHovered } from './SegmentedChoice.interaction';
 import { Text } from './Text';
 
 export interface OptionChipProps {
@@ -24,6 +26,10 @@ export interface OptionChipProps {
   fill?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  /** Web: grup ok tuşu gezintisi için Pressable ref'i (ChipGroup / OptionGrid verir). */
+  pressableRef?: (node: View | null) => void;
+  /** Web: roving tabindex (-1 → Tab ile atlanır, oklarla ulaşılır). */
+  tabIndex?: 0 | -1;
 }
 
 /**
@@ -42,7 +48,10 @@ export function OptionChip({
   fill = true,
   style,
   testID,
+  pressableRef,
+  tabIndex,
 }: OptionChipProps) {
+  const fit = useFitText(label, { enabled: fill, minimumFontScale: 0.8 });
   const reducedMotion = useReducedMotion();
   const [scale] = useState(() => new Animated.Value(1));
   const t = tones[tone];
@@ -65,6 +74,8 @@ export function OptionChip({
   return (
     <Animated.View style={[fill && styles.fill, { transform: [{ scale }] }, style]}>
       <Pressable
+        ref={pressableRef}
+        tabIndex={tabIndex}
         testID={testID}
         onPress={handlePress}
         onPressIn={() => animateTo(motion.pressScale)}
@@ -74,15 +85,15 @@ export function OptionChip({
         accessibilityRole={selectionMode}
         accessibilityLabel={accessibilityLabel ?? label}
         {...selectionA11y({ checked: selected, selected, disabled })}
-        style={({ pressed }) => [
+        style={(state) => [
           styles.chip,
           compact ? styles.compact : styles.regular,
           {
             backgroundColor: selected
-              ? pressed
+              ? state.pressed
                 ? t.solidPressed
                 : t.solid
-              : pressed
+              : state.pressed || (!disabled && isHovered(state))
                 ? colors.rule
                 : colors.surfaceMuted,
           },
@@ -98,10 +109,9 @@ export function OptionChip({
           variant="label"
           color={selected ? t.onSolid : colors.text}
           numberOfLines={1}
-          adjustsFontSizeToFit={fill}
-          minimumFontScale={0.8}
+          {...fit.textProps}
           maxFontSizeMultiplier={fontScale.dense}
-          style={styles.label}
+          style={[styles.label, fit.style]}
         >
           {label}
         </Text>

@@ -1,8 +1,9 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, layout, radii, spacing, useReducedMotion } from '@/theme';
 
 import { selectionA11y } from './a11y';
+import { isHovered, useRovingRadio, webPressFeedback } from './SegmentedChoice.interaction';
 import { Text } from './Text';
 
 export interface SegmentedTab<K extends string = string> {
@@ -27,9 +28,18 @@ export function SegmentedTabs<K extends string>({
   accessibilityLabel,
   testIDPrefix,
 }: SegmentedTabsProps<K>) {
+  const reducedMotion = useReducedMotion();
+  const selectedIndex = tabs.findIndex((t) => t.key === value);
+  // Sekme listesi de ok tuşlarıyla gezilir (otomatik etkinleştirme).
+  const roving = useRovingRadio(tabs.length, selectedIndex, (i) => onChange(tabs[i].key));
   return (
-    <View style={styles.track} accessibilityRole="tablist" accessibilityLabel={accessibilityLabel}>
-      {tabs.map((tab) => {
+    <View
+      style={styles.track}
+      accessibilityRole="tablist"
+      accessibilityLabel={accessibilityLabel}
+      {...roving.groupProps}
+    >
+      {tabs.map((tab, index) => {
         const selected = tab.key === value;
         return (
           <Pressable
@@ -39,7 +49,12 @@ export function SegmentedTabs<K extends string>({
             accessibilityRole="tab"
             accessibilityLabel={tab.label}
             {...selectionA11y({ selected })}
-            style={({ pressed }) => [styles.tab, selected ? styles.selected : pressed && styles.pressed]}
+            {...roving.itemProps(index)}
+            style={(state) => [
+              styles.tab,
+              selected ? styles.selected : state.pressed ? styles.pressed : isHovered(state) && styles.hovered,
+              webPressFeedback(state.pressed, reducedMotion),
+            ]}
           >
             <Text variant="label" tone={selected ? 'default' : 'muted'} numberOfLines={1}>
               {tab.label}
@@ -72,5 +87,6 @@ const styles = StyleSheet.create({
     borderWidth: layout.hairline,
     borderColor: colors.rule,
   },
+  hovered: { backgroundColor: colors.pressedOverlay },
   pressed: { backgroundColor: colors.rule },
 });
