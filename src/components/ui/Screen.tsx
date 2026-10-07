@@ -1,4 +1,4 @@
-import { usePathname, useRouter, type Href } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import {
@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, layout, spacing } from '@/theme';
 
 import { IconButton } from './IconButton';
-import { screenParentHref } from './ScreenBack';
+import { currentWebPathname, screenParentHref } from './ScreenBack';
 import { backIconSize, desktopBarInset, useDesktopWeb } from './ScreenChrome';
 import { StickyFooter } from './StickyFooter';
 import { Text } from './Text';
@@ -81,13 +81,12 @@ export function Screen({
   children,
 }: ScreenProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const desktopWeb = useDesktopWeb();
 
   const canGoBack = router.canGoBack();
   // Web'de sayfa yenilenince/bağlantıyla açılınca geçmiş yoktur; geri, mantıksal üst ekrana gider.
-  const parentHref: Href | null = isWeb && !canGoBack ? (fallbackHref ?? screenParentHref(pathname)) : null;
+  const parentHref: Href | null = isWeb && !canGoBack ? (fallbackHref ?? screenParentHref(currentWebPathname())) : null;
   const showBack = back === undefined ? canGoBack || parentHref !== null : Boolean(back);
   const onBack =
     typeof back === 'function'

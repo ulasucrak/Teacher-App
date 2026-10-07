@@ -29,3 +29,11 @@ export function screenParentHref(pathname: string | null | undefined): string | 
   if (parent.length <= 1) return '/';
   return `/${parent.join('/')}`;
 }
+
+/**
+ * Tarayıcının şu anki yolu (web dışında boş). Yalnızca geçmiş yokken, yani sayfa bu adresle
+ * açıldığında kullanılır; o anda adres çubuğu açık ekranın kendisidir.
+ */
+export function currentWebPathname(): string {
+  return typeof window !== 'undefined' && typeof window.location?.pathname === 'string' ? window.location.pathname : '';
+}
