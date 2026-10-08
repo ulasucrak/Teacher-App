@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Icon, IconButton, Text } from '@/components/ui';
+import { Icon, IconButton, Pill, Text } from '@/components/ui';
 import { addDays, formatDayLabel, formatSessionDate, todayIso } from '@/features/sessions/date';
 import { colors, iconSize, layout, radii, spacing } from '@/theme';
 
@@ -18,8 +18,8 @@ interface DayBarProps {
 }
 
 /**
- * Gün çubuğu: önceki / sonraki gün düğmeleri ve ortada tarih (dokununca takvim açılır).
- * Bugünden sonrası seçilemez.
+ * Gün çubuğu (mockup `.day`): önceki / sonraki gün düğmeleri ve ortada tarih (dokununca takvim açılır); sağda
+ * kurşun hapta kısa bilgi ("17 işaret", "21/28"). Bugünden sonrası seçilemez (ok soluk).
  */
 export function DayBar({ value, onChange, trailing, trailingLabel, testIDPrefix = 'day' }: DayBarProps) {
   const [open, setOpen] = useState(false);
@@ -29,10 +29,10 @@ export function DayBar({ value, onChange, trailing, trailingLabel, testIDPrefix 
   return (
     <View style={styles.row}>
       <IconButton
-        icon="back"
+        icon="chevronLeft"
         accessibilityLabel="Önceki gün"
         onPress={() => onChange(addDays(value, -1))}
-        color={colors.primary}
+        color={colors.text}
         testID={`${testIDPrefix}-prev`}
       />
       <Pressable
@@ -43,7 +43,7 @@ export function DayBar({ value, onChange, trailing, trailingLabel, testIDPrefix 
         testID={`${testIDPrefix}-pick`}
         style={({ pressed }) => [styles.label, pressed && styles.pressed]}
       >
-        <Icon name="calendar" size={iconSize.md} color={colors.primary} />
+        <Icon name="calendar" size={iconSize.md} color={colors.text} />
         <Text variant="bodyStrong" numberOfLines={1} testID={`${testIDPrefix}-label`}>
           {label}
         </Text>
@@ -53,13 +53,13 @@ export function DayBar({ value, onChange, trailing, trailingLabel, testIDPrefix 
         accessibilityLabel="Sonraki gün"
         onPress={() => onChange(addDays(value, 1))}
         disabled={value >= today}
-        color={colors.primary}
+        color={colors.text}
         testID={`${testIDPrefix}-next`}
       />
       {trailing ? (
-        <Text variant="number" tone="muted" accessibilityLabel={trailingLabel} style={styles.trailing} testID={`${testIDPrefix}-trailing`}>
-          {trailing}
-        </Text>
+        <View style={styles.trailing}>
+          <Pill label={trailing} accessibilityLabel={trailingLabel} testID={`${testIDPrefix}-trailing`} />
+        </View>
       ) : null}
       <CalendarSheet
         visible={open}
@@ -85,5 +85,5 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   pressed: { backgroundColor: colors.pressedOverlay },
-  trailing: { marginLeft: 'auto', paddingRight: layout.pageX - spacing.xs },
+  trailing: { marginLeft: 'auto', paddingRight: spacing.lg - spacing.xs },
 });

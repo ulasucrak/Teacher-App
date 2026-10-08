@@ -17,6 +17,8 @@ export interface StudentEntryRowProps {
   /** Kaydedilmemiş değişiklik var mı (adın yanında küçük nokta). */
   dirty: boolean;
   disabled?: boolean;
+  /** false: hiçbir öğrencinin numarası yok; numara sütunu ayrılmaz. */
+  showNumbers?: boolean;
   onToggle: (studentId: string, optionKey: string) => void;
   onOpenNote: (studentId: string) => void;
 }
@@ -33,6 +35,7 @@ export const StudentEntryRow = memo(function StudentEntryRow({
   options,
   dirty,
   disabled,
+  showNumbers = true,
   onToggle,
   onOpenNote,
 }: StudentEntryRowProps) {
@@ -41,13 +44,15 @@ export const StudentEntryRow = memo(function StudentEntryRow({
   return (
     <View style={styles.row} testID={testID}>
       <View style={styles.head}>
-        <View style={styles.numberCol}>
-          {student.number ? (
-            <Text variant="number" tone="muted" align="right" numberOfLines={1} maxFontSizeMultiplier={1.2}>
-              {student.number}
-            </Text>
-          ) : null}
-        </View>
+        {showNumbers ? (
+          <View style={styles.numberCol}>
+            {student.number ? (
+              <Text variant="number" tone="muted" align="right" numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                {student.number}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         <Text variant="bodyStrong" numberOfLines={1} style={styles.name} testID={`${testID}-name`}>
           {student.full_name}
         </Text>
@@ -69,7 +74,7 @@ export const StudentEntryRow = memo(function StudentEntryRow({
           testID={`${testID}-note`}
         />
       </View>
-      <View style={[styles.body, !isSegmented(options) && styles.bodyWide]}>
+      <View style={[styles.body, (!isSegmented(options) || !showNumbers) && styles.bodyWide]}>
         <OptionPicker
           options={options}
           value={entry.optionKey}

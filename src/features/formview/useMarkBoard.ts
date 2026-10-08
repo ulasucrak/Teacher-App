@@ -13,7 +13,7 @@ import {
   type StudentTally,
 } from '@/features/history';
 import { sortStudents } from '@/features/sessions/students';
-import { todayIso } from '@/features/sessions/date';
+import { isIsoDate, todayIso } from '@/features/sessions/date';
 import { useRealtimeRefresh, type RealtimePayload, type RealtimeTableSpec } from '@/lib/realtime';
 import type { FormRow } from '@/types/database';
 
@@ -30,12 +30,15 @@ export interface MarkBoard {
   /** Sayıları yüklenmiş öğrenciler (okul numarası, sonra ada göre). */
   rows: StudentTally[] | null;
   loadError: string | null;
-  /** Bugün (cihaz takvimi); işaretler bu güne yazılır. */
+  /** Bugün (cihaz takvimi). */
   today: string;
+  /** İşaretlerin yazıldığı seçili gün. */
+  day: string;
+  changeDay: (day: string) => void;
   reload: () => void;
   /** Tek dokunuş = bir işaret. Sayı hemen artar; sunucu reddederse geri alınır. */
   mark: (studentId: string, optionKey: string) => void;
-  /** Öğrencinin bugünkü son işaretini geri alır. */
+  /** Öğrencinin seçili gündeki son işaretini geri alır. */
   undoStudent: (studentId: string) => Promise<void>;
   /** Geri alma bandı: en son eklenen işaret. */
   lastMark: LastMark | null;
@@ -81,6 +84,7 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
   const [ops, setOpsState] = useState<readonly PendingOp[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [today, setToday] = useState(() => todayIso());
+  const [day, setDay] = useState(today);
   const [lastMark, setLastMark] = useState<LastMark | null>(null);
   const [undoingIds, setUndoingIds] = useState<ReadonlySet<string>>(new Set());
   const requestRef = useRef(0);
@@ -90,6 +94,8 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
   const opKeyRef = useRef(0);
   const resyncRef = useRef(false);
   const todayRef = useRef(today);
+  const dayRef = useRef(day);
+  const dayEpochRef = useRef(0);
   /** Bu cihazın yazdığı işaret olayları (`markEchoKey` biçiminde). */
   const ownEchoes = useRef(new Set<string>());
   const lastRef = useRef<LastMark | null>(null);
@@ -114,6 +120,36 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
     setLastMark(value);
   }, []);
 
+  const changeDay = useCallback(
+    (next: string) => {
+      if (!isIsoDate(next) || next > todayIso() || next === dayRef.current) return;
+      dayRef.current = next;
+      // Eski güne ait yüklemeler ve yazma yanıtları yeni görünümü değiştiremez.
+      dayEpochRef.current += 1;
+      requestRef.current += 1;
+      serverRef.current = null;
+      setServerRows(null);
+      setOps([]);
+      resyncRef.current = false;
+      setLoadError(null);
+      setLast(null);
+      setUndoingIds(new Set());
+      setDay(next);
+    },
+    [setLast, setOps],
+  );
+
+  // Bugünü izleyen ekran yeni güne geçer; özellikle seçilmiş geçmiş gün korunur.
+  const syncDay = useCallback(() => {
+    const current = todayIso();
+    if (current !== todayRef.current) {
+      if (dayRef.current === todayRef.current) changeDay(current);
+      todayRef.current = current;
+      setToday(current);
+    }
+    return dayRef.current;
+  }, [changeDay]);
+
   const formId = form.id;
   const classId = form.class_id;
   const options = form.options;
@@ -129,11 +165,9 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
   }, []);
 
   const reload = useCallback(() => {
+    const day = syncDay();
     const request = ++requestRef.current;
     const startedAt = ++clockRef.current;
-    const day = todayIso();
-    todayRef.current = day;
-    setToday(day);
     setLoadError(null);
     getTallies(formId, { day })
       .then((tallies) => {
@@ -150,11 +184,15 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
       .catch((error: unknown) => {
         if (request === requestRef.current && aliveRef.current) setLoadError(historyErrorMessage(error, 'counts'));
       });
-  }, [formId, resyncIfSettled, setOps]);
+  }, [formId, resyncIfSettled, setOps, syncDay]);
 
   useEffect(() => {
     reloadRef.current = reload;
   }, [reload]);
+
+  useEffect(() => {
+    if (dayEpochRef.current > 0) reload();
+  }, [day, reload]);
 
   const addOp = useCallback(
     (studentId: string, optionKey: string, delta: 1 | -1, settled: boolean): number => {
@@ -214,12 +252,17 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
       const student = serverRef.current?.find((r) => r.studentId === studentId);
       if (!student) return;
       tapFeedback();
-      const day = todayIso();
+      const day = syncDay();
+      const epoch = dayEpochRef.current;
       const key = addOp(studentId, optionKey, 1, false);
       addMark({ formId, studentId, optionKey, markDate: day }).then(
         (saved) => {
           ownEchoes.current.add(`mark_added:${saved.id}`);
           if (!aliveRef.current) return;
+          if (epoch !== dayEpochRef.current) {
+            reloadRef.current();
+            return;
+          }
           settleOp(key);
           setLast({
             markId: saved.id,
@@ -229,36 +272,42 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
           });
         },
         (error: unknown) => {
-          if (!aliveRef.current) return;
+          if (!aliveRef.current || epoch !== dayEpochRef.current) return;
           dropOp(key);
           toast.show(historyErrorMessage(error, 'mark'), 'error');
         },
       );
-      // Gün dönmüşse "bugün" sayıları eskidir: yeni günü yükle.
-      if (day !== todayRef.current) reload();
+      // Uyku sırasında gün dönmüşse yeni günün sayılarını yükle.
+      if (!serverRef.current) reload();
     },
-    [addOp, dropOp, formId, options, reload, setLast, settleOp, toast],
+    [addOp, dropOp, formId, options, reload, setLast, settleOp, syncDay, toast],
   );
 
   const undoStudent = useCallback(
     async (studentId: string) => {
+      const day = syncDay();
+      const epoch = dayEpochRef.current;
       setUndoingIds((ids) => new Set(ids).add(studentId));
       try {
-        const removed = await undoLastMark({ formId, studentId, markDate: todayIso() });
+        const removed = await undoLastMark({ formId, studentId, markDate: day });
         if (removed) ownEchoes.current.add(`mark_removed:${removed.id}`);
         if (!aliveRef.current) return;
+        if (epoch !== dayEpochRef.current) {
+          reloadRef.current();
+          return;
+        }
         if (removed) {
           addOp(studentId, removed.option_key, -1, true);
           if (lastRef.current?.markId === removed.id) setLast(null);
           toast.show(`${optionLabel(removed.option_key, options)} geri alındı`);
         } else {
-          toast.show('Bugün geri alınacak işaret yok');
+          toast.show('Seçili günde geri alınacak işaret yok');
           reload();
         }
       } catch (error) {
-        if (aliveRef.current) toast.show(historyErrorMessage(error, 'undo'), 'error');
+        if (aliveRef.current && epoch === dayEpochRef.current) toast.show(historyErrorMessage(error, 'undo'), 'error');
       } finally {
-        if (aliveRef.current) {
+        if (aliveRef.current && epoch === dayEpochRef.current) {
           setUndoingIds((ids) => {
             const next = new Set(ids);
             next.delete(studentId);
@@ -267,10 +316,12 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
         }
       }
     },
-    [addOp, formId, options, reload, setLast, toast],
+    [addOp, formId, options, reload, setLast, syncDay, toast],
   );
 
   const undoLast = useCallback(async () => {
+    syncDay();
+    const epoch = dayEpochRef.current;
     const last = lastRef.current;
     if (!last) return;
     setLast(null);
@@ -279,17 +330,21 @@ export function useMarkBoard(form: Pick<FormRow, 'id' | 'options'> & Partial<Pic
       const removed = await removeMark(last.markId);
       if (removed) ownEchoes.current.add(`mark_removed:${last.markId}`);
       if (!aliveRef.current) return;
+      if (epoch !== dayEpochRef.current) {
+        reloadRef.current();
+        return;
+      }
       // İşaret çoktan silinmişse (satırdaki geri alma) sayı iki kez düşmesin.
       if (removed) settleOp(key);
       else dropOp(key);
     } catch (error) {
-      if (!aliveRef.current) return;
+      if (!aliveRef.current || epoch !== dayEpochRef.current) return;
       dropOp(key);
       toast.show(historyErrorMessage(error, 'undo'), 'error');
     }
-  }, [addOp, dropOp, setLast, settleOp, toast]);
+  }, [addOp, dropOp, setLast, settleOp, syncDay, toast]);
 
   const dismissLast = useCallback(() => setLast(null), [setLast]);
 
-  return { rows, loadError, today, reload, mark, undoStudent, lastMark, undoLast, dismissLast, undoingIds };
+  return { rows, loadError, today, day, changeDay, reload, mark, undoStudent, lastMark, undoLast, dismissLast, undoingIds };
 }

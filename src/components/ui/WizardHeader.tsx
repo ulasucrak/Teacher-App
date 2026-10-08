@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, layout, radii, spacing, strokes } from '@/theme';
 
-import { IconButton } from './IconButton';
+import { IconButton, IconButtonVariantContext } from './IconButton';
 import { Text } from './Text';
 
 export interface StepperProps {
@@ -62,6 +62,7 @@ export interface WizardHeaderProps extends StepperProps {
 export function WizardHeader({ title, description, steps, current, onBack, onClose, testID }: WizardHeaderProps) {
   return (
     <View style={styles.header} testID={testID}>
+      <IconButtonVariantContext.Provider value="square">
       <View style={styles.bar0}>
         <View style={styles.side}>
           {onBack ? (
@@ -77,6 +78,7 @@ export function WizardHeader({ title, description, steps, current, onBack, onClo
           ) : null}
         </View>
       </View>
+      </IconButtonVariantContext.Provider>
       <View style={styles.titles}>
         <Text variant="title" accessibilityRole="header">
           {title}
@@ -94,18 +96,18 @@ export function WizardHeader({ title, description, steps, current, onBack, onClo
 const styles = StyleSheet.create({
   stepper: { gap: spacing.xs + spacing.xxs },
   bars: { flexDirection: 'row', gap: spacing.xs },
-  bar: { flex: 1, height: layout.stepBar, borderRadius: radii.full },
+  bar: { flex: 1, height: layout.stepBar, borderRadius: radii.xs / 2, borderWidth: strokes.thin, borderColor: colors.outline },
   barDone: { backgroundColor: colors.text },
-  barTodo: { backgroundColor: colors.rule },
+  barTodo: { backgroundColor: colors.surface },
   caption: { flexDirection: 'row', justifyContent: 'space-between' },
   header: { paddingBottom: spacing.lg },
   bar0: {
     minHeight: layout.headerHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
-  side: { width: layout.minTouch, flexDirection: 'row' },
+  side: { width: layout.minTouch + spacing.xs, flexDirection: 'row' },
   sideRight: { justifyContent: 'flex-end' },
   stepperWrap: { flex: 1, paddingHorizontal: spacing.md, paddingTop: spacing.md },
   titles: { paddingHorizontal: layout.pageX, paddingTop: spacing.lg, gap: spacing.sm },

@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { colors, iconSize, layout, radii, spacing } from '@/theme';
+import { colors, iconSize, layout, radii, spacing, strokes } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Sheet } from './Sheet';
@@ -112,15 +112,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     marginHorizontal: -spacing.sm,
     paddingHorizontal: spacing.sm,
-    borderRadius: radii.sm,
   },
   divider: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
-  pressed: { backgroundColor: colors.surfaceMuted },
+  // Basılıyken yuvarlak vurgu; ayraç düz kalsın diye yarıçap yalnızca burada (ayraç basılıyken gizlenir).
+  pressed: { backgroundColor: colors.surfaceMuted, borderRadius: radii.sm, borderBottomColor: 'transparent' },
   disabled: { opacity: 0.45 },
   iconBox: {
-    width: layout.minTouch - spacing.sm,
-    height: layout.minTouch - spacing.sm,
+    width: layout.iconTile,
+    height: layout.iconTile,
     borderRadius: radii.sm,
+    borderWidth: strokes.thin,
+    borderColor: colors.outline,
     backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',

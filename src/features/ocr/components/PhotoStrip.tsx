@@ -1,7 +1,7 @@
 import { Image, Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { Text } from '@/components/ui';
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, layout, radii, spacing, strokes } from '@/theme';
 
 import type { ImportPhoto } from '../ui/useStudentCollector';
 
@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
     width: THUMB_W,
     height: THUMB_H,
     borderRadius: radii.xs,
-    borderWidth: layout.hairline,
-    borderColor: colors.rule,
+    borderWidth: strokes.thin,
+    borderColor: colors.outline,
     backgroundColor: colors.surfaceMuted,
   },
 });

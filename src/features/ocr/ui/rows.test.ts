@@ -42,9 +42,27 @@ describe('parsePastedList', () => {
   });
 });
 
+describe('parsePastedList — e-Okul biçimleri', () => {
+  it('ardışık okul numaraları korunur', () => {
+    expect(parsePastedList('1 Ali Yılmaz\n2 Ayşe Kaya').map((s) => [s.number, s.fullName])).toEqual([
+      ['1', 'Ali Yılmaz'],
+      ['2', 'Ayşe Kaya'],
+    ]);
+    expect(parsePastedList('123\tAli Yılmaz\n124\tAyşe Kaya').map((s) => s.number)).toEqual(['123', '124']);
+  });
+
+  it('"1. Ali" liste sırasıdır', () => {
+    expect(parsePastedList('1. Ali Yılmaz\n2. Ayşe Kaya').map((s) => s.number)).toEqual([null, null]);
+  });
+});
+
 describe('parseTypedLine', () => {
   it('splits number and name', () => {
     expect(parseTypedLine('7 can su', makeId)).toMatchObject({ number: '7', fullName: 'Can Su', include: true });
+  });
+
+  it('keeps a bare number even when it is 1', () => {
+    expect(parseTypedLine('1 Ali Yılmaz', makeId)).toMatchObject({ number: '1', fullName: 'Ali Yılmaz' });
   });
 
   it('ignores empty input', () => {

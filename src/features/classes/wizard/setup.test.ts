@@ -99,6 +99,11 @@ describe('runClassSetup', () => {
 describe('presetFormInput', () => {
   it('copies preset options', () => {
     expect(presetFormInput('sozlu')).toMatchObject({ title: 'Sözlü', subject: null, description: null });
-    expect(presetFormInput('sozlu')?.options).toHaveLength(5);
+    expect(presetFormInput('sozlu')?.mode).toBe('daily');
+    expect(presetFormInput('sozlu')?.options).toEqual([
+      { key: 'arti', label: 'Artı', tone: 'positive', score: 1 },
+      { key: 'yarim_arti', label: 'Yarım artı', tone: 'positive', score: 0.5 },
+      { key: 'eksi', label: 'Eksi', tone: 'negative', score: -1 },
+    ]);
   });
 });

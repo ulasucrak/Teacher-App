@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yön 3 · Pano ve Damga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
+<style>
+/* ---- Sayfa çerçevesi (mockup dışı) ---- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --c-bg: #ECEEF2; --c-ink: #1D2129; --c-muted: #555C6B; --c-card: #FFFFFF; --c-rule: #D6DAE1; --c-link: #2446B0; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--c-bg); color: var(--c-ink); font-family: 'Atkinson Hyperlegible Next', system-ui, sans-serif; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+.page { max-width: 1480px; margin: 0 auto; padding: 28px 16px 96px; }
+a { color: var(--c-link); }
+.back-link { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; min-height: 44px; }
+.back-link:hover { text-decoration: underline; }
+.back-link:focus-visible, .seg button:focus-visible { outline: 3px solid var(--c-link); outline-offset: 2px; border-radius: 8px; }
+.intro { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: start; margin-top: 8px; }
+.kicker { color: var(--c-muted); font-weight: 600; }
+.intro h1 { font-family: 'Bricolage Grotesque', 'Atkinson Hyperlegible Next', sans-serif; font-weight: 800; font-size: clamp(34px, 5vw, 52px); line-height: 1.04; letter-spacing: -0.02em; margin: 4px 0 14px; text-wrap: balance; }
+.lede { font-size: 18px; max-width: 64ch; }
+.lede + .lede { margin-top: 10px; }
+.kit { background: var(--c-card); border-radius: 20px; padding: 20px; display: grid; gap: 18px; border: 1px solid var(--c-rule); }
+.kit h3 { font-size: 13px; color: var(--c-muted); font-weight: 600; margin-bottom: 8px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.sw { display: grid; gap: 4px; font-size: 12px; color: var(--c-muted); width: 76px; }
+.sw i { display: block; height: 44px; border-radius: 12px; border: 1px solid rgba(0,0,0,.08); }
+.sw b { color: var(--c-ink); font-size: 13px; }
+.type-sample { display: grid; gap: 2px; }
+.changes { padding-left: 18px; display: grid; gap: 4px; font-size: 15px; }
+section.block { margin-top: 56px; }
+section.block > h2 { font-family: 'Bricolage Grotesque', 'Atkinson Hyperlegible Next', sans-serif; font-weight: 700; font-size: 28px; line-height: 1.15; letter-spacing: -0.01em; }
+.sub { color: var(--c-muted); margin: 6px 0 20px; max-width: 80ch; }
+.phones { display: flex; flex-wrap: wrap; gap: 28px 32px; justify-content: center; }
+.dev { display: grid; justify-items: center; }
+.dev-cap { color: var(--c-muted); font-size: 15px; margin-top: 12px; text-align: center; }
+.fit { position: relative; }
+.fit > .fit-in { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+.phone-bezel { width: 414px; height: 868px; background: #15171C; border-radius: 60px; padding: 12px; box-shadow: 0 30px 60px -20px rgba(20,24,40,.35), 0 0 0 1px #2A2E36 inset; }
+.phone-screen { position: relative; width: 390px; height: 844px; border-radius: 48px; overflow: hidden; background: #fff; }
+.home-ind { position: absolute; bottom: 8px; left: 50%; width: 134px; height: 5px; margin-left: -67px; border-radius: 3px; background: #1D2129; z-index: 50; }
+.wide { width: 1440px; height: 900px; border-radius: 14px; overflow: hidden; position: relative; background: #fff; box-shadow: 0 30px 70px -30px rgba(20,24,40,.45), 0 0 0 1px rgba(20,24,40,.08); }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; background: var(--c-card); border: 1px solid var(--c-rule); border-radius: 999px; padding: 4px; margin-bottom: 16px; }
+.seg button { font: inherit; font-weight: 600; font-size: 15px; border: 0; background: none; color: var(--c-muted); padding: 8px 16px; min-height: 44px; border-radius: 999px; cursor: pointer; }
+.seg button:hover { color: var(--c-ink); }
+.seg button[aria-pressed="true"] { background: var(--c-ink); color: #fff; }
+.seg button.play-btn { color: var(--c-link); }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 24px; }
+.note { background: var(--c-card); border: 1px solid var(--c-rule); border-radius: 16px; padding: 16px 18px; }
+.note h3 { font-size: 16px; margin-bottom: 6px; }
+.note p, .note li { font-size: 15px; color: #2E333D; }
+.note ul { padding-left: 18px; display: grid; gap: 4px; }
+.frames { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-top: 32px; }
+.frame { display: grid; justify-items: center; gap: 8px; }
+.frame-cap { font-size: 14px; color: var(--c-muted); }
+.frame-box { width: 260px; height: 268px; display: grid; place-items: center; border-radius: 16px; position: relative; overflow: hidden; }
+footer.foot { margin-top: 64px; color: var(--c-muted); font-size: 14px; }
+@media (max-width: 900px) { .intro { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; } }
+
+
+/* ================= Yön 3: Pano ve Damga ================= */
+.p {
+  --paper: #FFFFFF; --ink: #141414; --muted: #4A4A4A; --hair: #E2E2E2;
+  --yellow: #FFD23F; --green: #39D98A; --greenDeep: #0E6B3E; --red: #FF6B5B; --blue: #7B9BFF;
+  --mint: #B8F0D4; --sky: #A9C1FF; --lilac: #CDB8FF; --orange: #FFB067; --pink: #FF9BC8;
+  --board: #2D3A8C; --boardDeep: #121848; --stamp: #6B2FD6;
+  --hard: 4px 4px 0 var(--ink); --hard3: 3px 3px 0 var(--ink); --hard2: 2px 2px 0 var(--ink);
+  --head: 'Bricolage Grotesque', sans-serif; --text: 'Atkinson Hyperlegible Next', sans-serif;
+  font-family: var(--text); color: var(--ink); font-size: 17px; line-height: 24px;
+}
+.p .scr { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--paper); overflow: hidden; }
+.p .sb { height: 50px; flex: none; padding: 16px 30px 0 34px; display: flex; justify-content: space-between; align-items: center; font: 600 16px/1 -apple-system, 'SF Pro Text', system-ui, sans-serif; color: var(--ink); }
+.p .sb-r { display: flex; gap: 6px; align-items: center; }
+.p .bar { height: 62px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+.p .bar.ruled { border-bottom: 2.5px solid var(--ink); }
+.p .bar-title { font: 800 21px/1 var(--head); letter-spacing: -0.01em; }
+.p .sq { width: 46px; height: 46px; border-radius: 12px; border: 2.5px solid var(--ink); background: #fff; display: grid; place-items: center; color: var(--ink); flex: none; box-shadow: var(--hard2); }
+.p .av { width: 38px; height: 38px; border-radius: 10px; border: 2px solid var(--ink); background: var(--avc); display: grid; place-items: center; font: 800 14px/1 var(--text); flex: none; }
+.p .blk { border: 2.5px solid var(--ink); box-shadow: var(--hard); }
+.p .sticker { position: absolute; }
+
+/* Sınıflarım */
+.p .lt { display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 20px; position: relative; }
+.p .t-title { font: 800 44px/46px var(--head); letter-spacing: -0.035em; }
+.p .t-sub { color: var(--muted); font-size: 17px; margin-top: 4px; }
+.p .cls-list { display: grid; gap: 16px; padding: 22px 20px 20px 16px; }
+.p .cls { display: flex; align-items: stretch; border-radius: 16px; overflow: hidden; background: #fff; min-height: 86px; }
+.p .cls .tagb { width: 90px; background: var(--cc); border-right: 2.5px solid var(--ink); display: grid; place-items: center; font: 800 30px/1 var(--head); letter-spacing: -0.03em; flex: none; }
+.p .cls .mid { flex: 1; padding: 14px 12px; display: grid; align-content: center; min-width: 0; }
+.p .cls .mid b { font-weight: 800; font-size: 17px; }
+.p .cls .mid span, .p .muted { font-size: 15px; color: var(--muted); }
+.p .cls .n { display: grid; align-content: center; text-align: right; padding-right: 4px; }
+.p .cls .n b { font: 800 24px/26px var(--head); }
+.p .cls .n span { font-size: 13px; color: var(--muted); }
+.p .cls .chev { display: grid; place-items: center; padding: 0 10px 0 4px; }
+.p .fab { position: absolute; right: 22px; bottom: 44px; height: 58px; padding: 0 24px 0 18px; border-radius: 16px; background: var(--yellow); display: flex; align-items: center; gap: 8px; font: 800 18px/1 var(--text); }
+
+/* Sınıf */
+.p .hero { margin: 4px 20px 0 16px; border-radius: 20px; background: var(--mint); padding: 18px 20px 18px; position: relative; box-shadow: 5px 5px 0 var(--ink); }
+.p .hero h3 { font: 800 80px/0.9 var(--head); letter-spacing: -0.05em; }
+.p .hero p { font-weight: 800; font-size: 18px; margin-top: 6px; }
+.p .hero .foot { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.p .hero .avs { display: flex; }
+.p .hero .avs .av { width: 34px; height: 34px; margin-left: -6px; font-size: 12px; }
+.p .hero .avs .av:first-child { margin-left: 0; }
+.p .blackpill { background: var(--ink); color: #fff; border-radius: 999px; padding: 6px 14px; font-weight: 800; font-size: 15px; }
+.p .tape { position: absolute; width: 74px; height: 22px; background: var(--tc); opacity: .92; transform: rotate(var(--tr)); }
+.p .sec { display: flex; align-items: center; justify-content: space-between; padding: 26px 20px 12px 18px; }
+.p .sec b { font: 800 26px/1 var(--head); letter-spacing: -0.02em; }
+.p .sec .cnt { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: #fff; font: 800 15px/1 var(--head); margin-left: 8px; vertical-align: 4px; }
+.p .btn-s { height: 44px; padding: 0 14px 0 10px; border-radius: 12px; background: #fff; display: flex; align-items: center; gap: 4px; font-weight: 800; font-size: 16px; box-shadow: var(--hard3); border: 2.5px solid var(--ink); }
+.p .fl { display: grid; gap: 12px; padding: 0 20px 0 16px; }
+.p .fcard { display: flex; align-items: center; gap: 14px; background: #fff; border-radius: 14px; padding: 12px 4px 12px 12px; min-height: 74px; box-shadow: var(--hard3); border: 2.5px solid var(--ink); }
+.p .icb { width: 46px; height: 46px; border-radius: 12px; border: 2px solid var(--ink); background: var(--cc); display: grid; place-items: center; flex: none; }
+.p .fmid { flex: 1; min-width: 0; }
+.p .fmid b { display: block; font-weight: 800; font-size: 17px; }
+.p .fmid span { display: block; font-size: 15px; color: var(--muted); line-height: 20px; }
+.p .badge { font-size: 13px; font-weight: 800; padding: 2px 8px; border-radius: 8px; background: var(--sky); border: 1.5px solid var(--ink); }
+.p .ib { width: 44px; height: 44px; display: grid; place-items: center; flex: none; }
+
+/* Artı / eksi */
+.p .tabs-row { display: flex; gap: 10px; padding: 14px 16px 6px; align-items: center; }
+.p .tabs { flex: 1; display: flex; border: 2.5px solid var(--ink); border-radius: 12px; overflow: hidden; }
+.p .tabs span { flex: 1; text-align: center; padding: 9px 0; font-weight: 800; font-size: 16px; }
+.p .tabs .on { background: var(--ink); color: #fff; }
+.p .cmb { height: 46px; padding: 0 14px 0 10px; border-radius: 12px; background: var(--lilac); display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; border: 2.5px solid var(--ink); box-shadow: var(--hard3); }
+.p .day { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 6px 6px; }
+.p .day-c { display: flex; align-items: center; gap: 4px; font-weight: 800; font-size: 17px; }
+.p .day-c .ib.off { color: #9A9A9A; }
+.p .search { margin: 2px 16px 8px; height: 48px; border-radius: 12px; border: 2.5px solid var(--ink); display: flex; align-items: center; gap: 10px; padding: 0 14px; color: var(--muted); flex: none; }
+.p .mrow { display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 16px; min-height: 72px; border-bottom: 2px solid var(--hair); }
+.p .mno { width: 34px; font: 700 15px/20px var(--text); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; flex: none; }
+.p .mname { flex: 1; min-width: 0; }
+.p .mname b { display: block; font-weight: 800; font-size: 17px; }
+.p .mname span { display: flex; align-items: center; gap: 3px; font-size: 14px; color: var(--muted); line-height: 19px; }
+.p .mname .g { color: var(--greenDeep); font-weight: 800; }
+.p .ctr { display: flex; align-items: center; gap: 4px; flex: none; }
+.p .cb { width: 44px; height: 44px; border-radius: 12px; border: 2.5px solid var(--ink); display: grid; place-items: center; }
+.p .cb.minus { background: #fff; }
+.p .cb.plus { background: var(--green); box-shadow: var(--hard2); }
+.p .net { min-width: 44px; text-align: center; font: 800 22px/1 var(--head); }
+.p .net.z { color: #8A8A8A; }
+.p .toast { position: absolute; left: 16px; right: 16px; bottom: 34px; background: var(--ink); color: #fff; border-radius: 14px; height: 58px; display: flex; align-items: center; padding: 0 8px 0 18px; gap: 10px; font-weight: 800; z-index: 5; box-shadow: 4px 4px 0 var(--yellow); }
+.p .toast .grow { flex: 1; }
+.p .toast .act { color: var(--yellow); padding: 0 12px; height: 44px; display: flex; align-items: center; }
+
+/* Laptop */
+.p .browser { height: 40px; background: #E6E6E6; display: flex; align-items: flex-end; gap: 8px; padding: 0 16px; }
+.p .dots { display: flex; gap: 8px; align-self: center; margin-right: 12px; }
+.p .dots i { width: 12px; height: 12px; border-radius: 50%; background: #C4C4C4; display: block; }
+.p .btab { height: 32px; background: #fff; border-radius: 10px 10px 0 0; display: flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 13px; font-weight: 700; }
+.p .appbar { height: 68px; background: #fff; border-bottom: 2.5px solid var(--ink); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
+.p .brand { display: flex; gap: 12px; align-items: center; font: 800 23px/1 var(--head); letter-spacing: -0.02em; }
+.p .logo { width: 40px; height: 40px; border-radius: 10px; background: var(--yellow); border: 2.5px solid var(--ink); display: grid; place-items: center; flex: none; }
+.p .who { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 15px; }
+.p .dotbg { position: absolute; top: 108px; bottom: 0; left: 0; right: 0; background-color: #F6F5F2; background-image: radial-gradient(#CFCCC4 1.3px, transparent 1.4px); background-size: 24px 24px; }
+.p .sheet { position: absolute; left: 50%; margin-left: -360px; width: 720px; top: 28px; bottom: -4px; border: 2.5px solid var(--ink); border-radius: 22px 22px 0 0; box-shadow: 6px 0 0 var(--ink); overflow: hidden; background: #fff; }
+.p .sheet .fab { right: 28px; bottom: 28px; }
+.p .sheet .toast { bottom: 24px; left: 24px; right: 24px; }
+
+/* Sınıf modu: mavi pano üstünde kâğıt kartlar */
+.p .cm { position: absolute; inset: 0; background: var(--board); display: flex; flex-direction: column; overflow: hidden; }
+.p .cm-top { height: 86px; flex: none; display: flex; align-items: center; padding: 0 24px; gap: 16px; }
+.p .cm-title { font: 800 32px/1 var(--head); color: #fff; letter-spacing: -0.02em; }
+.p .chip { height: 38px; padding: 0 14px; border-radius: 10px; background: var(--mint); border: 2.5px solid var(--ink); font: 800 19px/1 var(--head); display: flex; align-items: center; }
+.p .cm-day { margin-left: 8px; display: flex; align-items: center; background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; height: 50px; padding: 0 2px; font-weight: 800; font-size: 18px; gap: 6px; }
+.p .cm-day .ib { width: 42px; height: 42px; }
+.p .cm-day .ib.off { color: #9A9A9A; }
+.p .total { margin-left: auto; height: 58px; display: flex; align-items: center; gap: 10px; background: var(--yellow); border: 2.5px solid var(--ink); border-radius: 14px; padding: 0 18px 0 12px; box-shadow: 4px 4px 0 var(--boardDeep); }
+.p .total b { font: 800 34px/1 var(--head); letter-spacing: -0.02em; display: inline-block; }
+.p .total span { font-weight: 800; font-size: 16px; line-height: 18px; }
+.p .wbtn { height: 52px; min-width: 52px; padding: 0 16px; border-radius: 12px; background: #fff; border: 2.5px solid var(--ink); display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 17px; box-shadow: 4px 4px 0 var(--boardDeep); }
+.p .cm-grid { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr)); gap: 18px 16px; padding: 10px 28px 16px 24px; }
+.p .tile { background: #fff; border: 2.5px solid var(--ink); border-radius: 14px; box-shadow: 5px 5px 0 var(--boardDeep); padding: 14px 12px 12px 14px; display: flex; flex-direction: column; position: relative; min-width: 0; }
+.p .tile .tape { top: -12px; left: 50%; margin-left: -32px; width: 64px; height: 20px; }
+.p .t-head { display: flex; align-items: flex-start; gap: 6px; }
+.p .t-name { flex: 1; min-width: 0; }
+.p .t-name b { display: block; font: 800 26px/28px var(--head); letter-spacing: -0.02em; }
+.p .t-name span { display: block; font-size: 15px; color: var(--muted); line-height: 19px; }
+.p .t-score { width: 50px; height: 50px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; font: 800 21px/1 var(--head); flex: none; margin-top: -2px; margin-right: -2px; }
+.p .t-score.z, .p .t-score.n { background: #fff; color: var(--ink); border: 2.5px solid var(--ink); }
+.p .t-stick { display: flex; gap: 2px; margin-top: 6px; height: 20px; align-items: center; }
+.p .t-act { margin-top: auto; display: flex; gap: 8px; }
+.p .t-minus { width: 46px; height: 46px; border-radius: 12px; border: 2.5px solid var(--ink); background: #fff; display: grid; place-items: center; flex: none; }
+.p .t-plus { flex: 1; height: 46px; border-radius: 12px; border: 2.5px solid var(--ink); background: #fff; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 18px; box-shadow: var(--hard2); }
+.p .t-plus .pc { width: 26px; height: 26px; border-radius: 50%; background: var(--green); border: 2px solid var(--ink); display: grid; place-items: center; }
+.p .cm-bot { height: 96px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 28px 8px 24px; }
+.p .strip { flex: 1; height: 66px; display: flex; align-items: center; gap: 14px; padding: 0 22px 0 14px; color: #fff; font: 700 22px/1 var(--head); }
+.p .strip.cele { background: var(--yellow); color: var(--ink); border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 5px 5px 0 var(--boardDeep); font: 800 32px/1 var(--head); letter-spacing: -0.02em; }
+.p .strip .seal { width: 46px; height: 46px; border-radius: 50%; border: 3px solid var(--stamp); color: var(--stamp); display: grid; place-items: center; background: #fff; transform: rotate(-12deg); flex: none; }
+.p .strip .s-plus { margin-left: auto; background: var(--ink); color: #fff; border-radius: 999px; padding: 8px 16px; font: 800 24px/1 var(--head); }
+
+/* Kutlama: "Aferin" damgası */
+.p .tile.cele { background: #F2FFF8; }
+.p .tile.cele .t-plus { background: var(--green); }
+.p .stamp { position: absolute; right: 4px; bottom: 2px; width: 108px; height: 108px; border-radius: 50%; border: 5px solid var(--stamp); color: var(--stamp); display: grid; place-items: center; transform: rotate(-14deg); opacity: .94; pointer-events: none; z-index: 3; background: rgba(255,255,255,.72); }
+.p .stamp::before { content: ''; position: absolute; inset: 5px; border-radius: 50%; border: 2px solid var(--stamp); }
+.p .stamp .s-in { display: grid; justify-items: center; line-height: 1; gap: 2px; }
+.p .stamp .s-word { font: 800 13px/1 var(--text); letter-spacing: .14em; }
+.p .stamp .s-num { font: 800 30px/1 var(--head); letter-spacing: -0.02em; }
+.p .speck { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: var(--stamp); opacity: .8; }
+.p .new-stick { display: inline-flex; }
+.p .play .stamp, .p .freeze .stamp { animation: p-stamp 380ms cubic-bezier(.2,.9,.3,1.25) both; animation-delay: calc(0ms - var(--t, 0ms)); }
+.p .play .speck, .p .freeze .speck { animation: p-speck 420ms ease-out both; animation-delay: calc(170ms - var(--t, 0ms)); }
+.p .play .tile.cele, .p .freeze .tile.cele { animation: p-thud 300ms ease-out both; animation-delay: calc(150ms - var(--t, 0ms)); }
+.p .play .tile.cele .t-score, .p .freeze .tile.cele .t-score { animation: p-bump 420ms cubic-bezier(.34,1.56,.64,1) both; animation-delay: calc(260ms - var(--t, 0ms)); }
+.p .play .new-stick, .p .freeze .new-stick { animation: p-stick 420ms cubic-bezier(.34,1.56,.64,1) both; animation-delay: calc(420ms - var(--t, 0ms)); }
+.p .play .strip.cele, .p .freeze .strip.cele { animation: p-strip 360ms cubic-bezier(.2,.9,.3,1.2) both; animation-delay: calc(120ms - var(--t, 0ms)); }
+.p .play .total b, .p .freeze .total b { animation: p-bump 420ms cubic-bezier(.34,1.56,.64,1) both; animation-delay: calc(480ms - var(--t, 0ms)); }
+.p .freeze * { animation-play-state: paused !important; }
+@keyframes p-stamp { 0% { opacity: 0; transform: rotate(-34deg) scale(2.6); } 45% { opacity: .94; transform: rotate(-12deg) scale(.92); } 100% { opacity: .94; transform: rotate(-14deg) scale(1); } }
+@keyframes p-speck { 0% { opacity: 0; transform: scale(0); } 40% { opacity: .9; transform: scale(1.3); } 100% { opacity: .8; transform: scale(1); } }
+@keyframes p-thud { 0% { transform: none; box-shadow: 5px 5px 0 var(--boardDeep); } 35% { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--boardDeep); } 100% { transform: none; box-shadow: 5px 5px 0 var(--boardDeep); } }
+@keyframes p-bump { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
+@keyframes p-stick { 0% { transform: scale(0) rotate(-60deg); } 100% { transform: none; } }
+@keyframes p-strip { from { opacity: 0; transform: translateY(14px) rotate(-1deg); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <a class="back-link" href="index.html">&larr; Tüm yönler</a>
+  <div class="intro">
+    <div>
+      <p class="kicker">Yön 3 / 3 · Sınıf panosundan</p>
+      <h1>Pano ve Damga</h1>
+      <p class="lede">Sınıfın mantar panosu ve öğretmenin mor mürekkepli "Aferin" damgası. Kalın kurşun çerçeveler, düz ve canlı el işi kâğıdı renkleri, sert gölgeler, posterden fırlamış iri başlıklar. Bulanıklık ve degrade yok; her şey net çizgiyle ayrılıyor.</p>
+      <p class="lede">Sınıf modunda mavi panoya bantla tutturulmuş kâğıt kartlar duruyor. Artı verilince karta mor bir damga basılıyor. Çocukların defterinden tanıdığı bir ödül bu. Kalın çerçeve ve koyu pano projeksiyonda soluklaşmıyor.</p>
+    </div>
+    <aside class="kit" aria-label="Renk ve yazı">
+      <div>
+        <h3>Renkler</h3>
+        <div class="swatches">
+          <span class="sw"><i style="background:#FFFFFF"></i><b>Kâğıt</b>#FFFFFF</span>
+          <span class="sw"><i style="background:#141414"></i><b>Kurşun</b>#141414</span>
+          <span class="sw"><i style="background:#FFD23F"></i><b>Ana eylem</b>#FFD23F</span>
+          <span class="sw"><i style="background:#2D3A8C"></i><b>Pano</b>#2D3A8C</span>
+          <span class="sw"><i style="background:#6B2FD6"></i><b>Damga</b>#6B2FD6</span>
+          <span class="sw"><i style="background:#39D98A"></i><b>Artı</b>#39D98A</span>
+          <span class="sw"><i style="background:#B8F0D4"></i><b>Nane</b>#B8F0D4</span>
+          <span class="sw"><i style="background:#CDB8FF"></i><b>Lila</b>#CDB8FF</span>
+        </div>
+      </div>
+      <div class="type-sample">
+        <h3>Yazı</h3>
+        <span style="font:800 30px/1.05 'Bricolage Grotesque';letter-spacing:-0.03em">Bricolage 800: poster başlık</span>
+        <span style="font:400 17px/1.4 'Atkinson Hyperlegible Next'">Atkinson Hyperlegible Next: ad, metin, okul no 104</span>
+      </div>
+      <div>
+        <h3>Uygulama maliyeti: orta</h3>
+        <ul class="changes">
+          <li>Yazı tipleri aynı kalır, yalnız Bricolage 800 ağırlığı eklenir. Renk, kenar ve sert gölge token'ları değişir.</li>
+          <li>Sert gölge RN'de bulanıksız <code>boxShadow</code> (ya da kaydırılmış bir arka kutu) ile yapılır. Yalnız web'deki noktalı zemin bir görsel ister.</li>
+          <li>Damga düz View ve metinle kurulur, ek kütüphane gerekmez.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+
+  <section class="block">
+    <h2>Öğretmen: telefon (390 px)</h2>
+    <p class="sub">Ekranlar ve akış aynı. Sınıfın adı renkli bir kâğıt bloğunda, formlar çerçeveli kartlarda. Artı / eksi satırı tek satırlık sayaç. Ana eylem sarı ve ekranda yine bir kez.</p>
+    <div class="phones" id="phones"></div>
+  </section>
+
+  <section class="block">
+    <h2>Öğretmen: laptop</h2>
+    <p class="sub">720 px sütun, noktalı defter zemini üstünde kalın çerçeveli bir kâğıt gibi duruyor.</p>
+    <div class="seg" data-group="lap" role="group" aria-label="Laptop ekranı">
+      <button type="button" data-show="classes" aria-pressed="true">Sınıflarım</button>
+      <button type="button" data-show="class" aria-pressed="false">Sınıf</button>
+      <button type="button" data-show="marks" aria-pressed="false">Artı / eksi</button>
+    </div>
+    <div class="host" id="laptop"></div>
+  </section>
+
+  <section class="block">
+    <h2>Sınıf modu: laptop 1440×900</h2>
+    <p class="sub">Mavi pano, bantla tutturulmuş 28 kâğıt kart (7×4, kaydırma yok). Kartta ad, siyah puan dairesi, bugünün yıldız çıkartmaları ve iki düğme var. Arka sıradan okunması gereken her şey en az 26 px ve kalın.</p>
+    <div class="seg" data-group="cm" role="group" aria-label="Sınıf modu durumu">
+      <button type="button" data-show="idle" aria-pressed="true">Boşta</button>
+      <button type="button" data-show="cele" aria-pressed="false">Artı verildi</button>
+      <button type="button" class="play-btn" data-action="playCele">Kutlamayı oynat</button>
+    </div>
+    <div class="host" id="classroom"></div>
+    <div class="frames p" id="frames"></div>
+    <div class="notes">
+      <div class="note"><h3>Kutlama (yalnız artı verilen kart)</h3><p>0–380 ms: mor "Aferin +1" damgası yukarıdan inip karta basılır, kart "küt" diye 3 px çöker, mürekkep damlaları belirir. 260 ms: puan yaylanır. 420 ms: yeni yıldız çıkartması yapışır. Alt çubukta sarı kâğıt şerit: "Kerem, emeğine sağlık".</p></div>
+      <div class="note"><h3>Eksi</h3><p>Damga ve renk değişimi yok. Kartın gölgesi 1 sn kısalır, alt çubukta beyaz yazıyla küçük not çıkar. Panodaki toplam yalnız artıları sayar.</p></div>
+      <div class="note"><h3>Öğretmeni yavaşlatmaz</h3><ul><li>Damga dokunmayı engellemez. Aynı karta yeniden basılınca yeni damga eskisinin yerini alır.</li><li>"Hareketi azalt" açıksa damga düşmez, son hâliyle belirir.</li><li>Sözlü formunda "½" düğmesi "−"nin yanına gelir.</li></ul></div>
+    </div>
+  </section>
+
+  <footer class="foot">Ölçülen kontrastlar (WCAG): kurşun/beyaz 18.9:1 · beyaz/pano 10.0:1 · kurşun/sarı 12.8:1 · kurşun/artı yeşili 10.1:1 · damga moru/beyaz 6.99:1 · koyu yeşil/beyaz 6.58:1 · kurşun/lila 10.4:1. Durum hiçbir yerde yalnız renkle verilmiyor: + / − işareti, sayı ve çıkartma her zaman var.</footer>
+</main>
+
+<script>
+/* ---- Ortak veri, ikonlar ve yardımcılar (her yön dosyasında aynı) ---- */
+// [ad, soyad, okul no, net (birikimli), bugün artı, bugün eksi] — uydurma adlar
+const STUDENTS = [
+  ['Ayşe', 'Yılmaz', 104, 5, 2, 0], ['Mehmet', 'Kaya', 112, 3, 1, 0], ['Zeynep', 'Demir', 118, 4, 1, 0],
+  ['Emir', 'Çelik', 121, -1, 0, 1], ['Elif', 'Şahin', 127, 2, 0, 0], ['Yusuf', 'Aydın', 133, 1, 1, 0],
+  ['Defne', 'Arslan', 140, 6, 2, 0], ['Ömer', 'Koç', 146, 2, 1, 0], ['Ecrin', 'Doğan', 152, 0, 0, 0],
+  ['Alparslan', 'Kurt', 159, 3, 0, 0], ['Asel', 'Öztürk', 163, 1, 0, 0], ['Kerem', 'Aksoy', 170, 2, 0, 0],
+  ['Nehir', 'Polat', 176, 4, 1, 0], ['Miraç', 'Erdem', 181, 0, 0, 0], ['Duru', 'Yıldız', 188, 3, 1, 0],
+  ['Eymen', 'Güler', 194, 1, 0, 0], ['Azra', 'Korkmaz', 201, 2, 1, 0], ['Göktuğ', 'Tekin', 207, 0, 0, 1],
+  ['Masal', 'Uçar', 213, 5, 1, 0], ['Çınar', 'Bulut', 219, 1, 0, 0], ['İpek', 'Karaca', 224, 2, 1, 0],
+  ['Aras', 'Şimşek', 230, 0, 0, 0], ['Lina', 'Ateş', 236, 3, 0, 0], ['Poyraz', 'Özkan', 241, 1, 1, 0],
+  ['Hiranur', 'Kılıç', 247, 2, 0, 0], ['Bora', 'Yavuz', 252, 0, 0, 0], ['Eslem', 'Turan', 258, 4, 1, 0],
+  ['Kuzey', 'Acar', 263, 1, 0, 0],
+].map(([first, last, no, net, plus, minus], i) => ({ i, first, last, no, net, plus, minus }));
+
+/** Artı verilen öğrenci (kutlama karesi): Kerem Aksoy. */
+const CELE = 11;
+const TODAY_PLUS = STUDENTS.reduce((s, x) => s + x.plus, 0);
+const TODAY_MINUS = STUDENTS.reduce((s, x) => s + x.minus, 0);
+
+const CLASSES = [
+  { name: '5/B', ders: 'Matematik', count: 28, forms: 4, c: 'pos' },
+  { name: '6/A', ders: 'Matematik', count: 31, forms: 3, c: 'pen' },
+  { name: '7/C', ders: 'Matematik', count: 27, forms: 3, c: 'mor' },
+  { name: '8/D', ders: 'Matematik', count: 29, forms: 2, c: 'warn' },
+];
+
+const FORMS = [
+  { title: 'Yoklama', icon: 'checklist', c: 'pos', sub: 'Bugün kaydedildi', state: 'done' },
+  { title: 'Artı / eksi', icon: 'plusminus', c: 'pen', sub: 'Son işaret: Bugün', badge: 'Birikimli', state: 'live' },
+  { title: 'Sözlü', icon: 'speech', c: 'mor', sub: 'Dün kaydedildi', state: 'old' },
+  { title: 'Ödev kontrolü', icon: 'book', c: 'warn', sub: 'Henüz kayıt yok', state: 'none' },
+];
+
+const tr = (s) => s.toLocaleUpperCase('tr-TR');
+const initials = (s) => tr(s.first[0] + s.last[0]);
+const netText = (n) => (n > 0 ? '+' + n : n < 0 ? '−' + Math.abs(n) : '0');
+
+const ICONS = {
+  back: '<path d="M19 12H5"/><path d="M11 18l-6-6 6-6"/>',
+  more: '<circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  minus: '<path d="M5 12h14"/>',
+  chevR: '<path d="M9 6l6 6-6 6"/>',
+  chevL: '<path d="M15 6l-6 6 6 6"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  users: '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.4-3.4 3-5.6 6.5-5.6s6.1 2.2 6.5 5.6"/><path d="M15.5 5.2a3.4 3.4 0 0 1 0 6.6M17.8 14.6c2 .7 3.3 2.6 3.7 5.4"/>',
+  checklist: '<path d="M3.5 6.5l1.8 1.8L8.6 5M3.5 14.5l1.8 1.8 3.3-3.3"/><path d="M12 7h8.5M12 15h8.5"/>',
+  plusminus: '<path d="M7.5 3.5v7M4 7h7M13.5 17.5h7"/><path d="M18.5 4.5L5.5 19.5"/>',
+  speech: '<path d="M20.5 11.5a8 8 0 0 1-11.7 7.1L4 20l1.2-4.3a8 8 0 1 1 15.3-4.2z"/>',
+  book: '<path d="M3 5.5h5.5A3.5 3.5 0 0 1 12 9v11a2.8 2.8 0 0 0-2.8-2.8H3z"/><path d="M21 5.5h-5.5A3.5 3.5 0 0 0 12 9v11a2.8 2.8 0 0 1 2.8-2.8H21z"/>',
+  undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  star: '<path d="M12 2.9l2.75 5.6 6.15.9-4.45 4.35 1.05 6.12L12 17l-5.5 2.87 1.05-6.12L3.1 9.4l6.15-.9z" fill="currentColor" stroke-linejoin="round"/>',
+  starLine: '<path d="M12 2.9l2.75 5.6 6.15.9-4.45 4.35 1.05 6.12L12 17l-5.5 2.87 1.05-6.12L3.1 9.4l6.15-.9z" stroke-linejoin="round"/>',
+  present: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8.5 20.5L12 16l3.5 4.5"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  pencil: '<path d="M4 20l1-4.5L16 4.5a2.1 2.1 0 0 1 3 3L8 18.5z"/><path d="M14 6.5l3 3"/>',
+  jar: '<path d="M8 3.5h8M8.5 3.5v2.2c-2.3 1-3.5 2.8-3.5 5.3v6.5A3 3 0 0 0 8 20.5h8a3 3 0 0 0 3-3V11c0-2.5-1.2-4.3-3.5-5.3V3.5"/>',
+  stamp: '<path d="M9.5 3.5h5v4.2l2.8 3.3v2.5H6.7V11l2.8-3.3z"/><path d="M4.5 16.5h15v3.5h-15z"/>',
+  sparkle: '<path d="M12 3.5l1.6 5.2 5.4 1.8-5.4 1.8L12 17.5l-1.6-5.2L5 10.5l5.4-1.8z" fill="currentColor"/>',
+};
+function ic(name, size = 24, extra = '') {
+  return `<svg class="ic ${extra}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+}
+
+const STATUS_BAR = `<div class="sb"><span class="sb-time">9:41</span><span class="sb-r">
+<svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+<svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M8 11.5l2.2-2.6a3.3 3.3 0 0 0-4.4 0z M8 5.6a6 6 0 0 1 4.1 1.6l1.4-1.6a8.3 8.3 0 0 0-11 0l1.4 1.6A6 6 0 0 1 8 5.6z M8 1.5c2.9 0 5.5 1.1 7.4 2.9L16 3.6C13.8 1.4 11 .2 8 .2S2.2 1.4 0 3.6l.6.8C2.5 2.6 5.1 1.5 8 1.5z" fill="currentColor"/></svg>
+<svg width="27" height="13" viewBox="0 0 27 13" aria-hidden="true"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2.5" y="2.5" width="19" height="8" rx="2" fill="currentColor"/><path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2z" fill="currentColor" opacity=".45"/></svg>
+</span></div>`;
+
+/** Telefon çerçevesi: 390×844 ekran + çerçeve. */
+function phone(inner, label) {
+  return `<figure class="dev"><div class="fit" data-w="414" data-h="868"><div class="fit-in"><div class="phone-bezel" role="img" aria-label="${label}"><div class="phone-screen" aria-hidden="true">${inner}<div class="home-ind"></div></div></div></div></div><figcaption class="dev-cap">${label}</figcaption></figure>`;
+}
+
+/** Ölçeklenen geniş ekran (1440×900). */
+function wide(inner, label, cls = '') {
+  return `<div class="fit" data-w="1440" data-h="900"><div class="fit-in"><div class="wide ${cls}" role="img" aria-label="${label}"><div aria-hidden="true" style="height:100%">${inner}</div></div></div></div>`;
+}
+
+function fitAll() {
+  document.querySelectorAll('.fit').forEach((w) => {
+    const inner = w.firstElementChild;
+    const W = +w.dataset.w, H = +w.dataset.h;
+    const host = w.closest('.host') || w.closest('section') || document.body;
+    const avail = host.clientWidth;
+    const s = Math.min(1, avail / W);
+    inner.style.transform = `scale(${s})`;
+    w.style.width = W * s + 'px';
+    w.style.height = H * s + 'px';
+  });
+}
+
+/** Segment düğmeleri: data-group içindeki panelleri değiştirir. */
+function wireSegments() {
+  document.querySelectorAll('.seg').forEach((seg) => {
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.action) { window[b.dataset.action](b); return; }
+      seg.querySelectorAll('button[data-show]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      document.querySelectorAll(`[data-pane="${seg.dataset.group}"]`).forEach((p) => { p.hidden = p.dataset.name !== b.dataset.show; });
+      fitAll();
+    });
+  });
+}
+
+function boot(render) {
+  render();
+  wireSegments();
+  fitAll();
+  if ('ResizeObserver' in window) new ResizeObserver(fitAll).observe(document.body);
+  else window.addEventListener('resize', fitAll);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
+}
+
+/** Kutlamayı baştan oynatır (hareketi azalt açıksa yalnız son kare görünür). */
+function replay(el) {
+  el.classList.remove('play');
+  void el.offsetWidth;
+  el.classList.add('play');
+}
+
+
+/* ---------- Yön 3 çizimleri ---------- */
+const CC = { pos: '--mint', pen: '--sky', mor: '--lilac', warn: '--orange', rose: '--pink' };
+const AVC = ['#A9C1FF', '#FFB067', '#B8F0D4', '#FF9BC8', '#CDB8FF', '#FFD23F'];
+const TAPES = ['#FFD23F', '#FF9BC8', '#B8F0D4', '#A9C1FF', '#FFB067', '#CDB8FF'];
+const av = (s) => `<span class="av" style="--avc:${AVC[s.i % AVC.length]}">${initials(s)}</span>`;
+const stick = (n = 18) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.3l-5.8 3.05 1.1-6.45-4.7-4.6 6.5-.95z" fill="#FFD23F" stroke="#141414" stroke-width="2" stroke-linejoin="round"/></svg>`;
+const BIGSTICK = `<svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(14deg)"><path d="M12 2.4l2.9 5.9 6.5.95-4.7 4.6 1.1 6.45L12 17.3l-5.8 3.05 1.1-6.45-4.7-4.6 6.5-.95z" fill="#FFD23F" stroke="#141414" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+const LOGO = `<span class="logo"><svg width="16" height="20" viewBox="0 0 16 20" aria-hidden="true"><rect x="1" y="1" width="14" height="18" rx="2" fill="#fff" stroke="#141414" stroke-width="2"/><path d="M5 1v18" stroke="#141414" stroke-width="2"/></svg></span>`;
+
+function scrClasses(desk) {
+  return `<div class="scr">${desk ? '' : STATUS_BAR}
+    <div class="bar"><span></span><span class="sq">${ic('more')}</span></div>
+    <div class="lt"><div><h3 class="t-title">Sınıflarım</h3><p class="t-sub">Günaydın, Selin Hanım</p></div>${BIGSTICK}</div>
+    <div class="cls-list">${CLASSES.map((c) => `
+      <div class="cls blk" style="--cc:var(${CC[c.c]})"><span class="tagb">${c.name}</span>
+        <div class="mid"><b>${c.ders}</b><span>${c.forms} form</span></div>
+        <div class="n"><b>${c.count}</b><span>öğrenci</span></div><span class="chev">${ic('chevR', 22)}</span></div>`).join('')}
+    </div>
+    <div class="fab blk">${ic('plus', 22)} Yeni sınıf</div>
+  </div>`;
+}
+
+function scrClass(desk) {
+  return `<div class="scr">${desk ? '' : STATUS_BAR}
+    <div class="bar"><span class="sq">${ic('back')}</span><span class="sq">${ic('more')}</span></div>
+    <div class="hero blk"><span class="tape" style="--tc:#FFD23F;--tr:-6deg;left:-14px;top:-8px"></span><span class="sticker" style="right:10px;top:10px">${BIGSTICK}</span>
+      <h3>5/B</h3><p>Matematik</p>
+      <div class="foot"><span class="avs">${STUDENTS.slice(0, 4).map(av).join('')}</span><span class="blackpill">28 öğrenci</span></div></div>
+    <div class="sec"><span><b>Formlar</b><span class="cnt">4</span></span><span class="btn-s">${ic('plus', 20)} Form</span></div>
+    <div class="fl">${FORMS.map((f) => `
+      <div class="fcard"><span class="icb" style="--cc:var(${CC[f.c]})">${ic(f.icon)}</span>
+        <div class="fmid"><b>${f.title}</b><span>${f.sub}</span></div>${f.badge ? `<span class="badge">${f.badge}</span>` : ''}<span class="ib">${ic('more', 22)}</span></div>`).join('')}
+      <div class="fcard"><span class="icb" style="--cc:var(--pink)">${ic('users')}</span><div class="fmid"><b>Öğrenciler</b></div><b style="font:800 22px var(--head)">28</b><span class="ib">${ic('chevR', 22)}</span></div>
+    </div>
+  </div>`;
+}
+
+function markRow(s) {
+  let sub = '';
+  if (s.plus) { sub = '<span>'; for (let j = 0; j < s.plus; j++) sub += stick(15); sub += `<span class="g">&nbsp;Bugün +${s.plus}</span></span>`; }
+  else if (s.minus) sub = `<span>Bugün −${s.minus}</span>`;
+  return `<div class="mrow"><span class="mno">${s.no}</span><div class="mname"><b>${s.first} ${s.last}</b>${sub}</div>
+    <div class="ctr"><span class="cb minus">${ic('minus', 22)}</span><span class="net ${s.net === 0 ? 'z' : ''}">${netText(s.net)}</span><span class="cb plus">${ic('plus', 22)}</span></div></div>`;
+}
+
+function scrMarks(desk) {
+  return `<div class="scr">${desk ? '' : STATUS_BAR}
+    <div class="bar ruled"><span class="sq">${ic('back')}</span><span class="bar-title">Artı / eksi</span><span class="sq">${ic('more')}</span></div>
+    <div class="tabs-row"><div class="tabs"><span class="on">İşaretle</span><span>Geçmiş</span></div><span class="cmb">${ic('present', 20)} Sınıf modu</span></div>
+    <div class="day"><span class="day-c"><span class="ib">${ic('chevL', 22)}</span>${ic('calendar', 20)} Bugün, 8 Ekim<span class="ib off">${ic('chevR', 22)}</span></span><span class="blackpill">${TODAY_PLUS + TODAY_MINUS} işaret</span></div>
+    <div class="search">${ic('search', 20)} Ad ya da numara</div>
+    <div>${STUDENTS.slice(0, desk ? 9 : 8).map(markRow).join('')}</div>
+    <div class="toast"><span class="grow">Ömer Koç: Artı eklendi</span><span class="act">Geri al</span></div>
+  </div>`;
+}
+
+function laptop(inner) {
+  return `<div class="p" style="position:absolute;inset:0">
+    <div class="browser"><span class="dots"><i></i><i></i><i></i></span><span class="btab"><span style="width:14px;height:14px;border-radius:3px;background:#FFD23F;border:1.5px solid #141414;display:inline-block"></span>Sınıf Defteri</span></div>
+    <div class="appbar"><span class="brand">${LOGO}Sınıf Defteri</span><span class="who">Selin Hanım <span class="av" style="--avc:#FFB067">SH</span></span></div>
+    <div class="dotbg"><div class="sheet">${inner}</div></div></div>`;
+}
+
+function tile(s, cele) {
+  const net = cele ? s.net + 1 : s.net;
+  const plus = cele ? s.plus + 1 : s.plus;
+  let st = '';
+  for (let j = 0; j < Math.min(plus, 5); j++) st += (cele && j === plus - 1) ? `<span class="new-stick">${stick(19)}</span>` : stick(19);
+  const n = net > 0 ? '' : net === 0 ? 'z' : 'n';
+  const tr = ((s.i * 7) % 9) - 4;
+  return `<div class="tile ${cele ? 'cele' : ''}"><span class="tape" style="--tc:${TAPES[s.i % TAPES.length]};--tr:${tr}deg"></span>
+    <div class="t-head"><div class="t-name"><b>${s.first}</b><span>${s.last}</span></div><span class="t-score ${n}">${netText(net)}</span></div>
+    <div class="t-stick">${st}</div>
+    <div class="t-act"><span class="t-minus">${ic('minus', 22)}</span><span class="t-plus"><span class="pc">${ic('plus', 16)}</span>Artı</span></div>
+    ${cele ? `<span class="stamp"><span class="s-in"><span class="s-word">AFERİN</span><span class="s-num">+1</span>${ic('star', 16)}</span></span><span class="speck" style="right:2px;bottom:96px"></span><span class="speck" style="right:104px;bottom:20px;width:5px;height:5px"></span><span class="speck" style="right:96px;bottom:92px;width:4px;height:4px"></span>` : ''}
+  </div>`;
+}
+
+function classroom(cele) {
+  const total = TODAY_PLUS + (cele ? 1 : 0);
+  return `<div class="p" style="position:absolute;inset:0"><div class="cm ${cele ? 'peak' : ''}">
+    <div class="cm-top">${LOGO.replace('class="logo"', 'class="logo" style="width:46px;height:46px"')}<span class="cm-title">Artı / eksi</span><span class="chip">5/B</span>
+      <span class="cm-day"><span class="ib">${ic('chevL', 24)}</span>${ic('calendar', 20)} Bugün, 8 Ekim<span class="ib off">${ic('chevR', 24)}</span></span>
+      <span class="total">${stick(30)}<b>${total}</b><span>artı<br>bugün</span></span>
+      <span class="wbtn">${ic('search', 22)}</span><span class="wbtn">${ic('close', 20)} Çık</span></div>
+    <div class="cm-grid">${STUDENTS.map((s) => tile(s, cele && s.i === CELE)).join('')}</div>
+    <div class="cm-bot">${cele
+      ? `<div class="strip cele"><span class="seal">${ic('star', 20)}</span>Kerem, emeğine sağlık<span class="s-plus">+1</span></div>`
+      : `<div class="strip">${stick(26)} Her adım ilerlemedir</div>`}
+      <span class="wbtn">${ic('undo', 20)} Geri al</span></div>
+  </div></div>`;
+}
+
+function playCele() {
+  document.querySelector('.seg[data-group="cm"] button[data-show="cele"]').click();
+  replay(document.querySelector('[data-name="cele"] .cm'));
+}
+
+function render() {
+  document.getElementById('phones').innerHTML =
+    phone(`<div class="p" style="position:absolute;inset:0">${scrClasses(false)}</div>`, 'Sınıflarım') +
+    phone(`<div class="p" style="position:absolute;inset:0">${scrClass(false)}</div>`, 'Sınıf (5/B)') +
+    phone(`<div class="p" style="position:absolute;inset:0">${scrMarks(false)}</div>`, 'Artı / eksi: işaretleme');
+  document.getElementById('laptop').innerHTML =
+    `<div data-pane="lap" data-name="classes">${wide(laptop(scrClasses(true)), 'Laptop: Sınıflarım')}</div>` +
+    `<div data-pane="lap" data-name="class" hidden>${wide(laptop(scrClass(true)), 'Laptop: Sınıf')}</div>` +
+    `<div data-pane="lap" data-name="marks" hidden>${wide(laptop(scrMarks(true)), 'Laptop: Artı / eksi')}</div>`;
+  document.getElementById('classroom').innerHTML =
+    `<div data-pane="cm" data-name="idle">${wide(classroom(false), 'Sınıf modu, boşta')}</div>` +
+    `<div data-pane="cm" data-name="cele" hidden>${wide(classroom(true), 'Sınıf modu, Kerem Aksoy artı aldı')}</div>`;
+  const kerem = STUDENTS[CELE];
+  const box = (inner, t) => `<div class="frame-box ${t !== undefined ? 'freeze' : ''}" ${t !== undefined ? `style="--t:${t}ms;background:var(--board)"` : 'style="background:var(--board)"'}><div style="width:182px;height:158px;display:flex">${inner}</div></div>`;
+  document.getElementById('frames').innerHTML =
+    `<div class="frame">${box(tile(kerem, false))}<span class="frame-cap">Önce</span></div>` +
+    `<div class="frame">${box(tile(kerem, true), 90)}<span class="frame-cap">90 ms: damga iner</span></div>` +
+    `<div class="frame">${box(tile(kerem, true), 200)}<span class="frame-cap">200 ms: basılır, kart çöker</span></div>` +
+    `<div class="frame">${box(tile(kerem, true), 900)}<span class="frame-cap">900 ms: puan +3, yeni çıkartma</span></div>`;
+  document.querySelectorAll('#frames .tile').forEach((t) => { t.style.width = '182px'; });
+}
+boot(render);
+</script>
+</body>
+</html>

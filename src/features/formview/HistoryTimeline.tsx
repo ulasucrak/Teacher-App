@@ -11,9 +11,10 @@ import {
   type HistoryEvent,
 } from '@/features/history';
 import { formatDayLabel } from '@/features/sessions/date';
-import { colors, layout, radii, spacing, tones } from '@/theme';
+import { colors, layout, spacing } from '@/theme';
 import type { FormOption } from '@/types/database';
 
+import { ToneDot } from './ToneDot';
 import type { Timeline } from './useHistoryData';
 
 type Item =
@@ -64,7 +65,7 @@ export function HistoryTimeline({
   const renderItem: ListRenderItem<Item> = ({ item }) =>
     item.type === 'day' ? (
       <View style={styles.dayHeader} testID={`timeline-day-${item.day}`}>
-        <Text variant="label" tone="muted" accessibilityRole="header">
+        <Text variant="bodyStrong" accessibilityRole="header">
           {formatDayLabel(item.day)}
         </Text>
       </View>
@@ -192,10 +193,7 @@ const EventRow = memo(function EventRow({ event, options }: EventRowProps) {
           {event.undone ? <Badge label="Geri alındı" tone="warning" /> : null}
         </View>
         <View style={styles.change}>
-          <View
-            style={[styles.dot, { backgroundColor: tone && !dim ? tones[tone].solid : colors.border }]}
-            testID={`event-${event.id}-dot`}
-          />
+          <ToneDot tone={tone} dim={dim} testID={`event-${event.id}-dot`} />
           <Text
             variant="body"
             tone={dim ? 'muted' : 'default'}
@@ -219,8 +217,6 @@ const EventRow = memo(function EventRow({ event, options }: EventRowProps) {
     </View>
   );
 });
-
-const DOT = spacing.sm;
 
 const styles = StyleSheet.create({
   state: { gap: spacing.md, paddingTop: spacing.sm, paddingHorizontal: layout.pageX },
@@ -249,7 +245,6 @@ const styles = StyleSheet.create({
   eventHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   eventStudent: { flexShrink: 1 },
   change: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dot: { width: DOT, height: DOT, borderRadius: radii.full },
   changeText: { flexShrink: 1 },
   struck: { textDecorationLine: 'line-through' },
   more: { gap: spacing.md, padding: layout.pageX },

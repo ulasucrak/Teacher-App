@@ -747,3 +747,98 @@ describe('parsePlainNameList', () => {
     ]);
   });
 });
+
+describe('parsePlainNameList — numara biçimleri (yapıştırılan liste)', () => {
+  const pairs = (text: string) => parsePlainNameList(text).map((s) => [s.number, s.fullName]);
+
+  it('"1 Ali Yılmaz": çıplak sayı okul numarasıdır (1, 2, 3 … ardışık olsa da)', () => {
+    expect(pairs('1 Ali Yılmaz')).toEqual([['1', 'Ali Yılmaz']]);
+    expect(pairs('1 Ali Yılmaz\n2 Ayşe Kaya\n3 Can Su')).toEqual([
+      ['1', 'Ali Yılmaz'],
+      ['2', 'Ayşe Kaya'],
+      ['3', 'Can Su'],
+    ]);
+  });
+
+  it('ardışık okul numaraları sıra numarası sayılmaz ("123 Ali", "124 Ayşe")', () => {
+    expect(pairs('123 Ali Yılmaz\n124 Ayşe Kaya\n125 Can Su')).toEqual([
+      ['123', 'Ali Yılmaz'],
+      ['124', 'Ayşe Kaya'],
+      ['125', 'Can Su'],
+    ]);
+  });
+
+  it('sekmeyle ayrılmış e-Okul satırları (ardışık dahil)', () => {
+    expect(pairs('123\tAli Yılmaz\n124\tAyşe Kaya')).toEqual([
+      ['123', 'Ali Yılmaz'],
+      ['124', 'Ayşe Kaya'],
+    ]);
+  });
+
+  it('"S.No<TAB>Okul No<TAB>Ad" satırında son sayı okul numarasıdır', () => {
+    expect(pairs('1\t123\tAli Yılmaz\n2\t124\tAyşe Kaya')).toEqual([
+      ['123', 'Ali Yılmaz'],
+      ['124', 'Ayşe Kaya'],
+    ]);
+  });
+
+  it('addan sonra gelen numara ("Ali Yılmaz 123", "Ali Yılmaz<TAB>123")', () => {
+    expect(pairs('Ali Yılmaz 123\nAyşe Kaya 124')).toEqual([
+      ['123', 'Ali Yılmaz'],
+      ['124', 'Ayşe Kaya'],
+    ]);
+    expect(pairs('Ali Yılmaz\t123\nAyşe Kaya\t124')).toEqual([
+      ['123', 'Ali Yılmaz'],
+      ['124', 'Ayşe Kaya'],
+    ]);
+  });
+
+  it('noktalı / parantezli / tireli numaralandırma liste sırasıdır, numara kaydedilmez', () => {
+    const expected = [
+      [null, 'Ali Yılmaz'],
+      [null, 'Ayşe Kaya'],
+      [null, 'Can Su'],
+    ];
+    expect(pairs('1. Ali Yılmaz\n2. Ayşe Kaya\n3. Can Su')).toEqual(expected);
+    expect(pairs('1) Ali Yılmaz\n2) Ayşe Kaya\n3) Can Su')).toEqual(expected);
+    expect(pairs('1 - Ali Yılmaz\n2 - Ayşe Kaya\n3 - Can Su')).toEqual(expected);
+    expect(pairs('1.Ali Yılmaz\n2.Ayşe Kaya\n3.Can Su')).toEqual(expected);
+  });
+
+  it('numaralı listede noktalaması unutulan satır da liste sırası sayılır', () => {
+    expect(pairs('1. Ali Yılmaz\n2) Ayşe Kaya\n3 Can Su').map(([n]) => n)).toEqual([null, null, null]);
+  });
+
+  it('sıra numarası + addan sonra okul numarası: "1. Ali Yılmaz 123"', () => {
+    expect(pairs('1. Ali Yılmaz 123\n2. Ayşe Kaya 124')).toEqual([
+      ['123', 'Ali Yılmaz'],
+      ['124', 'Ayşe Kaya'],
+    ]);
+  });
+
+  it('3+ basamaklı noktalı sayılar okul numarasıdır ("123. Ali", "124. Ayşe")', () => {
+    expect(pairs('123. Ali Yılmaz\n124. Ayşe Kaya')).toEqual([
+      ['123', 'Ali Yılmaz'],
+      ['124', 'Ayşe Kaya'],
+    ]);
+  });
+
+  it('ardışık olmayan noktalı sayılar okul numarasıdır', () => {
+    expect(pairs('5. Ali Yılmaz\n9. Ayşe Kaya\n14. Can Su').map(([n]) => n)).toEqual(['5', '9', '14']);
+  });
+
+  it('fazla boşluk, CRLF ve baştaki boşluk', () => {
+    expect(pairs('  12   ali   yılmaz  \r\n13 AYŞE KAYA')).toEqual([
+      ['12', 'Ali Yılmaz'],
+      ['13', 'Ayşe Kaya'],
+    ]);
+  });
+
+  it('numarasız ve numaralı satırlar karışık olabilir', () => {
+    expect(pairs('12 Ali Yılmaz\nAyşe Kaya\n14 Can Su')).toEqual([
+      ['12', 'Ali Yılmaz'],
+      [null, 'Ayşe Kaya'],
+      ['14', 'Can Su'],
+    ]);
+  });
+});

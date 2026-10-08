@@ -23,6 +23,31 @@
         height: 100%;
         flex: 1;
       }
+      /* Telefon tarayıcısında dokunma: gri vurgu ve çift dokunma gecikmesi olmasın. */
+      html {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+      }
+      [role='button'],
+      [role='radio'],
+      [role='checkbox'],
+      [role='tab'] {
+        touch-action: manipulation;
+      }
+      /* Klavye odağı (v3): tüm etkileşimli öğelerde aynı 3 px pano-mavisi halka, kurşun çerçevenin 2 px dışında
+         (sert gölgeyi ve çerçeveyi örtmez). Mavi panoda (Board, data-board) halka sarıdır.
+         Metin alanları kendi mavi sert gölgesiyle odağı gösterir (TextField / SearchField). */
+      [tabindex]:focus-visible {
+        outline: 3px solid #2d3a8c;
+        outline-offset: 2px;
+      }
+      [data-board] [tabindex]:focus-visible {
+        outline-color: #ffd23f;
+      }
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: none;
+      }
     </style>
   </head>
 

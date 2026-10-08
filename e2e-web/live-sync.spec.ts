@@ -120,19 +120,22 @@ test.describe('canlı eşitleme (iki pencere, aynı hesap)', () => {
       await tid(a, 'mark-row-0-arti').click();
       await expect(tid(a, 'mark-row-0-net')).toHaveText('+1');
       await expect(tid(b, 'mark-row-0-net')).toHaveText('+1', live);
-      await expect(tid(b, 'mark-today-total')).toHaveText('1 işaret', live);
+      await expect(tid(b, 'mark-day-trailing')).toHaveText('1 işaret', live);
 
       // Ters yön: B işaretler → A'da görünür (eksi işareti U+2212).
       await tid(b, 'mark-row-1-eksi').click();
       await expect(tid(b, 'mark-row-1-net')).toHaveText('−1');
       await expect(tid(a, 'mark-row-1-net')).toHaveText('−1', live);
-      await expect(tid(a, 'mark-today-total')).toHaveText('2 işaret', live);
+      await expect(tid(a, 'mark-day-trailing')).toHaveText('2 işaret', live);
 
       // Geri alma: A, Ada'nın son işaretini geri alır → B'de silinir.
       await tid(a, 'mark-row-0-undo').click();
-      await expect(tid(a, 'mark-row-0-empty')).toBeVisible();
-      await expect(tid(b, 'mark-row-0-empty')).toBeVisible(live);
-      await expect(tid(b, 'mark-today-total')).toHaveText('1 işaret', live);
+      // Geri alınınca satırda "Bugün" satırı kalmaz, net 0'a döner.
+      await expect(tid(a, 'mark-row-0-net')).toHaveText('0');
+      await expect(tid(a, 'mark-row-0-day')).toHaveCount(0);
+      await expect(tid(b, 'mark-row-0-net')).toHaveText('0', live);
+      await expect(tid(b, 'mark-row-0-day')).toHaveCount(0, live);
+      await expect(tid(b, 'mark-day-trailing')).toHaveText('1 işaret', live);
 
       // B geçmiş özetini açık tutar; A yeni işaret verir → özet güncellenir.
       await tid(b, 'form-tab-history').click();

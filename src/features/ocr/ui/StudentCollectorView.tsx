@@ -62,7 +62,7 @@ export function StudentCollectorView({ collector, disabled = false }: StudentCol
             value={collector.pasteText}
             onChangeText={collector.setPasteText}
             placeholder={'12 Ayşe Yılmaz\n15 Mehmet Kaya'}
-            hint="Her satıra bir öğrenci; baştaki sayı okul numarası olur."
+            hint={'Her satıra bir öğrenci; baştaki sayı okul numarası olur ("1." ya da "1)" gibi liste sırası atlanır).'}
             multiline
             autoCapitalize="words"
             autoCorrect={false}

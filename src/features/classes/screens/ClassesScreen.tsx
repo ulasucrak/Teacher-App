@@ -12,6 +12,7 @@ import {
   LoadingState,
   OverflowMenu,
   Screen,
+  StarSticker,
   useToast,
 } from '@/components/ui';
 import { getDisplayName, useAuth } from '@/features/auth';
@@ -19,6 +20,7 @@ import { colors, layout, spacing } from '@/theme';
 
 import { listClasses } from '../api';
 import { ClassListRow } from '../components/ClassListRow';
+import { greetingFor } from '../model';
 import { useRemoteData } from '../useRemoteData';
 
 const LOAD_ERROR = 'Sınıflar yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.';
@@ -64,7 +66,7 @@ export function ClassesScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
-          <ClassListRow item={item} onPress={() => router.push(`/class/${item.id}`)} testID={`class-row-${index}`} />
+          <ClassListRow item={item} index={index} onPress={() => router.push(`/class/${item.id}`)} testID={`class-row-${index}`} />
         )}
         ListHeaderComponent={
           classes.error ? (
@@ -105,7 +107,8 @@ export function ClassesScreen() {
     <Screen
       title="Sınıflarım"
       largeTitle
-      subtitle={name ? `Merhaba, ${name}` : undefined}
+      largeTitleAccessory={<StarSticker size={64} rotate={14} />}
+      subtitle={name ? `${greetingFor(new Date().getHours())}, ${name}` : undefined}
       back={false}
       scroll={false}
       padded={false}
@@ -165,5 +168,5 @@ const styles = StyleSheet.create({
   padded: { paddingHorizontal: layout.pageX },
   errorBox: { marginTop: spacing.lg, gap: spacing.lg },
   banner: { marginBottom: spacing.md },
-  listContent: { flexGrow: 1, paddingBottom: layout.fabClearance + spacing.xxl },
+  listContent: { flexGrow: 1, paddingTop: spacing.xs, paddingBottom: layout.fabClearance + spacing.xxl },
 });
