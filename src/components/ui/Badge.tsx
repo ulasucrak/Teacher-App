@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { fontFamilies, radii, spacing, tones, type ToneName } from '@/theme';
+import { colors, fontFamilies, radii, spacing, strokes, tones, type ToneName } from '@/theme';
 
 import { Text } from './Text';
 
@@ -11,8 +11,8 @@ export interface BadgeProps {
 }
 
 /**
- * Küçük durum rozeti ("Taslak", "3 kaydedilmedi"). Satırda en fazla bir rozet;
- * olağan durum için rozet koymayın (örn. "Yayında" değil, yalnızca "Taslak").
+ * Küçük durum rozeti ("Taslak", "Birikimli"): ton kâğıdı + ince kurşun çerçeve, kalın yazı.
+ * Satırda en fazla bir rozet; olağan durum için rozet koymayın (örn. "Yayında" değil, yalnızca "Taslak").
  */
 export function Badge({ label, tone = 'neutral', testID }: BadgeProps) {
   const t = tones[tone];
@@ -23,7 +23,7 @@ export function Badge({ label, tone = 'neutral', testID }: BadgeProps) {
       accessibilityRole="text"
       accessibilityLabel={label}
     >
-      <Text variant="caption" color={t.onSoft} style={styles.text} numberOfLines={1}>
+      <Text variant="caption" color={colors.text} style={styles.text} numberOfLines={1}>
         {label}
       </Text>
     </View>
@@ -35,7 +35,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xxs,
-    borderRadius: radii.full,
+    borderRadius: radii.xs,
+    borderWidth: strokes.fine,
+    borderColor: colors.outline,
   },
-  text: { fontFamily: fontFamilies.textSemiBold },
+  text: { fontFamily: fontFamilies.textExtraBold, fontSize: 13, lineHeight: 18 },
 });

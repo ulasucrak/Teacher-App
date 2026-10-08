@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import type { ViewStyle } from 'react-native';
 
-/** Mobilde uygulama tüm ekranı kullanır; çerçeve yalnızca web'de vardır (AppFrame.web.tsx). */
-export function AppFrame({ children }: { children: ReactNode }) {
+/** Mobilde uygulama tüm ekranı kullanır; çerçeve ve üst çubuk yalnızca web'de vardır (AppFrame.web.tsx). */
+export function AppFrame({ children }: { children: ReactNode; header?: ReactNode }) {
   return children;
 }
 

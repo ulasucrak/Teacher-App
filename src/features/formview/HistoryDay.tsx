@@ -3,10 +3,12 @@ import { FlatList, StyleSheet, View, type ListRenderItem } from 'react-native';
 
 import { Banner, Button, EmptyState, ListRow, LoadingState, Text } from '@/components/ui';
 import { formatCounts, formatNet, type StudentSummary } from '@/features/history';
-import { colors, layout, radii, spacing, tones } from '@/theme';
+import { layout, spacing } from '@/theme';
 import type { FormMode, FormOption } from '@/types/database';
 
 import { sortSummaryStudents } from './board';
+import { ToneDot } from './ToneDot';
+import { TotalsCard } from './TotalsCard';
 import type { DayReview } from './useDayReview';
 
 interface HistoryDayProps {
@@ -18,8 +20,8 @@ interface HistoryDayProps {
   onRetry: () => void;
   /** O günün zaman çizelgesi (tüm sınıf ya da tek öğrenci). */
   onOpenList: (studentId?: { id: string; name: string }) => void;
-  /** Günlük formda günü İşaretle sekmesinde aç. */
-  onEditDay: () => void;
+  /** Günü İşaretle sekmesinde aç. */
+  onEditDay?: () => void;
 }
 
 /** Günün öğrenci başına değeri (günlük) ya da sayıları ve neti (birikimli). */
@@ -48,9 +50,9 @@ export function HistoryDay({ mode, options, day, review, error, onRetry, onOpenL
           icon="calendar"
           title="Bu günde kayıt yok"
           description={daily ? 'O gün yoklama alınmamış ya da form doldurulmamış.' : 'O gün kimseye işaret verilmemiş.'}
-          actionLabel={daily ? 'Bu günü işaretle' : undefined}
+          actionLabel={onEditDay ? 'Bu günü işaretle' : undefined}
           actionIcon="edit"
-          onAction={daily ? onEditDay : undefined}
+          onAction={onEditDay}
           actionTestID="day-edit-empty"
           testID="day-empty"
         />
@@ -79,7 +81,7 @@ export function HistoryDay({ mode, options, day, review, error, onRetry, onOpenL
           daily ? (
             value ? (
               <View style={styles.value}>
-                <View style={[styles.dot, { backgroundColor: value.tone ? tones[value.tone].solid : colors.border }]} />
+                <ToneDot tone={value.tone} />
                 <Text variant="bodyStrong" testID={`day-row-${index}-value`}>
                   {value.label}
                 </Text>
@@ -102,33 +104,24 @@ export function HistoryDay({ mode, options, day, review, error, onRetry, onOpenL
   const header = (
     <View style={styles.header}>
       {error ? <Banner kind="error" message={error} /> : null}
-      <View style={styles.totals} testID="day-totals">
-        <View style={styles.totalsText}>
-          <Text variant="label" tone="muted">
-            Sınıf toplamı
+      <TotalsCard
+        title="Sınıf toplamı"
+        net={summary.net !== null ? formatNet(summary.net) : null}
+        netAccessibilityLabel={summary.net !== null ? `Günün neti ${formatNet(summary.net)}` : undefined}
+        netTestID="day-totals-net"
+        testID="day-totals"
+      >
+        <Text variant="body" testID="day-totals-counts">
+          {formatCounts(summary.totals, options, 'İşaret yok')}
+        </Text>
+        {daily ? (
+          <Text variant="caption" testID="day-changes">
+            {changes.total === 0
+              ? 'Bu gün değişiklik yok'
+              : `${changes.capped ? 'En az ' : ''}${changes.total} değişiklik`}
           </Text>
-          <Text variant="body" testID="day-totals-counts">
-            {formatCounts(summary.totals, options, 'İşaret yok')}
-          </Text>
-          {daily ? (
-            <Text variant="caption" tone="muted" testID="day-changes">
-              {changes.total === 0
-                ? 'Bu gün değişiklik yok'
-                : `${changes.capped ? 'En az ' : ''}${changes.total} değişiklik`}
-            </Text>
-          ) : null}
-        </View>
-        {summary.net !== null ? (
-          <View accessible accessibilityLabel={`Günün neti ${formatNet(summary.net)}`}>
-            <Text variant="title" align="right" testID="day-totals-net">
-              {formatNet(summary.net)}
-            </Text>
-            <Text variant="caption" tone="muted" align="right">
-              net
-            </Text>
-          </View>
         ) : null}
-      </View>
+      </TotalsCard>
       <View style={styles.actions}>
         <Button
           label="Bu günün listesi"
@@ -139,7 +132,7 @@ export function HistoryDay({ mode, options, day, review, error, onRetry, onOpenL
           onPress={() => onOpenList()}
           testID="day-open-list"
         />
-        {daily ? (
+        {onEditDay ? (
           <Button
             label="Bu günü düzenle"
             icon="edit"
@@ -170,16 +163,7 @@ const styles = StyleSheet.create({
   state: { gap: spacing.md, paddingHorizontal: layout.pageX, paddingTop: spacing.sm },
   padded: { paddingHorizontal: layout.pageX },
   header: { gap: spacing.md, paddingHorizontal: layout.pageX, paddingBottom: spacing.sm },
-  totals: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  totalsText: { flex: 1, gap: spacing.xxs },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingBottom: spacing.sm },
   value: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  dot: { width: spacing.sm, height: spacing.sm, borderRadius: radii.full },
   listContent: { paddingBottom: spacing.huge },
 });

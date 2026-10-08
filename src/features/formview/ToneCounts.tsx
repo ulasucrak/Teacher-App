@@ -2,7 +2,9 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Text } from '@/components/ui';
 import { countText, type CountItem } from '@/features/history';
-import { colors, radii, spacing, tones } from '@/theme';
+import { spacing } from '@/theme';
+
+import { ToneDot } from './ToneDot';
 
 interface ToneCountsProps {
   items: readonly CountItem[];
@@ -15,7 +17,7 @@ interface ToneCountsProps {
 }
 
 /**
- * Sayım satırı: her seçeneğin sayısının önünde tonunun renginde küçük nokta ("● 5 Geldi  ● 1 İzinli").
+ * Sayım satırı: her seçeneğin sayısının önünde tonunun renginde çerçeveli küçük nokta ("● 5 Geldi  ● 1 İzinli").
  * Sığmazsa sarar. Renk yalnızca destek; anlam metindedir, ekran okuyucu tek cümle okur
  * ("5 Geldi, 1 İzinli"). Kaldırılmış seçenekler soluk noktayla gelir.
  */
@@ -36,10 +38,7 @@ export function ToneCounts({ items, empty, variant = 'caption', style, testID }:
     >
       {items.map((item) => (
         <View key={item.key} style={styles.item} importantForAccessibility="no-hide-descendants">
-          <View
-            style={[styles.dot, { backgroundColor: item.tone ? tones[item.tone].solid : colors.border }]}
-            testID={testID ? `${testID}-dot-${item.key}` : undefined}
-          />
+          <ToneDot tone={item.tone} testID={testID ? `${testID}-dot-${item.key}` : undefined} />
           <Text variant={variant} tone={variant === 'caption' ? 'muted' : 'default'}>
             {countText(item)}
           </Text>
@@ -52,5 +51,4 @@ export function ToneCounts({ items, empty, variant = 'caption', style, testID }:
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.md, rowGap: spacing.xxs },
   item: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  dot: { width: spacing.sm, height: spacing.sm, borderRadius: radii.full },
 });

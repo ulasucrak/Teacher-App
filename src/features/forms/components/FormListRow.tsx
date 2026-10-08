@@ -1,13 +1,13 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { Badge, IconButton, IconTile, ListRow } from '@/components/ui';
+import { Badge, IconButton, IconTile, ListRow, ListRowActionSpacer } from '@/components/ui';
 import { formatCompactDate } from '@/features/sessions/date';
-import { colors, iconSize, layout, spacing } from '@/theme';
+import { colors, iconSize, spacing } from '@/theme';
 import type { FormMode } from '@/types/database';
 
 import type { FormListItem } from '../api';
 import { formModeLabels } from '../mode';
-import { presetIcon } from '../presets';
+import { formPaper, presetIcon } from '../presets';
 
 interface FormListRowProps {
   form: FormListItem;
@@ -32,7 +32,7 @@ export function lastSessionLabel(date: string | null, mode: FormMode = 'daily'):
 }
 
 /**
- * Kompakt form satırı: ikon, ad, son kayıt; sağda "⋯". Birikimli formda "Birikimli" rozeti
+ * Form kartı (mockup `.fcard`): kâğıt renkli ikon kutusu, ad, son kayıt; sağda "⋯". Birikimli formda "Birikimli" rozeti
  * (günde bir kez olan olağan türdür, rozetsiz). Uzun basış da menüyü açar.
  */
 export function FormListRow({ form, index, onOpen, onMore, busy = false, openHint }: FormListRowProps) {
@@ -43,7 +43,8 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
     <ListRow
       title={form.title}
       subtitle={subtitle}
-      leading={<IconTile icon={presetIcon(form.title)} />}
+      variant="card"
+      leading={<IconTile icon={presetIcon(form.title)} paper={formPaper(form.title, index)} />}
       showChevron={false}
       onPress={busy ? undefined : onOpen}
       onLongPress={onMore}
@@ -57,21 +58,23 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
               <Badge label={formModeLabels.repeatable} testID={`${testID}-mode`} />
             </View>
           ) : null}
-          <View style={styles.trailing}>
-          {busy ? (
-            <ActivityIndicator color={colors.primary} testID={`${testID}-busy`} />
-          ) : (
-            <IconButton
-              icon="more"
-              size={iconSize.lg}
-              color={colors.textMuted}
-              accessibilityLabel={`${form.title} için diğer seçenekler`}
-              onPress={onMore}
-              testID={`${testID}-more`}
-            />
-          )}
-          </View>
+          <ListRowActionSpacer />
         </View>
+      }
+      // "⋯" düğmesi basılabilir satırın içine konmaz (web'de iç içe <button> olur); kardeş olarak çizilir.
+      action={
+        busy ? (
+          <ActivityIndicator color={colors.primary} testID={`${testID}-busy`} />
+        ) : (
+          <IconButton
+            icon="more"
+            size={iconSize.lg}
+            color={colors.textMuted}
+            accessibilityLabel={`${form.title} için diğer seçenekler`}
+            onPress={onMore}
+            testID={`${testID}-more`}
+          />
+        )
       }
     />
   );
@@ -80,5 +83,4 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
 const styles = StyleSheet.create({
   badge: { alignSelf: 'center' },
   trailingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  trailing: { width: layout.minTouch, alignItems: 'center', justifyContent: 'center', marginRight: -layout.pageX / 2 },
 });

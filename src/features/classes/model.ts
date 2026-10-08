@@ -101,3 +101,10 @@ export function deriveClassParts(name: string): { grade: string; section: string
   if (!match) return { grade: '', section: '' };
   return { grade: match[1], section: match[2].toLocaleUpperCase('tr-TR') };
 }
+
+/** Sınıflarım altındaki selam: sabah "Günaydın", gündüz "İyi günler", akşam "İyi akşamlar". */
+export function greetingFor(hour: number): string {
+  if (hour >= 5 && hour < 12) return 'Günaydın';
+  if (hour >= 12 && hour < 18) return 'İyi günler';
+  return 'İyi akşamlar';
+}

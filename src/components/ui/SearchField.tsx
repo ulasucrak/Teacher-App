@@ -1,7 +1,7 @@
-import type { Ref } from 'react';
-import { StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useState, type Ref } from 'react';
+import { Platform, StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, fontScale, iconSize, layout, radii, spacing, typography } from '@/theme';
+import { colors, fontScale, hardShadow, iconSize, layout, radii, spacing, typography } from '@/theme';
 
 import { Icon } from './Icon';
 import { IconButton } from './IconButton';
@@ -21,7 +21,7 @@ export interface SearchFieldProps {
   testID?: string;
 }
 
-/** Görünür etiketsiz arama alanı: sıra grisi hap, büyüteç, yazınca temizle düğmesi. */
+/** Görünür etiketsiz arama alanı: beyaz, kalın kurşun çerçeveli (mockup `.search`), büyüteç, yazınca temizle düğmesi. Odakta mavi sert gölge. */
 export function SearchField({
   value,
   onChangeText,
@@ -33,8 +33,9 @@ export function SearchField({
   ref,
   testID,
 }: SearchFieldProps) {
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={[styles.wrap, style]}>
+    <View style={[styles.wrap, focused && styles.wrapFocused, style]}>
       <Icon name="search" size={iconSize.md} color={colors.textMuted} />
       <TextInput
         ref={ref}
@@ -54,6 +55,8 @@ export function SearchField({
         returnKeyType="search"
         clearButtonMode="never"
         onSubmitEditing={onSubmitEditing}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={styles.input}
       />
       {value ? (
@@ -70,16 +73,23 @@ export function SearchField({
   );
 }
 
+/** Web: odak kapsayıcının kenarıyla gösterilir; tarayıcının iç çerçevesi kaldırılır. */
+const noBrowserOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as object;
+
 const styles = StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     minHeight: layout.minTouch,
-    borderRadius: radii.full,
-    backgroundColor: colors.surfaceMuted,
-    paddingLeft: spacing.lg,
+    borderRadius: radii.sm,
+    // Odak: TextField ile aynı dil (kurşun kenar + mavi sert gölge); kenar hep aynı, odakta yer değişmez.
+    borderWidth: layout.inputBorder,
+    borderColor: colors.outline,
+    backgroundColor: colors.surface,
+    paddingLeft: spacing.lg - layout.inputBorder,
     paddingRight: spacing.xxs,
   },
-  input: { ...typography.body, flex: 1, color: colors.text, paddingVertical: spacing.sm },
+  wrapFocused: hardShadow('xs', colors.primary),
+  input: { ...typography.body, flex: 1, color: colors.text, paddingVertical: spacing.sm, ...noBrowserOutline },
 });

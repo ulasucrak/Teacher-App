@@ -6,13 +6,9 @@ describe('appFrameMode (web masaüstü çerçevesi)', () => {
     expect(appFrameMode(appFrame.framedMinWidth - 1, 1000)).toBe('full');
   });
 
-  it('geniş ama alçak pencerede kenar boşluksuz sütun', () => {
+  it('geniş pencerede masa üstünde kâğıt sütun', () => {
     expect(appFrameMode(1280, 650)).toBe('framed');
-  });
-
-  it('geniş ve yeterince yüksek pencerede yüzen kart', () => {
-    expect(appFrameMode(1440, 900)).toBe('floating');
-    expect(appFrameMode(appFrame.framedMinWidth, appFrame.floatingMinHeight)).toBe('floating');
+    expect(appFrameMode(appFrame.framedMinWidth, 400)).toBe('framed');
   });
 
   it('sütun, çerçeve eşiğine iki yanda boşluk bırakacak kadar dar', () => {
@@ -25,20 +21,23 @@ describe('overlayColumnStyle (masaüstünde Sheet paneli sütunda)', () => {
     expect(overlayColumnStyle(390, 844)).toBeNull();
   });
 
-  it('yüzen kartta kartla aynı kutu: ortalı, üst/alt boşluklu, yuvarlak köşeli', () => {
+  it('kâğıt sütunun iç kutusu: ortalı, çerçevenin içinde, alta yaslı, üst köşeleri yuvarlak', () => {
+    const top = appFrame.inset + appFrame.border;
     expect(overlayColumnStyle(1440, 900)).toMatchObject({
       position: 'absolute',
-      left: (1440 - appFrame.width) / 2,
-      width: appFrame.width,
-      top: appFrame.inset,
-      bottom: appFrame.inset,
-      height: 900 - appFrame.inset * 2,
-      borderRadius: appFrame.radius,
+      left: (1440 - appFrame.width) / 2 + appFrame.border,
+      width: appFrame.width - appFrame.border * 2,
+      top,
+      bottom: 0,
+      height: 900 - top,
+      borderTopLeftRadius: appFrame.radius - appFrame.border,
+      borderTopRightRadius: appFrame.radius - appFrame.border,
       overflow: 'hidden',
     });
   });
 
-  it('alçak pencerede kenar boşluksuz, köşesiz sütun', () => {
-    expect(overlayColumnStyle(1280, 650)).toMatchObject({ top: 0, bottom: 0, height: 650, borderRadius: 0 });
+  it('uygulama çubuğu varsa sütun onun altından başlar', () => {
+    const style = overlayColumnStyle(1440, 900, 68);
+    expect(style).toMatchObject({ top: 68 + appFrame.inset + appFrame.border, bottom: 0 });
   });
 });

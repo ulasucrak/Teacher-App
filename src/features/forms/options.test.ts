@@ -215,7 +215,7 @@ describe('PRESETS', () => {
       'Yapmadı:negative',
       'Gelmedi:neutral',
     ]);
-    expect(byId.sozlu).toEqual(['5:positive', '4:positive', '3:neutral', '2:warning', '1:negative']);
+    expect(byId.sozlu).toEqual(['Artı:positive', 'Yarım artı:positive', 'Eksi:negative']);
     expect(byId.katilim).toEqual(['Çok iyi:positive', 'İyi:positive', 'Orta:neutral', 'Zayıf:negative']);
     expect(byId.artieksi).toEqual(['Artı:positive', 'Eksi:negative']);
   });
@@ -226,8 +226,15 @@ describe('PRESETS', () => {
     expect(byId.yoklama?.mode).toBe('daily');
     expect(hasScores(byId.yoklama?.options ?? [])).toBe(false);
     expect(byId.artieksi?.options.map((o) => o.score)).toEqual([1, -1]);
-    // Puan yalnızca artı/eksi şablonunda.
-    expect(PRESETS.filter((p) => hasScores(p.options)).map((p) => p.id)).toEqual(['artieksi']);
+    // Sözlü günde bir kez; artı +1, yarım artı +0,5, eksi −1.
+    expect(byId.sozlu?.mode).toBe('daily');
+    expect(byId.sozlu?.options.map((o) => [o.key, o.score])).toEqual([
+      ['arti', 1],
+      ['yarim_arti', 0.5],
+      ['eksi', -1],
+    ]);
+    // Seçeneğin kendi puanı olan şablonlar: sözlü ve artı/eksi.
+    expect(PRESETS.filter((p) => hasScores(p.options)).map((p) => p.id)).toEqual(['sozlu', 'artieksi']);
   });
 });
 

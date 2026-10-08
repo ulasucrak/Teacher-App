@@ -1,0 +1,97 @@
+// Bileşen galerisi (önizleme için): bu dosyayı `app/gallery.tsx` olarak kopyalayın, web'de /gallery adresini açın,
+// işiniz bitince SİLİN (üretime gitmemeli). Ayrıntı: docs/DESIGN.md §12.
+import { useState } from 'react';
+import { ScrollView, View } from 'react-native';
+
+import {
+  Avatar, Badge, Banner, Board, Button, Card, Chip, CountBubble, EmptyState, Fab, HeroBlock, IconButton, IconTile,
+  ListRow, OptionGrid, PaperCard, Pill, SearchField, SectionHeader, SegmentedChoice, SegmentedTabs, SelectField,
+  Stamp, StarSticker, Tape, Text, TextField,
+} from '@/components/ui';
+import { colors } from '@/theme';
+
+export default function Gallery() {
+  const [v, setV] = useState<string | null>('b');
+  const [tab, setTab] = useState('a');
+  const [q, setQ] = useState('');
+  return (
+    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={{ padding: 20, gap: 20, paddingBottom: 80 }} testID="gallery">
+      <Text variant="hero">5/B</Text>
+      <Text variant="poster">Poster 44</Text>
+      <Text variant="display">Display 40</Text>
+      <Text variant="title">Title 32</Text>
+      <Text variant="headline">Headline 26</Text>
+      <Text variant="heading">Heading 20</Text>
+      <Text variant="bodyStrong">bodyStrong Ayşe Yılmaz</Text>
+      <Text variant="body">body metin 17 — Atkinson Hyperlegible</Text>
+      <Text variant="caption" tone="muted">caption 14 muted</Text>
+      <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+        <IconButton icon="back" accessibilityLabel="a" onPress={() => {}} variant="square" />
+        <IconButton icon="close" accessibilityLabel="a" onPress={() => {}} variant="tonal" />
+        <IconButton icon="more" accessibilityLabel="a" onPress={() => {}} />
+        <Pill label="28 öğrenci" />
+        <Pill label="11 işaret" tone="paper" />
+        <CountBubble value={4} />
+        <Badge label="Birikimli" />
+        <Badge label="Taslak" tone="warning" />
+        <Badge label="Hata" tone="negative" />
+        <Badge label="Tamam" tone="positive" />
+        <StarSticker />
+        <StarSticker size={48} rotate={14} />
+        <Avatar name="Ayşe Yılmaz" /><Avatar name="Mehmet Kaya" size="lg" />
+      </View>
+      <Button label="Yeni sınıf" icon="plus" onPress={() => {}} />
+      <Button label="Vazgeç" variant="secondary" onPress={() => {}} />
+      <Button label="Sınıfı sil" variant="destructive" onPress={() => {}} />
+      <Button label="Şifremi unuttum" variant="ghost" onPress={() => {}} />
+      <Button label="Kaydet" disabled onPress={() => {}} />
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <Button label="+ Form" size="sm" variant="secondary" fullWidth={false} onPress={() => {}} />
+        <Button label="Kaydet" size="sm" fullWidth={false} onPress={() => {}} />
+      </View>
+      <TextField label="Sınıf adı" placeholder="5/B" />
+      <TextField label="Hatalı" error="Bu alan boş olamaz." defaultValue="x" />
+      <SearchField value={q} onChangeText={setQ} placeholder="Ad ya da numara" accessibilityLabel="ara" />
+      <SelectField label="Ders" placeholder="Seçin" value="m" options={[{ value: 'm', label: 'Matematik' }]} onChange={() => {}} />
+      <SegmentedTabs tabs={[{ key: 'a', label: 'İşaretle' }, { key: 'b', label: 'Geçmiş' }]} value={tab} onChange={setTab} />
+      <SegmentedChoice options={[{ key: 'a', label: 'Geldi', tone: 'positive' }, { key: 'b', label: 'Gelmedi', tone: 'negative' }, { key: 'c', label: 'İzinli', tone: 'neutral' }, { key: 'd', label: 'Geç', tone: 'warning' }]} value={v} onChange={setV} />
+      <OptionGrid options={[{ key: 'a', label: 'Geldi', tone: 'positive' }, { key: 'b', label: 'Gelmedi', tone: 'negative' }, { key: 'c', label: 'İzinli', tone: 'neutral' }]} value="a" onChange={() => {}} />
+      <View style={{ flexDirection: 'row', gap: 8 }}><Chip label="Tümü" selected /><Chip label="Bugün" /></View>
+      <Banner kind="info" title="Bilgi" message="Bu bir bilgi bandı." actionLabel="Tekrar dene" onAction={() => {}} />
+      <Banner kind="error" message="İnternet bağlantısı yok. Bağlanıp tekrar deneyin." />
+      <Banner kind="warning" message="Kaydedilmemiş değişiklik." />
+      <Banner kind="success" message="Kaydedildi." />
+      <SectionHeader title="Formlar" count={4} actionLabel="Form" actionIcon="plus" onAction={() => {}} />
+      <View style={{ marginHorizontal: -20 }}>
+        <ListRow variant="card" title="Yoklama" subtitle="Bugün kaydedildi" leading={<IconTile icon="checklist" paper="nane" />} onPress={() => {}} />
+        <ListRow variant="card" title="Artı / eksi" subtitle="Son işaret: Bugün" leading={<IconTile icon="plus" paper="gok" />} trailing={<Badge label="Birikimli" />} onPress={() => {}} />
+        <ListRow title="Ayşe Yılmaz" number={104} subtitle="Bugün +2" onPress={() => {}} />
+        <ListRow title="Mehmet Kaya" number={112} onPress={() => {}} />
+      </View>
+      <HeroBlock title="5/B" subtitle="Matematik" sticker paper="nane">
+        <Pill label="28 öğrenci" />
+      </HeroBlock>
+      <HeroBlock title="6/A" subtitle="Fen" paper="lila" tape="pembe" />
+      <View style={{ flexDirection: 'row', gap: 16, flexWrap: 'wrap' }}>
+        <PaperCard tapeIndex={1} style={{ width: 150 }}><Text variant="heading">Kerem</Text><Text variant="caption" tone="muted">Aksoy</Text></PaperCard>
+        <PaperCard tapeIndex={2} paper="sari" style={{ width: 150 }}><Text variant="heading">Defne</Text><Text variant="caption">Arslan</Text></PaperCard>
+        <Card variant="muted"><Text>muted</Text></Card>
+        <Card onPress={() => {}}><Text>basılabilir</Text></Card>
+      </View>
+      <Board style={{ flex: 0, padding: 24, gap: 20, borderRadius: 16, minHeight: 280, flexDirection: 'row', flexWrap: 'wrap' }}>
+        <PaperCard onBoard tapeIndex={3} style={{ width: 190, height: 170 }}>
+          <Text variant="headline">Kerem</Text><Text variant="caption" tone="muted">Aksoy</Text>
+          <View style={{ flexDirection: 'row', marginTop: 6 }}><StarSticker /><StarSticker /><StarSticker /></View>
+          <Stamp style={{ position: 'absolute', right: 4, bottom: 2 }} animate />
+        </PaperCard>
+        <PaperCard onBoard tapeIndex={4} style={{ width: 190, height: 170 }}>
+          <Text variant="headline">Defne</Text>
+        </PaperCard>
+        <Tape />
+        <Button label="Yeni sınıf" variant="secondary" fullWidth={false} onPress={() => {}} />
+      </Board>
+      <EmptyState title="Henüz sınıfınız yok" description="İlk sınıfınızı ekleyin; öğrencileri fotoğraftan alabilirsiniz." actionLabel="Yeni sınıf" onAction={() => {}} />
+      <Fab label="Yeni sınıf" onPress={() => {}} />
+    </ScrollView>
+  );
+}

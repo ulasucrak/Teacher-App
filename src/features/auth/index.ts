@@ -8,3 +8,4 @@ export type { AuthErrorKind } from './errors';
 export { getDisplayName, useAuth } from './useAuth';
 export { MIN_PASSWORD_LENGTH, validateEmail, validateFullName, validatePassword } from './validation';
 export { AuthPage } from './AuthPage';
+export { WebAppBar } from './WebAppBar';

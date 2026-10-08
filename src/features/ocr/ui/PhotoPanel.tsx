@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { Button, LoadingState, Sheet, Text } from '@/components/ui';
-import { layout, radii, spacing } from '@/theme';
+import { colors, layout, radii, spacing, strokes } from '@/theme';
 
 import { PhotoStrip } from '../components/PhotoStrip';
 import type { ImportPhoto, StudentCollector } from './useStudentCollector';
@@ -100,5 +100,5 @@ const styles = StyleSheet.create({
   buttons: { gap: spacing.sm },
   reading: { minHeight: layout.iconBox * 2, justifyContent: 'center' },
   previewBody: { gap: spacing.lg, alignItems: 'center' },
-  previewImage: { borderRadius: radii.xs },
+  previewImage: { borderRadius: radii.xs, borderWidth: strokes.thin, borderColor: colors.outline },
 });

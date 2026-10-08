@@ -43,7 +43,7 @@ export function EmptyState({
     <View style={styles.container} testID={testID}>
       <IconTile icon={icon} size="lg" />
       <View style={styles.texts}>
-        <Text variant="heading" align="center" accessibilityRole="header">
+        <Text variant="headline" align="center" accessibilityRole="header">
           {title}
         </Text>
         <Text variant="bodySmall" tone="muted" align="center">

@@ -1,6 +1,7 @@
 import {
   classMetaParts,
   deriveClassParts,
+  greetingFor,
   sortClasses,
   suggestClassName,
   toClassSummary,
@@ -71,5 +72,16 @@ describe('deriveClassParts', () => {
     ['5/B Fen', '', ''],
   ])('%p', (name, grade, section) => {
     expect(deriveClassParts(name)).toEqual({ grade, section });
+  });
+});
+
+describe('greetingFor', () => {
+  it('greets by time of day', () => {
+    expect(greetingFor(5)).toBe('Günaydın');
+    expect(greetingFor(11)).toBe('Günaydın');
+    expect(greetingFor(12)).toBe('İyi günler');
+    expect(greetingFor(17)).toBe('İyi günler');
+    expect(greetingFor(18)).toBe('İyi akşamlar');
+    expect(greetingFor(2)).toBe('İyi akşamlar');
   });
 });
