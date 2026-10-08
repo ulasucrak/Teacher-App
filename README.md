@@ -36,7 +36,7 @@ yoklama, ödev kontrolü, sözlü, derse katılım gibi formları hızlıca dold
   işaretleme ve altta "Kaydet". Kaydedilmemiş değişiklikle çıkış (geri tuşu ya da kaydırma) onay
   ister. Kayıt ilk "Kaydet"te oluşturulur; boş kayıt birikmez.
 
-Tasarım dili ("Kalem kutusu": ekranda tek sarı ana eylem, kurşun metin, sade liste satırları)
+Tasarım dili ("Pano ve Damga": ekranda tek sarı ana eylem, kalın kurşun çerçeve + sert gölge, kâğıt renkleri)
 ve yazı kuralları [`docs/DESIGN.md`](docs/DESIGN.md) içindedir.
 
 ### Ekranlar (yönlendirme)
@@ -142,7 +142,8 @@ prebuild'i hatayla durdurur; Expo şablonu UIScene'i kendisi desteklediğinde ek
 ## Web sürümü
 
 Aynı kod tabanı tarayıcıda da çalışır (Expo web, `react-native-web`, Metro). Web'de ekranlar
-masaüstünde ortada okunur genişlikte (en fazla 720 px), telefon tarayıcısında tam genişliktedir;
+masaüstünde noktalı defter masası üstünde ortada okunur genişlikte bir kâğıt sütundadır (en fazla 720 px; oturum
+açıkken üstte "Sınıf Defteri" uygulama çubuğu), telefon tarayıcısında tam genişliktedir;
 ikonlar Material Symbols ile çizilir, `Alert.alert` onayları tarayıcının `confirm`/`alert`
 pencereleriyle sorulur. Aynı hesapla açık mobil uygulama ve tarayıcı birbirini canlı izler
 (Supabase Realtime): bir yerde eklenen sınıf, öğrenci ya da işaret diğerinde yenilemeden görünür.
@@ -302,7 +303,7 @@ src/
   types/database.ts      Veritabanı tipleri
   theme/                 Renk, yazı, boşluk, ikon boyutu, radius, gölge ve hareket token'ları
 modules/                 Yerel Expo modülleri (vision-text-recognition: iOS Apple Vision OCR)
-docs/DESIGN.md           Tasarım dili ("Kalem kutusu"), ekran kalıpları, yazı kuralları
+docs/DESIGN.md           Tasarım dili ("Pano ve Damga"), ekran kalıpları, yazı kuralları
 .maestro/                Maestro uçtan uca akışları (iOS simülatörü)
 e2e-web/                 Playwright web uçtan uca testleri (playwright.config.ts)
 scripts/e2e/             E2E çalıştırıcısı, yapay sınıf listesi üreticisi, web derleme/sunucu betikleri

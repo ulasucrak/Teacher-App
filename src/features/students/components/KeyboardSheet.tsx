@@ -13,8 +13,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IconButton, Text } from '@/components/ui';
+import { useOverlayColumnStyle } from '@/components/ui/AppFrame';
 import { isWeb, WEB_MAX_SHEET_WIDTH } from '@/lib/platform';
-import { colors, elevation, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
+import { colors, elevation, iconSize, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
 
 export interface KeyboardSheetProps {
   visible: boolean;
@@ -34,7 +35,10 @@ export interface KeyboardSheetProps {
 export function KeyboardSheet({ visible, onClose, title, children, footer, onDismissed, testID }: KeyboardSheetProps) {
   const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height: windowHeight } = useWindowDimensions();
+  // Web masaüstü: perde tüm sayfayı karartır, panel uygulama sütununun içinde kalır.
+  const column = useOverlayColumnStyle();
+  const height = typeof column?.height === 'number' ? column.height : windowHeight;
   const [mounted, setMounted] = useState(visible);
   const [progress] = useState(() => new Animated.Value(0));
 
@@ -80,7 +84,7 @@ export function KeyboardSheet({ visible, onClose, title, children, footer, onDis
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Kapat" />
       </Animated.View>
       <KeyboardAvoidingView
-        style={styles.anchor}
+        style={[styles.anchor, column]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         pointerEvents="box-none"
       >
@@ -101,6 +105,8 @@ export function KeyboardSheet({ visible, onClose, title, children, footer, onDis
             </Text>
             <IconButton
               icon="close"
+              variant="tonal"
+              size={iconSize.md}
               accessibilityLabel="Kapat"
               onPress={onClose}
               testID={testID ? `${testID}-close` : undefined}
@@ -135,14 +141,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.rule,
     marginTop: spacing.sm,
   },
+  // `Sheet` başlığıyla aynı ölçüler (tonlu kapat düğmesi, aynı iç boşluk).
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: layout.pageX + spacing.xs,
-    paddingRight: spacing.xs,
-    paddingTop: spacing.xs,
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingLeft: layout.pageX,
+    paddingRight: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
-  title: { flex: 1 },
+  title: { flex: 1, paddingTop: spacing.sm },
   body: { paddingHorizontal: layout.pageX, paddingBottom: spacing.lg, gap: spacing.lg },
   footer: { paddingHorizontal: layout.pageX, paddingTop: spacing.sm, gap: spacing.sm },
 });

@@ -7,7 +7,7 @@ import * as formsApi from '@/features/forms/api';
 import { todayIso } from '@/features/sessions/date';
 import type { FormOption } from '@/types/database';
 
-import { deleteClass, getClass } from '../api';
+import { deleteClass, getClass, listStudentPreview } from '../api';
 import type { ClassSummary } from '../model';
 import { ClassDetailScreen } from './ClassDetailScreen';
 
@@ -32,7 +32,7 @@ jest.mock('expo-router', () => {
     useFocusEffect: (effect: () => void) => useEffect(effect, [effect]),
   };
 });
-jest.mock('../api', () => ({ getClass: jest.fn(), deleteClass: jest.fn() }));
+jest.mock('../api', () => ({ getClass: jest.fn(), deleteClass: jest.fn(), listStudentPreview: jest.fn() }));
 jest.mock('@/features/forms/api', () => ({
   listForms: jest.fn(),
   createForm: jest.fn(),
@@ -45,6 +45,7 @@ jest.mock('@/features/forms/api', () => ({
 
 const mockGetClass = jest.mocked(getClass);
 const mockDeleteClass = jest.mocked(deleteClass);
+const mockPreview = jest.mocked(listStudentPreview);
 const forms = jest.mocked(formsApi);
 
 const theClass: ClassSummary = {
@@ -95,6 +96,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockParams = { classId: 'c1' };
   mockGetClass.mockResolvedValue(theClass);
+  mockPreview.mockResolvedValue(['Ayşe Yılmaz', 'Ali Kaya']);
   forms.listForms.mockResolvedValue([
     form('f1', 'Yoklama', { lastSessionDate: todayIso() }),
     form('f2', 'Ödev kontrolü'),
@@ -118,6 +120,26 @@ describe('ClassDetailScreen', () => {
 
     await fireEvent.press(screen.getByTestId('class-students-row'));
     expect(mockPush).toHaveBeenCalledWith('/class/c1/students');
+  });
+
+  it('shows the class identity block: big name, avatar stack of the first students and a student pill', async () => {
+    await renderScreen();
+
+    expect(await screen.findByTestId('class-hero')).toBeOnTheScreen();
+    expect(screen.getByTestId('class-student-pill')).toHaveTextContent('28 öğrenci');
+    // Avatarlar süstür: ekran okuyucudan gizli (includeHiddenElements).
+    await waitFor(() => expect(screen.getAllByTestId('avatar', { includeHiddenElements: true })).toHaveLength(2));
+    // Ad "5/B" addan türetilen düzey/şubeyle aynı: hero altında tekrar yazılmaz.
+    expect(screen.queryByText('5. sınıf, B şubesi')).toBeNull();
+  });
+
+  it('does not fail the screen when the avatar preview cannot load', async () => {
+    mockPreview.mockRejectedValue(new Error('boom'));
+    await renderScreen();
+
+    expect(await screen.findByTestId('class-hero')).toBeOnTheScreen();
+    expect(screen.queryByTestId('avatar', { includeHiddenElements: true })).toBeNull();
+    expect(screen.queryByText(/yüklenemedi/)).toBeNull();
   });
 
   it('opens the form screen (İşaretle | Geçmiş) when a form row is tapped', async () => {

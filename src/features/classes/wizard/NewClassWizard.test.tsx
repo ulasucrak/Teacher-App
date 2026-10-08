@@ -74,6 +74,65 @@ describe('NewClassWizard', () => {
     expect(screen.getByTestId('wizard-step-3')).toBeTruthy();
   });
 
+  it('saves the school numbers of a pasted list and shows them in the preview', async () => {
+    jest.mocked(runClassSetup).mockResolvedValue({
+      ok: true,
+      progress: { classRow: null, studentsSaved: true, formsSaved: [] },
+      classRow: { id: 'c9', name: '6/A', grade: null, section: null, teacher_id: 't', created_at: '' },
+    });
+    await goToStudents();
+    await fireEvent.press(screen.getByTestId('collect-method-paste'));
+    await fireEvent.changeText(
+      screen.getByTestId('collect-paste-input'),
+      '1 Ali Yılmaz\n2\tayşe kaya\n123 Can Su\nEce Nur 124',
+    );
+    await fireEvent.press(screen.getByTestId('collect-paste-add'));
+
+    // Önizleme: numara ve ad ayrı alanlarda (ad numarasız).
+    expect(screen.getByTestId('student-row-0-number').props.value).toBe('1');
+    expect(screen.getByTestId('student-row-0-name').props.value).toBe('Ali Yılmaz');
+    expect(screen.getByTestId('student-row-1-number').props.value).toBe('2');
+    expect(screen.getByTestId('student-row-3-number').props.value).toBe('124');
+
+    await fireEvent.press(screen.getByTestId('wizard-next'));
+    await fireEvent.press(screen.getByTestId('wizard-create'));
+
+    expect(runClassSetup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        students: [
+          { full_name: 'Ali Yılmaz', number: '1' },
+          { full_name: 'Ayşe Kaya', number: '2' },
+          { full_name: 'Can Su', number: '123' },
+          { full_name: 'Ece Nur', number: '124' },
+        ],
+      }),
+      expect.anything(),
+    );
+  });
+
+  it('does not save list-order markers ("1. Ali") as school numbers', async () => {
+    jest.mocked(runClassSetup).mockResolvedValue({
+      ok: true,
+      progress: { classRow: null, studentsSaved: true, formsSaved: [] },
+      classRow: { id: 'c9', name: '6/A', grade: null, section: null, teacher_id: 't', created_at: '' },
+    });
+    await goToStudents();
+    await fireEvent.press(screen.getByTestId('collect-method-paste'));
+    await fireEvent.changeText(screen.getByTestId('collect-paste-input'), '1. Ali Yılmaz\n2. Ayşe Kaya');
+    await fireEvent.press(screen.getByTestId('wizard-next'));
+    await fireEvent.press(screen.getByTestId('wizard-create'));
+
+    expect(runClassSetup).toHaveBeenCalledWith(
+      expect.objectContaining({
+        students: [
+          { full_name: 'Ali Yılmaz', number: null },
+          { full_name: 'Ayşe Kaya', number: null },
+        ],
+      }),
+      expect.anything(),
+    );
+  });
+
   it('Android back goes one step back instead of leaving', async () => {
     await goToStudents();
     await fireEvent.press(screen.getByTestId('wizard-skip-students'));

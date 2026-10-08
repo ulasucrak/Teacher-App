@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { spacing, type ToneName } from '@/theme';
 
 import { OptionChip } from './OptionChip';
+import { type RovingItemProps, useRovingRadio } from './SegmentedChoice.interaction';
 
 export interface ChipGroupItem {
   key: string;
@@ -56,13 +57,19 @@ export function ChipGroup(props: ChipGroupProps) {
     }
   };
 
+  // Tek seçimde radiogroup: web'de ok tuşları seçimi taşır. Çoklu seçimde (checkbox) Tab yeterli.
+  const selectedIndex = props.multiple ? -1 : options.findIndex((o) => o.key === props.value);
+  const roving = useRovingRadio(options.length, selectedIndex, (i) => press(options[i].key), disabled);
+  const radio = !props.multiple;
+
   return (
     <View
       style={styles.wrap}
-      accessibilityRole={props.multiple ? undefined : 'radiogroup'}
+      accessibilityRole={radio ? 'radiogroup' : undefined}
       accessibilityLabel={contextLabel}
+      {...(radio ? roving.groupProps : null)}
     >
-      {options.map((option) => (
+      {options.map((option, index) => (
         <OptionChip
           key={option.key}
           label={option.label}
@@ -75,10 +82,15 @@ export function ChipGroup(props: ChipGroupProps) {
           onPress={() => press(option.key)}
           accessibilityLabel={contextLabel ? `${contextLabel}: ${option.label}` : option.label}
           testID={testIDPrefix ? `${testIDPrefix}-${option.key}` : undefined}
+          {...(radio ? webChipProps(roving.itemProps(index)) : null)}
         />
       ))}
     </View>
   );
+}
+
+function webChipProps(web: RovingItemProps) {
+  return { pressableRef: web.ref, tabIndex: web.tabIndex };
 }
 
 const styles = StyleSheet.create({

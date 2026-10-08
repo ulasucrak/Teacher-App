@@ -6,13 +6,14 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppFrame, Banner, Text, ToastProvider } from '@/components/ui';
-import { AuthProvider, useAuth } from '@/features/auth';
+import { AlertDialogHost } from '@/components/ui/AlertDialog';
+import { AuthProvider, useAuth, WebAppBar } from '@/features/auth';
 import { installWebAlert } from '@/lib/platformAlert';
 import { supabaseConfigError } from '@/lib/supabase';
 import { colors, fontAssets, layout, spacing } from '@/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
-// Web'de Alert.alert boştur; onaylar tarayıcı iletişim kutusuyla sorulur (mobilde etkisiz).
+// Web'de Alert.alert boştur; onaylar uygulama içi iletişim kutusuyla sorulur (AlertDialogHost; mobilde etkisiz).
 installWebAlert();
 
 export default function RootLayout() {
@@ -22,13 +23,14 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AppFrame>
-        <AuthProvider>
+      <AuthProvider>
+        <AppFrame header={fontsReady ? <WebAppBar /> : null}>
           <ToastProvider>
             <RootNavigator fontsReady={fontsReady} />
           </ToastProvider>
-        </AuthProvider>
-      </AppFrame>
+        </AppFrame>
+      </AuthProvider>
+      <AlertDialogHost />
     </SafeAreaProvider>
   );
 }

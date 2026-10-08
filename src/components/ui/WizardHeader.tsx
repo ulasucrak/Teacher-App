@@ -1,8 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, layout, radii, spacing, strokes } from '@/theme';
 
-import { IconButton } from './IconButton';
+import { IconButton, IconButtonVariantContext } from './IconButton';
+import { backIconSize, desktopBarInset, useDesktopWeb } from './ScreenChrome';
 import { Text } from './Text';
 
 export interface StepperProps {
@@ -60,12 +61,20 @@ export interface WizardHeaderProps extends StepperProps {
  * `Screen header={<WizardHeader … />}` ile kullanın; altta `BottomActionBar` ile "Devam".
  */
 export function WizardHeader({ title, description, steps, current, onBack, onClose, testID }: WizardHeaderProps) {
+  const desktopWeb = useDesktopWeb();
   return (
     <View style={styles.header} testID={testID}>
-      <View style={styles.bar0}>
+      <IconButtonVariantContext.Provider value="square">
+      <View style={[styles.bar0, desktopWeb && styles.barDesktop]}>
         <View style={styles.side}>
           {onBack ? (
-            <IconButton icon="back" accessibilityLabel="Önceki adım" onPress={onBack} testID="wizard-back" />
+            <IconButton
+              icon="back"
+              accessibilityLabel="Önceki adım"
+              onPress={onBack}
+              size={backIconSize}
+              testID="wizard-back"
+            />
           ) : null}
         </View>
         <View style={styles.stepperWrap}>
@@ -77,6 +86,7 @@ export function WizardHeader({ title, description, steps, current, onBack, onClo
           ) : null}
         </View>
       </View>
+      </IconButtonVariantContext.Provider>
       <View style={styles.titles}>
         <Text variant="title" accessibilityRole="header">
           {title}
@@ -94,18 +104,19 @@ export function WizardHeader({ title, description, steps, current, onBack, onClo
 const styles = StyleSheet.create({
   stepper: { gap: spacing.xs + spacing.xxs },
   bars: { flexDirection: 'row', gap: spacing.xs },
-  bar: { flex: 1, height: layout.stepBar, borderRadius: radii.full },
+  bar: { flex: 1, height: layout.stepBar, borderRadius: radii.xs / 2, borderWidth: strokes.thin, borderColor: colors.outline },
   barDone: { backgroundColor: colors.text },
-  barTodo: { backgroundColor: colors.rule },
+  barTodo: { backgroundColor: colors.surface },
   caption: { flexDirection: 'row', justifyContent: 'space-between' },
   header: { paddingBottom: spacing.lg },
   bar0: {
     minHeight: layout.headerHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
-  side: { width: layout.minTouch, flexDirection: 'row' },
+  barDesktop: { paddingTop: desktopBarInset },
+  side: { width: layout.minTouch + spacing.xs, flexDirection: 'row' },
   sideRight: { justifyContent: 'flex-end' },
   stepperWrap: { flex: 1, paddingHorizontal: spacing.md, paddingTop: spacing.md },
   titles: { paddingHorizontal: layout.pageX, paddingTop: spacing.lg, gap: spacing.sm },

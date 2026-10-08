@@ -6,11 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Banner, Button, EmptyState, LoadingState, OverflowMenu, SearchField, Text } from '@/components/ui';
 import { totalCount, sumCounts, type StudentTally } from '@/features/history';
 import { UndoBar } from '@/features/sessions/components/UndoBar';
-import { formatDayLabel } from '@/features/sessions/date';
+import { formatShortDate } from '@/features/sessions/date';
 import { filterStudents } from '@/features/sessions/students';
 import { colors, layout, spacing } from '@/theme';
 
 import type { FormViewProps } from './DailyFormView';
+import { ClassroomView } from '@/features/classroom/ClassroomView';
+import { requestPresentationFullscreen } from '@/features/classroom/presentation';
+
+import { DayBar } from './DayBar';
 import { FormShell, type FormTab } from './FormShell';
 import { HistoryPane } from './HistoryPane';
 import { MarkRow } from './MarkRow';
@@ -31,6 +35,12 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
 
   const [tab, setTab] = useState<FormTab>(initialTab);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [classroomOpen, setClassroomOpen] = useState(false);
+  const closeClassroom = useCallback(() => setClassroomOpen(false), []);
+  const openClassroom = () => {
+    requestPresentationFullscreen();
+    setClassroomOpen(true);
+  };
   const [query, setQuery] = useState('');
 
   // Geçmişten ya da düzenlemeden dönünce sayılar güncel görünsün.
@@ -46,13 +56,18 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
     const items = rows.map((row) => ({ row, number: row.number, full_name: row.fullName }));
     return filterStudents(items, query).map((item) => item.row);
   }, [rows, query]);
-  const todayMarks = useMemo(() => (rows ? totalCount(sumCounts(rows.map((r) => r.dayCounts))) : 0), [rows]);
+  const dayLabel = board.day === board.today ? 'Bugün' : formatShortDate(board.day);
+  // Hiçbir öğrencinin numarası yoksa boş numara sütunu ayrılmaz.
+  const hasNumbers = useMemo(() => (rows ? rows.some((r) => Boolean(r.number?.trim())) : true), [rows]);
+  const dayMarks = useMemo(() => (rows ? totalCount(sumCounts(rows.map((r) => r.dayCounts))) : 0), [rows]);
 
   const renderItem: ListRenderItem<StudentTally> = ({ item, index }) => (
     <MarkRow
       student={item}
       index={index}
       options={form.options}
+      dayLabel={dayLabel}
+      showNumbers={hasNumbers}
       undoing={board.undoingIds.has(item.studentId)}
       onMark={board.mark}
       onUndo={board.undoStudent}
@@ -70,34 +85,27 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
   } else if (!rows) {
     marking = <LoadingState label="Öğrenciler yükleniyor" />;
   } else {
-    const dateLabel = formatDayLabel(board.today);
     marking = (
       <>
-        <View style={styles.metaRow}>
-          <Text variant="label" tone="muted" accessibilityLabel={`Tarih: ${dateLabel}`} testID="mark-date">
-            {dateLabel}
-          </Text>
-          <Text variant="number" tone="muted" accessibilityLabel={`Bugün ${todayMarks} işaret verildi`} testID="mark-today-total">
-            {`${todayMarks} işaret`}
-          </Text>
-        </View>
         <FlatList
           data={visible}
           keyExtractor={(r) => r.studentId}
           renderItem={renderItem}
           ListHeaderComponent={
-            <View style={styles.listHeader}>
-              {board.loadError ? <Banner kind="error" message={board.loadError} /> : null}
-              {rows.length >= MARK_SEARCH_MIN_STUDENTS ? (
-                <SearchField
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder="Ad ya da numara"
-                  accessibilityLabel="Öğrenci ara"
-                  testID="mark-search"
-                />
-              ) : null}
-            </View>
+            board.loadError || rows.length >= MARK_SEARCH_MIN_STUDENTS ? (
+              <View style={styles.listHeader}>
+                {board.loadError ? <Banner kind="error" message={board.loadError} /> : null}
+                {rows.length >= MARK_SEARCH_MIN_STUDENTS ? (
+                  <SearchField
+                    value={query}
+                    onChangeText={setQuery}
+                    placeholder="Ad ya da numara"
+                    accessibilityLabel="Öğrenci ara"
+                    testID="mark-search"
+                  />
+                ) : null}
+              </View>
+            ) : null
           }
           ListEmptyComponent={
             rows.length === 0 ? (
@@ -139,9 +147,28 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
   }
 
   return (
-    <FormShell title={form.title} tab={tab} onTab={setTab} onMore={() => setMenuOpen(true)} testID="form-screen">
-      {tab === 'mark' ? marking : null}
-      <HistoryPane form={form} active={tab === 'history'} />
+    <FormShell title={form.title} tab={tab} onTab={setTab} onMore={() => setMenuOpen(true)} onClassroom={openClassroom} testID="form-screen">
+      {tab === 'mark' ? (
+        <>
+          <DayBar
+            value={board.day}
+            onChange={board.changeDay}
+            testIDPrefix="mark-day"
+            trailing={rows ? `${dayMarks} işaret` : undefined}
+            trailingLabel={`${dayLabel} ${dayMarks} işaret verildi`}
+          />
+          {marking}
+        </>
+      ) : null}
+      <HistoryPane
+        form={form}
+        active={tab === 'history'}
+        onEditDay={(day) => {
+          board.changeDay(day);
+          setTab('mark');
+        }}
+      />
+      {classroomOpen ? <ClassroomView form={form} board={board} day={board.day} onDay={board.changeDay} onExit={closeClassroom} /> : null}
       <OverflowMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
@@ -161,15 +188,7 @@ export function RepeatableFormView({ classId, form, initialTab }: FormViewProps)
 }
 
 const styles = StyleSheet.create({
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingHorizontal: layout.pageX,
-    paddingBottom: spacing.sm,
-  },
-  listHeader: { paddingHorizontal: layout.pageX, gap: spacing.md, paddingBottom: spacing.xs },
+  listHeader: { paddingHorizontal: layout.pageX, paddingTop: spacing.xs, gap: spacing.md, paddingBottom: spacing.xs },
   stateWrap: { gap: spacing.md, paddingTop: spacing.sm, paddingHorizontal: layout.pageX },
   padded: { paddingHorizontal: layout.pageX, paddingVertical: spacing.lg },
   listContent: { borderTopWidth: layout.hairline, borderTopColor: colors.rule, paddingBottom: spacing.huge + spacing.xxxl },

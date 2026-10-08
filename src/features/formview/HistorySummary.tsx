@@ -10,11 +10,12 @@ import {
   type FormSummary,
   type StudentSummary,
 } from '@/features/history';
-import { colors, layout, spacing } from '@/theme';
+import { layout, spacing } from '@/theme';
 import type { FormMode, FormOption } from '@/types/database';
 
 import { sortSummaryStudents, type SummarySort } from './board';
 import { ToneCounts } from './ToneCounts';
+import { TotalsCard } from './TotalsCard';
 
 interface HistorySummaryProps {
   mode: FormMode;
@@ -86,24 +87,15 @@ export function HistorySummary({
   const header = (
     <View style={styles.header}>
       {error ? <Banner kind="error" message={error} /> : null}
-      <View style={styles.totals} testID="summary-totals">
-        <View style={styles.totalsText}>
-          <Text variant="label" tone="muted">
-            Sınıf toplamı
-          </Text>
-          <ToneCounts items={summary.items} empty="İşaret yok" variant="body" testID="summary-totals-counts" />
-        </View>
-        {summary.net !== null ? (
-          <View accessible accessibilityLabel={`Sınıf neti ${formatNet(summary.net)}`}>
-            <Text variant="title" align="right" testID="summary-totals-net">
-              {formatNet(summary.net)}
-            </Text>
-            <Text variant="caption" tone="muted" align="right">
-              net
-            </Text>
-          </View>
-        ) : null}
-      </View>
+      <TotalsCard
+        title="Sınıf toplamı"
+        net={summary.net !== null ? formatNet(summary.net) : null}
+        netAccessibilityLabel={summary.net !== null ? `Sınıf neti ${formatNet(summary.net)}` : undefined}
+        netTestID="summary-totals-net"
+        testID="summary-totals"
+      >
+        <ToneCounts items={summary.items} empty="İşaret yok" variant="body" testID="summary-totals-counts" />
+      </TotalsCard>
       <SectionHeader title="Öğrenciler" count={students.length} />
       {sortable ? (
         <View style={styles.sort} accessibilityRole="radiogroup" accessibilityLabel="Sıralama">
@@ -166,16 +158,6 @@ const styles = StyleSheet.create({
   state: { gap: spacing.md, paddingHorizontal: layout.pageX, paddingTop: spacing.sm },
   padded: { paddingHorizontal: layout.pageX },
   header: { gap: spacing.sm, paddingHorizontal: layout.pageX, paddingBottom: spacing.sm },
-  totals: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: layout.hairline,
-    borderBottomColor: colors.rule,
-  },
-  totalsText: { flex: 1, gap: spacing.xxs },
   sort: { flexDirection: 'row', gap: spacing.sm },
   listContent: { paddingBottom: spacing.huge },
 });

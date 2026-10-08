@@ -3,8 +3,9 @@ import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, View, use
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { isWeb, WEB_MAX_SHEET_WIDTH } from '@/lib/platform';
-import { colors, elevation, iconSize, layout, motion, radii, spacing, useReducedMotion } from '@/theme';
+import { colors, iconSize, layout, motion, radii, spacing, strokes, useReducedMotion } from '@/theme';
 
+import { useOverlayColumnStyle } from './AppFrame';
 import { IconButton } from './IconButton';
 import { Text } from './Text';
 
@@ -33,7 +34,10 @@ const hasNativeDismiss = () => Platform.OS === 'ios';
 export function Sheet({ visible, onClose, title, children, footer, onDismissed, description, testID }: SheetProps) {
   const reducedMotion = useReducedMotion();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height: windowHeight } = useWindowDimensions();
+  // Web masaüstü: perde tüm sayfayı karartır, panel uygulama sütununun içinde kalır.
+  const column = useOverlayColumnStyle();
+  const height = typeof column?.height === 'number' ? column.height : windowHeight;
   const [mounted, setMounted] = useState(visible);
   const [progress] = useState(() => new Animated.Value(0));
   const onDismissedRef = useRef(onDismissed);
@@ -82,7 +86,7 @@ export function Sheet({ visible, onClose, title, children, footer, onDismissed, 
           accessibilityLabel="Kapat"
         />
       </Animated.View>
-      <View style={styles.anchor} pointerEvents="box-none">
+      <View style={[styles.anchor, column]} pointerEvents="box-none">
         <Animated.View
           accessibilityViewIsModal
           testID={testID}
@@ -130,18 +134,21 @@ const styles = StyleSheet.create({
   scrim: { ...StyleSheet.absoluteFill, backgroundColor: colors.scrim },
   anchor: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    ...elevation.overlay,
+    // Kalın kurşun çerçeveli kâğıt: alt kenar ekran dışında olduğu için çizilmez.
     backgroundColor: colors.surface,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
+    borderWidth: strokes.base,
+    borderBottomWidth: 0,
+    borderColor: colors.outline,
   },
   handle: {
     alignSelf: 'center',
-    width: spacing.xxxl + spacing.xs,
-    height: spacing.xs,
+    width: spacing.huge,
+    height: spacing.xs + 1,
     borderRadius: radii.full,
-    backgroundColor: colors.rule,
-    marginTop: spacing.sm,
+    backgroundColor: colors.outline,
+    marginTop: spacing.md,
   },
   header: {
     flexDirection: 'row',

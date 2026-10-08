@@ -53,10 +53,10 @@ test('form ekleme, yoklama doldurma, birikimli işaretler ve geçmiş', async ({
   await tid(page, 'mark-row-1-eksi').click();
   await expect(tid(page, 'mark-row-0-net')).toHaveText('+2');
   await expect(tid(page, 'mark-row-1-net')).toHaveText('−1'); // eksi işareti U+2212
-  await expect(tid(page, 'mark-today-total')).toHaveText('3 işaret');
+  await expect(tid(page, 'mark-day-trailing')).toHaveText('3 işaret');
   await tid(page, 'mark-row-0-undo').click();
   await expect(tid(page, 'mark-row-0-net')).toHaveText('+1');
-  await expect(tid(page, 'mark-today-total')).toHaveText('2 işaret');
+  await expect(tid(page, 'mark-day-trailing')).toHaveText('2 işaret');
 
   await tid(page, 'form-tab-history').click();
   await expect(tid(page, 'summary-totals-net')).toHaveText('0', { timeout: 20_000 });

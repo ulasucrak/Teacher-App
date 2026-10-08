@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import {
@@ -12,9 +12,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, layout, spacing } from '@/theme';
+import { colors, layout, spacing, strokes } from '@/theme';
 
-import { IconButton } from './IconButton';
+import { IconButton, IconButtonVariantContext } from './IconButton';
+import { currentWebPathname, screenParentHref } from './ScreenBack';
+import { backIconSize, desktopBarInset, useDesktopWeb } from './ScreenChrome';
 import { StickyFooter } from './StickyFooter';
 import { Text } from './Text';
 
@@ -25,13 +27,21 @@ export interface ScreenProps {
    */
   title?: string;
   largeTitle?: boolean;
+  /** Büyük başlığın sağında süs (ör. `StarSticker`); yalnızca `largeTitle` ile. Dekoratif olmalı (ekran okuyucudan gizli). */
+  largeTitleAccessory?: ReactNode;
   /** Büyük başlığın altında tek satır soluk bilgi ("28 öğrenci"). Yalnızca `largeTitle` ile. */
   subtitle?: string;
   /**
    * Geri düğmesi. `true` → router.back(); fonksiyon → özel davranış; `false` → yok.
-   * Varsayılan: geri gidilebiliyorsa göster.
+   * Varsayılan: geri gidilebiliyorsa göster. Web'de geçmiş yoksa (yenileme, doğrudan bağlantı)
+   * düğme yine görünür ve `fallbackHref` adresine gider.
    */
   back?: boolean | (() => void);
+  /**
+   * Web: geri gidilecek geçmiş yoksa gidilecek üst ekran. Verilmezse adresten çıkarılır
+   * (`/class/1/students` → `/class/1`, `/class/1` → `/`).
+   */
+  fallbackHref?: Href;
   /** Sağ üst: en fazla BİR öğe — genellikle "Diğer seçenekler" (⋯) `IconButton`. */
   headerRight?: ReactNode;
   /** Varsayılan üst çubuğun yerine özel başlık (ör. `WizardHeader`). */
@@ -57,8 +67,10 @@ export interface ScreenProps {
 export function Screen({
   title,
   largeTitle = false,
+  largeTitleAccessory,
   subtitle,
   back,
+  fallbackHref,
   headerRight,
   header: customHeader,
   scroll = true,
@@ -73,17 +85,33 @@ export function Screen({
 }: ScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const desktopWeb = useDesktopWeb();
 
   const canGoBack = router.canGoBack();
-  const showBack = back === undefined ? canGoBack : Boolean(back);
-  const onBack = typeof back === 'function' ? back : () => router.back();
+  // Web'de sayfa yenilenince/bağlantıyla açılınca geçmiş yoktur; geri, mantıksal üst ekrana gider.
+  const parentHref: Href | null = isWeb && !canGoBack ? (fallbackHref ?? screenParentHref(currentWebPathname())) : null;
+  const showBack = back === undefined ? canGoBack || parentHref !== null : Boolean(back);
+  const onBack =
+    typeof back === 'function'
+      ? back
+      : () => {
+          if (router.canGoBack()) router.back();
+          else if (parentHref !== null) router.replace(parentHref);
+        };
   const showBar = showBack || Boolean(headerRight) || (Boolean(title) && !largeTitle);
 
   const bar = showBar ? (
-    <View style={[styles.bar, headerDivider && styles.barDivider]}>
+    <IconButtonVariantContext.Provider value="square">
+    <View style={[styles.bar, desktopWeb && styles.barDesktop, headerDivider && styles.barDivider]}>
       <View style={styles.side}>
         {showBack ? (
-          <IconButton icon="back" accessibilityLabel="Geri" onPress={onBack} testID="screen-back" />
+          <IconButton
+            icon="back"
+            accessibilityLabel="Geri"
+            onPress={onBack}
+            size={backIconSize}
+            testID="screen-back"
+          />
         ) : null}
       </View>
       <View style={styles.barTitle}>
@@ -95,18 +123,26 @@ export function Screen({
       </View>
       <View style={[styles.side, styles.sideRight]}>{headerRight}</View>
     </View>
+    </IconButtonVariantContext.Provider>
   ) : null;
 
   const big =
     title && largeTitle ? (
       <View style={[styles.largeTitle, !showBar && styles.largeTitleTop, !padded && styles.padded]}>
-        <Text variant="title" accessibilityRole="header">
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text variant="bodySmall" tone="muted">
-            {subtitle}
+        <View style={styles.largeTitleText}>
+          <Text variant="poster" accessibilityRole="header">
+            {title}
           </Text>
+          {subtitle ? (
+            <Text variant="body" tone="muted">
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+        {largeTitleAccessory ? (
+          <View style={styles.accessory} accessible={false} importantForAccessibility="no-hide-descendants">
+            {largeTitleAccessory}
+          </View>
         ) : null}
       </View>
     ) : null;
@@ -152,6 +188,8 @@ export function Screen({
   );
 }
 
+const isWeb = Platform.OS === 'web';
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
@@ -159,13 +197,16 @@ const styles = StyleSheet.create({
     minHeight: layout.headerHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.lg,
   },
-  barDivider: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
-  side: { minWidth: layout.minTouch * 2, flexDirection: 'row', alignItems: 'center' },
+  barDesktop: { paddingTop: desktopBarInset },
+  barDivider: { borderBottomWidth: strokes.base, borderBottomColor: colors.outline },
+  side: { minWidth: layout.squareButton + spacing.xl, flexDirection: 'row', alignItems: 'center' },
   sideRight: { justifyContent: 'flex-end' },
   barTitle: { flex: 1, paddingHorizontal: spacing.xs },
-  largeTitle: { marginTop: spacing.xs, marginBottom: spacing.xl, gap: spacing.xxs },
+  largeTitle: { marginTop: spacing.sm, marginBottom: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  largeTitleText: { flex: 1, gap: spacing.xs },
+  accessory: { marginRight: spacing.xs, pointerEvents: 'none' },
   largeTitleTop: { marginTop: spacing.xxl },
   scrollContent: { flexGrow: 1 },
   padded: { paddingHorizontal: layout.pageX },

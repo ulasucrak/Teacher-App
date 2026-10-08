@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { selectionHaptic } from '@/lib/haptics';
-import { colors, fontScale, iconSize, layout, motion, radii, spacing, tones, type ToneName, useReducedMotion } from '@/theme';
+import { colors, fontScale, hardShadow, iconSize, layout, motion, radii, spacing, strokes, tones, type ToneName, useReducedMotion } from '@/theme';
 
 import { selectionA11y } from './a11y';
+import { useFitText } from './fitText';
 import { Icon } from './Icon';
+import { isHovered } from './SegmentedChoice.interaction';
 import { Text } from './Text';
 
 export interface OptionChipProps {
@@ -24,11 +26,16 @@ export interface OptionChipProps {
   fill?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
+  /** Web: grup ok tuşu gezintisi için Pressable ref'i (ChipGroup / OptionGrid verir). */
+  pressableRef?: (node: View | null) => void;
+  /** Web: roving tabindex (-1 → Tab ile atlanır, oklarla ulaşılır). */
+  tabIndex?: 0 | -1;
 }
 
 /**
- * Form seçeneği. Seçiliyken kendi tonunun dolgusunu ve ✓ işaretini alır;
- * seçili değilken sıra grisi zemin + ton noktası. Basınca seçim titreşimi.
+ * Form seçeneği. Seçiliyken kendi tonunun canlı kâğıt dolgusunu, kalın kurşun çerçeveyi, küçük sert gölgeyi
+ * ve ✓ işaretini alır (yazı kurşun); seçili değilken beyaz zemin + ince çerçeve + ton noktası.
+ * Basınca seçim titreşimi.
  */
 export function OptionChip({
   label,
@@ -42,7 +49,10 @@ export function OptionChip({
   fill = true,
   style,
   testID,
+  pressableRef,
+  tabIndex,
 }: OptionChipProps) {
+  const fit = useFitText(label, { enabled: fill, minimumFontScale: 0.8 });
   const reducedMotion = useReducedMotion();
   const [scale] = useState(() => new Animated.Value(1));
   const t = tones[tone];
@@ -65,6 +75,8 @@ export function OptionChip({
   return (
     <Animated.View style={[fill && styles.fill, { transform: [{ scale }] }, style]}>
       <Pressable
+        ref={pressableRef}
+        tabIndex={tabIndex}
         testID={testID}
         onPress={handlePress}
         onPressIn={() => animateTo(motion.pressScale)}
@@ -74,18 +86,20 @@ export function OptionChip({
         accessibilityRole={selectionMode}
         accessibilityLabel={accessibilityLabel ?? label}
         {...selectionA11y({ checked: selected, selected, disabled })}
-        style={({ pressed }) => [
+        style={(state) => [
           styles.chip,
           compact ? styles.compact : styles.regular,
           {
             backgroundColor: selected
-              ? pressed
+              ? state.pressed
                 ? t.solidPressed
                 : t.solid
-              : pressed
-                ? colors.rule
-                : colors.surfaceMuted,
+              : state.pressed || (!disabled && isHovered(state))
+                ? colors.surfaceMuted
+                : colors.surface,
           },
+          selected ? styles.selected : styles.unselected,
+          selected && hardShadow('xs'),
           disabled && styles.disabled,
         ]}
       >
@@ -98,10 +112,9 @@ export function OptionChip({
           variant="label"
           color={selected ? t.onSolid : colors.text}
           numberOfLines={1}
-          adjustsFontSizeToFit={fill}
-          minimumFontScale={0.8}
+          {...fit.textProps}
           maxFontSizeMultiplier={fontScale.dense}
-          style={styles.label}
+          style={[styles.label, fit.style]}
         >
           {label}
         </Text>
@@ -110,7 +123,7 @@ export function OptionChip({
   );
 }
 
-const DOT = spacing.sm - 1;
+const DOT = spacing.sm + 2;
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
@@ -123,7 +136,9 @@ const styles = StyleSheet.create({
   },
   regular: { minHeight: layout.chipHeight, paddingHorizontal: spacing.sm },
   compact: { minHeight: layout.chipHeightCompact, paddingHorizontal: spacing.md },
-  dot: { width: DOT, height: DOT, borderRadius: radii.full },
+  selected: { borderWidth: strokes.base, borderColor: colors.outline },
+  unselected: { borderWidth: strokes.thin, borderColor: colors.outline },
+  dot: { width: DOT, height: DOT, borderRadius: radii.full, borderWidth: strokes.fine, borderColor: colors.outline },
   label: { flexShrink: 1 },
   disabled: { opacity: 0.5 },
 });

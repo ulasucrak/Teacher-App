@@ -32,6 +32,21 @@ describe('web icon mapping', () => {
     expect(material[web as string]).toEqual(expect.any(Number));
   });
 
+  it('draws iOS-like glyphs on web without changing Android', () => {
+    // chevron.left: ince ‹, Android'deki ← oku değil.
+    expect(toWebSymbol(icons.back)).toEqual({ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back_ios_new' });
+    expect(toWebSymbol(icons.chevronRight).web).toBe('arrow_forward_ios');
+    // book.closed: kapalı kitap (menu_book açık kitaptır).
+    expect(toWebSymbol(icons.book).web).toBe('book_2');
+    expect(toWebSymbol(icons.calendar).web).toBe('calendar_month');
+    expect(toWebSymbol(icons.note).web).toBe('article');
+    expect(toWebSymbol(extraIcons.list).web).toBe('format_list_bulleted');
+  });
+
+  it('keeps an explicit web name', () => {
+    expect(toWebSymbol({ ios: 'chevron.left', android: 'arrow_back', web: 'chevron_left' }).web).toBe('chevron_left');
+  });
+
   it('keeps the iOS and Android names when adding the web name', () => {
     expect(toWebSymbol({ ios: 'pencil', android: 'edit' })).toEqual({ ios: 'pencil', android: 'edit', web: 'edit' });
   });

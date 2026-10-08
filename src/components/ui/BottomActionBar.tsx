@@ -75,6 +75,7 @@ export function BottomActionBar({ primary, secondary, hint }: BottomActionBarPro
 
 const styles = StyleSheet.create({
   wrap: { gap: spacing.sm },
-  row: { flexDirection: 'row', gap: spacing.sm, alignItems: 'center' },
+  // Gölge sağa/alta taştığı için yan yana düğmeler arası geniş.
+  row: { flexDirection: 'row', gap: spacing.lg, alignItems: 'center' },
   grow: { flex: 1 },
 });

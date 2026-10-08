@@ -1,11 +1,20 @@
-# Sınıf Defteri — tasarım dili v2: "Kalem kutusu"
+# Sınıf Defteri — tasarım dili v3: "Pano ve Damga"
 
-Bu belge uygulamanın tek tasarım kaynağıdır (v1 "çizgili defter" dilinin yerini aldı). Yeni ekran yazan ya da
-mevcut ekranı yeniden düzenleyen her görev buna uyar. Kod karşılığı: `src/theme/`
-(token'lar) ve `@/components/ui` (bileşenler). Tema dışında hex renk, font adı ya da
-rastgele boşluk sayısı yazılmaz.
+Bu belge uygulamanın tek tasarım kaynağıdır (v1 "çizgili defter" ve v2 "Kalem kutusu" dillerinin
+yerini aldı). Yeni ekran yazan ya da mevcut ekranı yeniden düzenleyen her görev buna uyar.
+Kod karşılığı: `src/theme/` (token'lar) ve `@/components/ui` (bileşenler). Tema dışında hex renk,
+font adı ya da rastgele boşluk sayısı yazılmaz.
 
-## 0. Neden yeniden? v1 denetimi (en çok kalabalık yaratan 7 sorun)
+**Görsel referans:** `docs/design/pano-ve-damga.html` (onaylı mockup: telefon, laptop ve Sınıf modu).
+Tarayıcıda açıp bu belgeyle birlikte okuyun; belge ile mockup çelişirse mockup kazanır, belge
+düzeltilir. Bileşenleri tek sayfada görmek için bkz. §12 ("Galeri").
+
+**Geçiş durumu:** aşama 1 (token'lar + `@/components/ui`) tamam. **Aşama 2'de öğretmen ekranları mockup'a
+getirildi** (giriş, Sınıflarım, Sınıf + `HeroBlock`, Artı/eksi tek satır sayaç, Geçmiş toplam kartı, öğrenci
+listesi, hesap, laptop uygulama çubuğu — bkz. §13); **Sınıf modu** ekranı ayrı iştir ve henüz bu belgedeki
+"Sınıf modu" bölümünün eski (v2 yerleşimli) tarifindedir.
+
+## 0. Neden yeniden? v1 denetimi (tarihsel; en çok kalabalık yaratan 7 sorun)
 
 | # | Sorun (mevcut ekran) | v2 kararı |
 |---|---|---|
@@ -17,6 +26,10 @@ rastgele boşluk sayısı yazılmaz.
 | 6 | **Metin fazlası:** boş durumlarda 2–3 cümle, açıklamalı kartlar, uzun banner'lar. | Boş durum = başlık + tek cümle + tek buton. Açıklama yalnızca belirsizlik varsa. |
 | 7 | **Onaylar ekranın üstünde** (sistem Alert'i) ve menü sheet'lerinde iri butonlar + açıklama metni. | Seçenekler `OverflowMenu` satırlarıyla, geri alınamaz eylemler başparmak yakınında `ConfirmSheet` ile. |
 
+
+> v2 bu yedi sorunu çözdü ve **v3'te de geçerlidir**; v3 yalnızca görsel dili (renk, çerçeve, gölge,
+> başlık ölçeği) değiştirir. Ekran yapısı, akışlar ve navigasyon aynıdır.
+
 ## 1. Konu, kullanıcı, ana iş
 
 - **Konu:** Türkiye'de bir öğretmenin ders içi kayıtları: yoklama, ödev kontrolü, sözlü,
@@ -25,123 +38,184 @@ rastgele boşluk sayısı yazılmaz.
   öğretmen. Sınıfta 30–45 öğrenci. Ekrana 2 saniye bakıp "kim yok, kim getirmedi" görmek ister.
 - **Ana iş:** Bir listeyi hızlıca işaretleyip kaydetmek. Her karar buna hizmet eder.
 
-## 2. Yön: "Kalem kutusu"
 
-Öğretmenin kalem kutusunda her kalemin bir işi vardır; arayüzdeki her renk de öyle:
+## 2. Yön: "Pano ve Damga"
 
-- **Kurşun kalem** (grafit) metni yazar. Ekranın %90'ı kurşun ve beyaz kâğıttır.
-- **Sarı kalem** (kalemin gövdesi; fosforlu kalem gibi "önemli olan bu") yalnızca
-  **ekrandaki tek ana eylemi** boyar: "Kaydet", "Devam", "Yeni sınıf". Kullanıcı ekrana
-  baktığında başparmağının nereye gideceğini sarıdan anlar.
-- **Mavi tükenmez** etkileşimi gösterir: bağlantı, seçim, odak, hafif butonlar.
-- **Boya kalemleri** (yeşil, mavi, hardal, kırmızı) yalnızca form seçeneklerinin anlamını
-  taşır: Geldi / İzinli / Eksik / Gelmedi.
-- **Kırmızı kalem** hata ve silme içindir.
+Sınıfın mantar panosu ve öğretmenin mor mürekkepli "Aferin" damgası. **Kalın kurşun çerçeveler, düz ve
+canlı el işi kâğıdı renkleri, sert (ofsetli, bulanıksız) gölgeler, posterden fırlamış iri başlıklar.**
+Degrade, bulanıklık, cam efekti yok; her şey net çizgiyle ayrılır.
 
-**Cesaretimizi tek yere harcıyoruz: sarı ana eylem.** Geri kalan her şey sessiz: beyaz
-kâğıt, kurşun metin, ince ayraç, bol boşluk. Uygulama işareti (girişte) kurşun bir kare
-içinde sarı bir defterdir — markanın tek imzası.
+- **Kurşun** (`#141414`) yalnız metin değil, **her çerçevenin ve gölgenin** rengidir. Ekran beyaz kâğıt
+  üstünde kurşun çizgilerle çizilmiş gibi okunur.
+- **Sarı** (`#FFD23F`) yine **ekrandaki tek ana eylemi** boyar. v2'nin en iyi kararı korunur.
+- **Pano mavisi** (`#2D3A8C`) iki iş yapar: Sınıf modunun zemini (`Board`) ve etkileşim rengi
+  (bağlantı, odak, ghost buton). Pano üstünde kâğıt kartlar, kartların gölgesi koyu mavidir (`boardDeep`).
+- **Damga moru** (`#6B2FD6`) yalnızca ödül anıdır: "Aferin +1" damgası. Başka hiçbir yerde mor kullanılmaz.
+- **El işi kâğıdı renkleri** (nane, gök, lila, turuncu, pembe) sınıf/form kimliği, ikon kutusu, rozet,
+  bant ve avatar zeminidir; üstlerinde hep kurşun yazı. **Seçenek tonları** (artı, mercan, gök,
+  turuncu) da bu canlı renklerdir ve v3'te üstlerinde **beyaz değil kurşun** yazı taşır.
+- Başlıklar Bricolage **800**, ad/buton/etiket Atkinson **800**: ağırlık v2'den bir kademe yukarıdadır.
+
+### Kalem kutusu'ndan (v2) korunanlar
+
+| Karar | v3'te |
+|---|---|
+| Sarı yalnızca ana eylem; ekranda en fazla bir sarı öğe | **Aynen.** Sarı yazı/ikon rengi olarak da kullanılmaz (beyaz üstünde 1.5:1). Tek istisna: kurşun zeminde (toast eylemi, "Aferin" şeridi) sarı yazı ≥ 12:1. |
+| Saf beyaz kâğıt zemin, krem/serif yok | **Aynen** (sayfa `#FFFFFF`). Noktalı "defter masası" yalnız geniş web ekranında çerçevenin arkasında. |
+| Ekran başına tek ana eylem, başparmak bölgesi altta | **Aynen** (FAB / `BottomActionBar`). |
+| Bölümleri kartlara bölmemek; liste satırı + boşluk | **Aynen.** Kart yalnızca giriş noktası (`ListRow variant="card"`), vurgu (`PaperCard`) ve Sınıf modu karoları için. |
+| Büyük harf etiket, eyebrow, emoji yok; cümle düzeni başlık | **Aynen.** "İri başlık" büyük **harf** değil büyük **punto**dur. |
+| Durum yalnızca renkle verilmez (✓, +/−, sayı, çıkartma her zaman var) | **Aynen** ve mockup'ta da vurgulu. |
+| Dokunma ≥ 48 pt, tüm eylemlerin `testID`'si | **Aynen** (bileşen API'leri kırılmadı). |
+| Tek yazı çifti: Bricolage Grotesque + Atkinson Hyperlegible Next | **Aynen**; yalnız ağırlıklar 800'e çıktı (600/700 başlık ağırlıkları paketten çıktı). |
+| Hareket yalnızca kullanıcı eylemine cevap; "hareketi azalt" saygısı | **Aynen**; damga animasyonu da buna uyar. |
+| Boş durum = başlık + tek cümle + tek buton; hata dili; onaylar `ConfirmSheet` | **Aynen.** |
+
+**Anlamı değişenler:** "kalem kutusu" metaforu ve `tukenmez` (mavi tükenmez) → artık pano mavisi;
+`sira` (soluk gri yüzey) artık yalnızca devre dışı/pasif/ikon kutusu zemini (alanlar beyaz + çerçeveli);
+"yüzey = gölgesiz" kuralı kalktı: kart/buton/FAB/alan kalın çerçeve + sert gölge taşır; "hap" biçimi
+(FAB, arama, çip, avatar) kaldırıldı — yalnız sayaç/damga/puan dairesi yuvarlak; `elevation` yumuşak gölge
+değil sert gölge/üst çizgi.
 
 ### Jenerik varsayılanlara karşı kontrol
 
 | İlk refleks | Neden reddedildi | Yerine |
 |---|---|---|
-| v1'i koruyup sadeleştirmek (mavi birincil) | Mavi; seçim, nötr ton ve bağlantıyla çakışıyor, ana eylem kayboluyor | Sarı ana eylem + kurşun metin; mavi yalnızca etkileşim |
-| Krem zemin + serif başlık + kiremit vurgu | Üretilmiş tasarımın en yaygın işareti | Saf beyaz kâğıt, grotesk başlık |
-| Her bölümü aynı radiuslu, gölgeli karta koymak | "SaaS kart kiti"; ekranı bölüp kalabalık gösterir | Liste satırı + boşlukla gruplama; kart yalnızca gerçekten birlikte okunan içerik için |
-| Büyük harf bölüm etiketi ("ÖĞRENCİLER") | Jenerik; Türkçede `i/İ` büyütmesi riskli | Cümle düzeni başlık + soluk sayı: "Öğrenciler 28" |
-| Mor/indigo degrade, cam efekti | Konudan kopuk | Düz renk, okul malzemesinden alınmış |
-| Sadece ikonlu FAB | Anlamı tahmin ettirir | Her zaman etiketli hap: "+ Yeni sınıf" |
+| Yumuşak gölge, cam, degrade, pastel "SaaS" görünüm | Tahtada/projeksiyonda soluyor; jenerik | Düz renk, kalın kurşun çizgi, bulanıksız ofset gölge |
+| Her bileşene aynı kalın çerçeve + gölge | Yorucu, hiyerarşi kaybolur | Üç seviye: gölgesiz 2 px (satır içi çip/avatar), 2.5 px + küçük gölge (alan, ikincil), 2.5 px + büyük gölge (ana eylem, hero) |
+| Her yere renk | Anlam kaybolur | Renk yalnız anlam (ton) ve kimlik (kâğıt rengi) taşır; ana eylem tek sarı |
+| Mor aksan her yerde | "AI moru" klişesi | Mor yalnızca damga |
+| Sadece ikonlu FAB | Anlamı tahmin ettirir | Her zaman etiketli: "+ Yeni sınıf" |
 
 ## 3. Renk
 
-Ana palet (6 isim, `palette`):
+Ana palet (`palette`):
 
 | Token | Hex | Rol |
 |---|---|---|
 | `kagit` | `#FFFFFF` | Sayfa ve yüzey zemini |
-| `sira` | `#F2F3F5` | Okul sırasının grisi: pasif çip, giriş alanı, arama, ikincil buton |
-| `kursun` | `#1D2129` | Ana metin, seçili filtre çipi, tamamlanan adım |
-| `sariKalem` | `#FFC62E` | **Yalnızca** ekrandaki tek ana eylemin dolgusu (üstünde kurşun metin) |
-| `tukenmez` | `#2446B0` | Etkileşim: bağlantı, hafif buton, odak kenarı, nötr ton |
-| `kirmiziKalem` | `#B3261E` | Hata metni, yıkıcı buton, olumsuz ton |
+| `kursun` | `#141414` | Ana metin **ve tüm çerçeve/gölgeler** (`colors.outline`, `colors.shadow`) |
+| `sariKalem` | `#FFD23F` | Ekrandaki tek ana eylemin dolgusu (üstünde kurşun, 12.8:1) |
+| `pano` | `#2D3A8C` | Etkileşim (bağlantı, odak, ghost) + Sınıf modu zemini; beyaz üstünde 10.0:1 |
+| `panoDerin` | `#121848` | Pano üstündeki kartların sert gölgesi |
+| `damga` | `#6B2FD6` | Yalnızca "Aferin" damgası (beyaz üstünde 6.99:1) |
+| `yesil` / `yesilKoyu` | `#39D98A` / `#0E6B3E` | "+" dolgusu (üstünde kurşun 10.1:1) / yeşil metin (beyaz üstünde 6.58:1) |
+| `mercan` | `#FF6B5B` | Olumsuz/yıkıcı **dolgu** (üstünde kurşun 6.6:1); yazı rengi olarak değil |
+| `kirmiziKalem` | `#B91E0D` | Hata **yazısı/ikonu** (beyaz üstünde 6.45:1) |
+| `mavi` | `#7B9BFF` | Nötr seçim dolgusu (üstünde kurşun 7.0:1) |
+| `nane` `gok` `lila` `turuncu` `pembe` | `#B8F0D4` `#A9C1FF` `#CDB8FF` `#FFB067` `#FF9BC8` | El işi kâğıtları (`PaperName`, `paper` haritası); üstünde kurşun ≥ 9:1 |
+| `sira` | `#F2F2EF` | Pasif yüzey, devre dışı buton, ikon kutusu (v3: hafif sıcak gri) |
+| `defter` / `defterNokta` | `#F6F5F2` / `#CFCCC4` | Yalnız `AppFrame.web` noktalı masa |
 
 Kod adları (`colors`): `background/surface` = kâğıt, `surfaceMuted` = sıra, `text` = kurşun,
-`textMuted #5A6170`, `rule #E3E5EA` (ayraç), `border #868C98`, `accent/accentPressed #EDB300/onAccent`
-(sarı kalem), `primary` = tükenmez (adı geriye uyum için korunur; **birincil buton rengi değildir**),
-`danger`, `dangerMuted`, `scrim`, `pressedOverlay`.
+`textMuted #4A4A4A` (beyaz 8.9:1, sıra 7.9:1), `rule #E2E2E2` (2 px ayraç), `border #8A8A8A`
+(soluk/pasif çizgi — **yazı için değil**, 3.45:1), **`outline` = kurşun** (kalın çerçeve),
+`accent/accentPressed/onAccent` (sarı), `primary` = pano (adı geriye uyum için korunur; **birincil
+buton rengi değildir**), `primaryMuted #DCE5FF`, `danger` (kırmızı kalem yazı), `dangerMuted #FFD6D0`,
+`dangerSolid #FF6B5B` + `onDangerSolid` (yıkıcı buton dolgusu), `board`, `boardDeep`, `stamp`,
+`plus`/`plusText`, `scrim` (%55 kurşun), `pressedOverlay`.
 
-### Seçenek tonları (`FormOption.tone`) — boya kalemleri
+### Seçenek tonları (`FormOption.tone`) — canlı kâğıt renkleri
 
-| Ton | Dolgu (seçili, beyaz metin) | Açık zemin / metin | Örnek |
+v3'te dolgu üstünde **kurşun** yazı (v2'de beyazdı); `onSoft` koyu ton rengidir ve hem `soft` hem
+beyaz üstünde okunur. Seçili çip = ton dolgusu + 2.5 px kurşun çerçeve + küçük sert gölge + ✓.
+
+| Ton | Dolgu (`solid`, kurşun yazı) | `soft` / `onSoft` | Örnek |
 |---|---|---|---|
-| `positive` | `#17744A` — 5.78:1 | `#E1F2E8` / `#17744A` — 4.97:1 | Geldi, Tamamlandı |
-| `neutral` | `#2446B0` — 8.15:1 | `#E7ECFA` / `#2446B0` — 6.90:1 | İzinli, Orta |
-| `warning` | `#9C5700` — 5.56:1 | `#FCEFD5` / `#9C5700` — 4.88:1 | Eksik, Geç geldi |
-| `negative` | `#B3261E` — 6.54:1 | `#FCE8E6` / `#B3261E` — 5.55:1 | Gelmedi, Getirmedi |
+| `positive` | `#39D98A` — 10.1:1 | `#B8F0D4` / `#0E6B3E` — 5.2:1 | Geldi, Artı, Tamamlandı |
+| `neutral` | `#7B9BFF` — 7.0:1 | `#C9D8FF` / `#2D3A8C` | İzinli, Orta |
+| `warning` | `#FFB067` — 10.2:1 | `#FFD9B0` / `#7A3E00` | Eksik, Geç geldi |
+| `negative` | `#FF6B5B` — 6.6:1 | `#FFD0CA` / `#9F1A0B` | Gelmedi, Getirmedi, Eksi |
 
-Diğer ölçülen kontrastlar: kurşun/beyaz 16.13:1, kurşun/sıra 14.53:1, `textMuted`/beyaz
-6.22:1, `textMuted`/sıra 5.60:1, kurşun/sarı 10.27:1, kurşun/sarı basılı 8.49:1,
-tükenmez/beyaz 8.15:1, `border`/beyaz 3.38:1, kurşun/avatar zeminleri ≥ 9:1.
+Bu kontrastlar `src/theme/theme.test.ts` içinde **otomatik doğrulanır** (metin ≥ 4.5:1, kâğıt/avatar ≥ 9:1).
+Yeni renk eklerken teste de ekleyin.
 
 Kurallar:
-- Sarı beyaz zemin üstünde metin ya da ikon rengi olarak **kullanılmaz** (1.57:1). Yalnızca dolgu.
-- Ton tek başına anlam taşımaz: seçili çipte ✓ ve `accessibilityState.selected/checked` var.
-- Bir ekranda sarı dolgulu öğe en fazla **bir** tanedir (FAB, alt buton ya da boş durum eylemi).
+- Sarı beyaz zemin üstünde metin ya da ikon rengi olarak **kullanılmaz** (1.6:1). Yalnızca dolgu (ve kurşun zeminde yazı).
+- Mercan ve diğer pastel dolgular beyaz üstünde **yazı** değildir; hata yazısı `danger`.
+- Ton tek başına anlam taşımaz: seçili çipte ✓ ve `accessibilityState.selected/checked`; sayılar ve +/− işareti her zaman var.
+- Bir ekranda sarı dolgulu öğe en fazla **bir** tanedir (FAB, alt buton ya da boş durum eylemi). İstisna: Sınıf modunda toplam kutusu ve kutlama şeridi (mockup).
+- Damga moru yalnız `Stamp` ve kutlamada.
 
 ## 4. Tipografi
 
-v1'in iki ailesi korunur (paketler kurulu, Türkçe glifler `ı İ ş ğ ç ö ü` tam):
+İki aile korunur: **Bricolage Grotesque 800** (tüm başlıklar, büyük sayılar) ve **Atkinson Hyperlegible
+Next 400/700/800** (metin, buton, etiket, okul numarası `tabular-nums`). Yalnızca `fonts.ts` içindeki
+dört ağırlık paketlenir.
 
-- **Bricolage Grotesque** — başlıklar: ekran başlığı, sınıf adı, sihirbaz sorusu. Hafif
-  "el yapımı" grotesk; okul panosundaki kesme harfler.
-- **Atkinson Hyperlegible Next** — tüm metin, buton, çip, okul numarası (`tabular-nums`).
-  `I/l/1`, `O/0` ayrımı net; isim listesini hızlı taramak için.
+| Varyant | Font | Boyut / satır | Aralık | Kullanım |
+|---|---|---|---|---|
+| `hero` *(yeni)* | Bricolage 800 | 80 / 72 | −4 | Sınıf adı bloğu (`HeroBlock`): "5/B" |
+| `poster` *(yeni)* | Bricolage 800 | 44 / 46 | −1.5 | Kök ekran büyük başlığı (`Screen largeTitle`): "Sınıflarım" |
+| `display` | Bricolage 800 | 40 / 44 *(v2: 34/40)* | −1.2 | Giriş ekranı "Sınıf Defteri"; Sınıf modu puanı |
+| `title` | Bricolage 800 | 32 / 36 *(28/34)* | −0.9 | Sihirbaz sorusu, ikincil büyük başlık |
+| `headline` *(yeni)* | Bricolage 800 | 26 / 30 | −0.5 | Bölüm başlığı (`SectionHeader`), boş durum başlığı |
+| `heading` | Bricolage 800 | 20 / 25 *(19/24)* | −0.3 | Üst çubuk, sheet başlığı, satır sonu sayı |
+| `bodyStrong` | Atkinson 800 *(700)* | 17 / 24 | — | Ad, satır başlığı, buton |
+| `body` | Atkinson 400 | 17 / 24 | — | Paragraf, alan değeri |
+| `bodySmall` | Atkinson 400 | 15 / 21 | — | Kısa açıklama |
+| `label` | Atkinson 700 *(600)* | 15 / 20 | — | Alan etiketi, çip, küçük buton |
+| `caption` | Atkinson 400 | 14 / 19 *(13/18)* | — | Alt bilgi, yardım metni |
+| `number` | Atkinson 700 tabular | 15 / 20 | — | Okul numarası |
 
-| Varyant | Font | Boyut / satır | Kullanım |
-|---|---|---|---|
-| `display` | Bricolage 700 | 34 / 40 | Yalnızca giriş ekranı: "Sınıf Defteri" |
-| `title` | Bricolage 700 | 28 / 34 | Kök ekran büyük başlığı, sihirbaz sorusu |
-| `heading` | Bricolage 600 | 19 / 24 | Üst çubuk başlığı, bölüm başlığı, sheet başlığı |
-| `bodyStrong` | Atkinson 700 | 17 / 24 | Öğrenci adı, liste satırı başlığı, buton |
-| `body` | Atkinson 400 | 17 / 24 | Paragraf, alan değeri |
-| `bodySmall` | Atkinson 400 | 15 / 21 | Kısa açıklama, banner |
-| `label` | Atkinson 600 | 15 / 20 | Alan etiketi, çip, küçük buton |
-| `caption` | Atkinson 400 | 13 / 18 | Yardım metni, sayaç |
-| `number` | Atkinson 600 tabular | 15 / 20 | Okul numarası |
+`heading` mockup'ta 21 px'tir ama 20'de tutulur: Sınıf modu seçenek genişliği hesabı
+(`features/classroom/layout.ts`) `typography.heading` boyutundan türetildiği için 21'de 1920 px'te sütun
+sayısı düşer; aşama 2'de bu bağımlılık kaldırılınca 21'e çıkarılabilir.
 
-Kurallar: büyük harf etiket yok; başlık üstünde "eyebrow" yok; tek kelime vurgusu yok;
-satır < 80 karakter. Dinamik yazı açık, en fazla 1.4× (çiplerde 1.2×).
+Eski ad `fontFamilies.displayBold/displaySemiBold/textSemiBold` kullanımdan kalktı (aynı yeni fonta eşlenir).
+Kurallar: büyük **harf** etiket yok; başlık üstünde "eyebrow" yok; satır < 80 karakter. Dinamik yazı
+açık, en fazla 1.4× (çiplerde 1.2×). `hero` ve sayaçlarda `adjustsFontSizeToFit` ya da tek satır sınırı kullanılır.
 
 ## 5. Boşluk, yerleşim, dokunma
 
-- 4 tabanlı ölçek: `xxs 2 · xs 4 · sm 8 · md 12 · lg 16 · xl 20 · xxl 24 · xxxl 32 · huge 48`
-  (bu belge içinde ara nokta yalnızca ölçeği listelemek için).
+- 4 tabanlı ölçek: `xxs 2 · xs 4 · sm 8 · md 12 · lg 16 · xl 20 · xxl 24 · xxxl 32 · huge 48`.
 - Sayfa yatay boşluğu **20** (`layout.pageX`). Bölümler arası `xxl`. İçerik sola hizalı;
   ortalı olan yalnızca üst çubuk başlığı ve boş durum.
+- **Sert gölge yer ister:** sağ/alt 3–5 px taşar. Yan yana düğmeler arası ≥ 12–16 (`BottomActionBar` 16,
+  `ConfirmSheet` 16); kapsayıcıya `overflow: hidden` verilirse gölge kırpılır.
 - **Başparmak bölgesi:** ana eylem her zaman altta (alt çubuk ya da FAB). Üstte yalnızca geri
-  ve "⋯".
-- Dokunma alanı ≥ 48 pt (`layout.minTouch`). Buton 56, FAB 56, liste satırı ≥ 64,
-  ızgara çipi 44, kompakt çip 40 + 4 pt hitSlop.
+  ve "⋯" (46 pt kare "pul": `layout.squareButton`).
+- Dokunma alanı ≥ 48 pt (`layout.minTouch`; görünür kutu 44–46 + `hitSlop`). Buton 56, küçük buton 44
+  (+4 hitSlop), FAB 58, liste satırı ≥ 72 *(v2: 64)*, ızgara çipi 44, kompakt çip 40 + 4 hitSlop,
+  üst çubuk 62 *(52)*.
+- Çizgi kalınlıkları (`strokes`): `fine 1.5` (rozet) · `thin 2` (ayraç, ikon kutusu, avatar, pasif çip) ·
+  `base 2.5` (buton, kart, alan, segment, üst çubuk çizgisi) · `heavy 3` (vurgu). `layout.hairline` artık **2** px
+  (adı v1'den kalma), `layout.inputBorder/inputBorderFocus` 2.5, `layout.stroke` 2.5.
 
-## 6. Radius ve yükselti (hiyerarşiye göre)
+## 6. Radius, çerçeve ve sert gölge
 
-| Seviye | Ne | Radius | Gölge / kenar |
+`radii`: `xs 8` (rozet, küçük onay kutusu) · `sm 12` (alan, çip, ikon kutusu, kare düğme, banner, segment) ·
+`md 16` (buton, kart, FAB, toast) · `lg 22` (sheet üst köşeleri, hero) · `full` (yalnız daire: sayaç, nokta,
+damga). Avatar yuvarlatılmış karedir (≈ %26 radius).
+
+**Sert gölge** (`hardShadow(size, color?)`, `shadowOffset`: `xs 2 · sm 3 · md 4 · lg 5`): `boxShadow: 'Npx Npx 0px renk'`.
+RN 0.76+ `boxShadow` iOS, Android (API 28+) ve web'de aynı çizilir; eski Android'de gölge görünmez, çerçeve
+kalır (kayıp yok). **Doğrudan `boxShadow` yazmayın.** Basılabilir her gölgeli öğe **gömülür**:
+`pressed ? pressedIn(size) : hardShadow(size)` (gölge kapanır, öğe gölge ofseti kadar kayar).
+
+| Seviye | Ne | Çerçeve | Gölge |
 |---|---|---|---|
-| 0 — sayfa | Liste satırı | 0 | İçerik başından itibaren 1 px `rule` ayraç |
-| 1 — gömülü | Giriş alanı, seçenek çipi, banner, segment | `sm` 12 | Gölge yok; giriş alanı sıra dolgulu, odakta beyaz + 2 px mavi kenar |
-| 1 — hap | Filtre çipi, arama, rozet, avatar, FAB | `full` | — |
-| 2 — kart / buton | Buton, (nadir) kart, toast | `md` 16 | Kartta 1 px `rule`, gölge yok |
-| 3 — yüzen | Alt eylem çubuğu, FAB | çubuk 0 / FAB `full` | `elevation.raised` / `elevation.floating` |
-| 4 — üstte | Sheet, menü, onay | üst köşeler `lg` 28 | `elevation.overlay` + %42 kurşun perde |
+| 0 — sayfa | `ListRow` (düz) | yok | 2 px `rule` ayraç |
+| 1 — satır içi | Seçilmemiş çip, avatar, ikon kutusu (`md`) | 2 px kurşun | yok |
+| 1 — seçili | `OptionChip`, `SegmentedChoice` | 2.5 px kurşun | `xs` (çip) / yok (segment) |
+| 2 — alan / ikincil | `TextField`, `SearchField`, `SelectField`, `Button secondary`, `IconButton square`, `Card`, `ListRow card` | 2.5 px kurşun | `xs`–`sm` (alanlarda yalnız odakta/hatada, mavi/kırmızı) |
+| 2 — ana | `Button primary/destructive`, `Fab`, `IconTile lg`, `Toast` | 2.5 px kurşun | `md` (toast: **sarı** gölge) |
+| 3 — vurgu | `HeroBlock`, `Card paper`, `PaperCard` | 2.5 px kurşun | `lg` (panoda `boardDeep`) |
+| 4 — üstte | `Sheet`/menü/onay | 2.5 px kurşun (alt kenar yok) | gölge yok; %55 kurşun perde |
+| Sabit çubuk | `StickyFooter` (`elevation.raised`) | üstte 2.5 px kurşun çizgi | yok |
+
+`elevation` adları (`flat/raised/floating/overlay`) korunur ama anlamı değişti: yumuşak gölge değil, çizgi/sert gölge.
 
 ## 7. Hareket
 
-- Süreler: `fast 120` (basma), `base 200` (durum, toast), `slow 280` (sheet).
-  Eğri: ease-out.
-- Yalnızca kullanıcı eylemine cevap: çip basınca 0.96 ölçek + seçim titreşimi, sheet aşağıdan
-  kayar, toast belirir. Giriş animasyonu, sıralı kart girişleri, kendiliğinden hareket yok.
-- "Hareketi azalt" açıksa ölçek/kayma kapanır, yalnızca opaklık (`useReducedMotion`).
+- Süreler: `fast 120` (basma), `base 200` (durum, toast), `slow 280` (sheet), `stampMs 380` (damga).
+  Eğri: ease-out (damgada hafif yay).
+- Yalnızca kullanıcı eylemine cevap: düğme basınca gömülür, çip 0.96 ölçek + seçim titreşimi, sheet
+  aşağıdan kayar, toast belirir, **damga iner**. Giriş animasyonu, sıralı kart girişleri, kendiliğinden hareket yok.
+- **Damga** (`<Stamp animate />`): 380 ms'de büyükten (2.6×, −34°) yerine (1×, −14°) basılır; aynı karta
+  yeniden basmak için `key` değiştirilir. Basılan kart "küt" diye 3 px çöker (aşama 2), puan yaylanır, yeni çıkartma yapışır.
+- "Hareketi azalt" açıksa ölçek/kayma/damga düşüşü kapanır, yalnızca opaklık; damga son hâliyle belirir
+  (`useReducedMotion`).
 
 ## 8. Yazı dili (Türkçe)
 
@@ -164,9 +238,14 @@ Ekran görevleri bu kalıplara uyar. Her ekranda **tek ana eylem**, en fazla **b
 
 ### 9.1 Ekran başlığı
 
-- **Kök ekranlar** (Sınıflarım, Sınıf): `Screen title largeTitle subtitle` — solda büyük
-  başlık, altında tek satır soluk bilgi ("28 öğrenci"). Sağ üstte "⋯".
-- **Alt ekranlar** (Form doldurma, düzenleme): üst çubukta geri + ortalı `heading` başlık + "⋯".
+- **Kök ekranlar** (Sınıflarım, Sınıf): Sınıflarım `Screen title largeTitle subtitle largeTitleAccessory` —
+  solda `poster` (44) başlık, altında tek satır soluk selam ("Günaydın, Selin Hanım": sabah Günaydın, gündüz
+  İyi günler, akşam İyi akşamlar), sağda süs `StarSticker` (64, 14°). Sınıf ekranında başlık yerine `HeroBlock`
+  (sınıf adı 80 pt nane kâğıtta, bant, çıkartma, avatar yığını + `Pill "28 öğrenci"`). Sağ üstte "⋯".
+- **Alt ekranlar** (Form doldurma, düzenleme): üst çubukta geri + ortalı `heading` başlık + "⋯"; çubuğun
+  altında `headerDivider` ile 2.5 px kurşun çizgi (mockup `.bar.ruled`).
+- **Üst çubuk düğmeleri** (`Screen` bar'ı ve `WizardHeader`) otomatik olarak 46 pt kare "pul" olur
+  (`IconButtonVariantContext`); ekranlar `IconButton`'u eskisi gibi verir, bir şey değiştirmez.
 - **Sihirbaz:** `Screen header={<WizardHeader …/>}` — geri/kapat, adım çubuğu, soru başlığı.
 - Başlık kartı, üstte açıklama paragrafı, eyebrow yok.
 
@@ -177,15 +256,25 @@ Ekran görevleri bu kalıplara uyar. Her ekranda **tek ana eylem**, en fazla **b
 - **Görev ekranı** (sihirbaz, doldurma, düzenleme): `Screen footer={<BottomActionBar primary=… />}`.
   İsteğe bağlı `secondary` ("Geri") solda, `hint` üstte ("3 değişiklik kaydedilmedi").
 - Boş durum kendi sarı butonunu gösteriyorsa ekran FAB/alt buton göstermez.
-- Hiçbir ekranda iki sarı öğe olmaz; ikinci eylem `secondary` ya da `ghost`.
+- Hiçbir ekranda iki sarı öğe olmaz; ikinci eylem `secondary` (beyaz, çerçeveli) ya da `ghost` (çerçevesiz bağlantı).
 
 ### 9.3 Liste satırı (`ListRow`)
 
-- Kart değil; satırlar arası ince ayraç. Başlık `bodyStrong`, en fazla bir satır soluk alt
-  bilgi, sağda en fazla bir öğe (sayı, rozet ya da chevron).
+- **`plain` (varsayılan):** kart değil; satırlar arası 2 px ayraç (öğrenci listesi, işaretleme).
+  Başlık `bodyStrong` (800), en fazla bir satır soluk alt bilgi (`caption` 14), sağda en fazla bir öğe
+  (sayı, rozet ya da chevron).
+- **`variant="card"` (yeni):** sayfa kenarlarından 20 pt içeride, 2.5 px kurşun çerçeveli, `sm` sert gölgeli
+  kâğıt kart; basınca gömülür; kartlar arası 12 pt boşluğu satır kendisi bırakır, ayraç çizmez. Giriş
+  noktaları için (formlar, sınıflar; mockup `.fcard` / `.cls`).
 - Okul numarası `number` prop'u ile solda dar, soluk, sağa hizalı sütun.
 - Her satırda aynı olan bilgi (sınıf adı vb.) satıra yazılmaz; başlıkta bir kez yazılır.
-- Giriş noktası satırı: `leading={<IconTile icon=… />}` + başlık + tek satır açıklama.
+- Giriş noktası satırı: `variant="card"` + `leading={<IconTile icon=… paper="nane" />}` + başlık + tek satır açıklama.
+  Form kartı (`FormListRow`) ikon kutusunu `formPaper(başlık)` ile boyar (yoklama nane, artı/eksi gök, sözlü lila,
+  ödev kontrolü turuncu, derse katılım pembe; özel formlar sıraya göre, sarı hariç); "Öğrenciler" kartı pembe.
+- **Sınıf kartı** (`ClassListRow`, mockup `.cls`): solda 90 pt kâğıt renkli etiket bloğunda sınıf adı
+  (`paperCycle` sırası: nane, gök, lila, turuncu, pembe — sarı ana eyleme ayrıldığı için atlanır; uzun ad küçülür),
+  ortada "N form" / "Henüz form yok", sağda `heading` 24 öğrenci sayısı + "öğrenci" ve chevron; kalın çerçeve +
+  `md` gölge, basınca gömülür. Erişilebilir ad değişmedi: "5/B, 28 öğrenci, 4 form".
 
 ### 9.4 İkincil eylemler (`OverflowMenu`)
 
@@ -233,10 +322,23 @@ alt çubukta "Öğrencileri ekle").
 - Alt çubuk: `BottomActionBar primary="Kaydet"`, `hint` kaydedilmemiş sayısı. Kaydedince toast
   "Kaydedildi". Kaydedilmemiş değişiklikle çıkışta sistem Alert'i kalır (gezinme koruması).
 
+**Artı / eksi (birikimli) satırı** (`MarkRow`, mockup `.mrow`): solda okul no, ortada ad (800) ve altında bugünün
+artıları kadar `StarSticker` (en çok 3) + yeşil "Bugün +N" (yalnız eksi varsa soluk "Bugün −N"; geçmiş günde
+"6 Eki +N"), yanında küçük ↶ ("son işareti geri al", yalnız o günde işaret varsa). Sağda tek satır sayaç: kare
+beyaz **−** · net (Bricolage 22; 0 soluk) · yeşil **+** (`tones.positive.solid`, `xs` gölge). Formun ilk olumlu
+seçeneği "+", ilk olumsuz seçeneği "−" olur; başka seçenekler ("Yarım artı") adın altında küçük ton çipleri olarak
+kalır (bugünün sayısıyla). `testID`'ler aynı: `mark-row-N`, `-name`, `-net`, `-day`, `-undo`, `-<seçenekAnahtarı>`.
+"Toplam: …" satırı kalktı (toplam sayılar net'in erişilebilir metninde); işareti olmayan satırda ek metin yok.
+Geri alma bandı (`UndoBar`) `Toast` ile aynı görünümdedir (kurşun + sarı gölge, sarı "Geri al").
+Gün çubuğu (`DayBar`): ok + takvim + tarih, sağda kurşun `Pill` ("17 işaret" / "21/28").
+
+**Geçmiş:** "Sınıf toplamı" `TotalsCard` (nane kâğıt, `md` gölge, net `display`); sayım noktaları (`ToneDot`) ton
+dolgusu + 1.5 px kurşun çerçeve; gün başlıkları kalın (800), kayıt ayraçları 2 px.
+
 ### 9.8 Boş durumlar
 
-`EmptyState`: ortalı ikon karesi, başlık, tek cümle, tek sarı buton (isteğe bağlı bir
-`ghost` ikinci yol). Arama sonucu boşsa EmptyState değil, tek satır soluk metin:
+`EmptyState`: ortalı, hafif eğik ikon kutusu (`IconTile lg`), `headline` başlık, tek cümle, tek sarı buton
+(isteğe bağlı bir `ghost` ikinci yol). Arama sonucu boşsa EmptyState değil, tek satır soluk metin:
 "“ay” ile eşleşen öğrenci yok."
 
 ### 9.9 Onaylar
@@ -247,6 +349,9 @@ alt çubukta "Öğrencileri ekle").
 - Sistem `Alert` yalnızca gezinme korumasında (kaydedilmemiş değişiklik).
 
 ### 9.10 Tel kafes çizimleri
+
+Yerleşimin kaba şemasıdır (v2'den); **görsel biçim için mockup'a bakın** — renkli kâğıt bloklar, kalın
+çerçeve ve gölge bu çizimlerde gösterilmez.
 
 **Sınıflarım** (kök, FAB)
 
@@ -389,55 +494,196 @@ alt çubukta "Öğrencileri ekle").
 ## 10. Bileşen envanteri (`@/components/ui`)
 
 Tüm dokunulabilir bileşenler `testID` alır (liste içerenler `testIDPrefix` → `${prefix}-${key}`).
+**Bileşen API'leri v2 ile uyumludur**; v3'te yalnızca eklemeler yapıldı (yeni prop/bileşen).
 
-| Bileşen | Ne zaman | Notlar |
+| Bileşen | Ne zaman | Notlar (v3) |
 |---|---|---|
-| `Screen` | Her ekranın kökü | `title`, `largeTitle`, `subtitle`, `back`, `headerRight` (tek öğe), `header` (özel), `footer`, `fab`, `scroll` |
-| `WizardHeader` / `Stepper` | Sihirbaz adımları | Gerçek sıra olduğu için numaralı ("Adım 2 / 3") |
-| `BottomActionBar` | Görev ekranının alt eylemi | `primary` (sarı), `secondary` (sol), `hint` |
-| `Fab` | Liste ekranının ana eylemi | Her zaman etiketli; `footer` ile birlikte kullanılmaz |
-| `Button` | Eylemler | `primary` sarı (ekranda bir kez), `secondary` sıra grisi, `ghost` mavi metin, `destructive` kırmızı (yalnızca onayda) |
-| `IconButton` | Geri, "⋯", satır içi | 48 pt, zorunlu `accessibilityLabel`, `variant="tonal"` |
-| `OverflowMenu` | İkincil eylemler | Eylem panel kapanınca çalışır |
-| `ConfirmSheet` | Geri alınamaz eylem onayı | `confirmLabel` eylem adı, `loading` |
-| `Sheet` | Seçici / panel | `description`, `onDismissed`, kapat `${testID}-close` |
-| `ListRow` | Liste satırı | `number`, `leading`, `trailing`, `children`, `divider`, `onLongPress` |
-| `IconTile` | Satır başı / boş durum ikonu | `tone` isteğe bağlı |
-| `SectionHeader` | Bölüm başlığı | Başlık + sayı + tek hafif eylem |
-| `SearchField` | Liste araması | Etiketsiz hap; `${testID}-clear` |
-| `TextField` | Form alanı | Sıra dolgu; odakta beyaz + mavi kenar; `multiline` ≥ 3 satır |
-| `SelectField` | Seçici alan | Sheet açar |
-| `ChipGroup` | Satır içi seçenekler | Kompakt, sarar; tek ya da `multiple` seçim; ton isteğe bağlı |
-| `SegmentedChoice` | 2–4 seçenekli değer | radiogroup, tonlu dolgu |
-| `OptionChip` / `OptionGrid` | Eşit sütunlu seçenek ızgarası | Düzenleme önizlemesi; doldurmada `ChipGroup` tercih edin |
-| `SegmentedTabs` | Görünüm değiştirme | tablist |
-| `Chip` | Filtre / tarih çipi | Hap; seçili = kurşun dolgu |
-| `Badge` | Olağan dışı durum | Hap; satırda en fazla bir ("Taslak") |
-| `Banner` | Satır içi bilgi/hata | İsteğe bağlı tek eylem ("Tekrar dene") |
-| `EmptyState` | Boş liste | Ortalı; tek sarı eylem + isteğe bağlı ikinci yol |
-| `LoadingState`, `ToastProvider`/`useToast`, `Avatar`, `Text`, `Icon`, `Card`, `StickyFooter` | v1'deki gibi | `Card` nadiren; `StickyFooter` doğrudan değil `Screen footer` ile |
+| `Screen` | Her ekranın kökü | `title`, `largeTitle` (`poster` 44), `largeTitleAccessory` (başlık sağında süs), `subtitle`, `back`, `headerRight` (tek öğe), `header` (özel), `footer`, `fab`, `scroll`, `headerDivider` (2.5 px kurşun çizgi). Bar düğmeleri kare "pul". |
+| `WizardHeader` / `Stepper` | Sihirbaz adımları | Adım çubuğu: 10 pt, kurşun çerçeveli; tamamlanan kurşun, kalan beyaz. |
+| `BottomActionBar` | Görev ekranının alt eylemi | `primary` (sarı), `secondary` (sol), `hint`. Düğmeler arası 16. |
+| `Fab` | Liste ekranının ana eylemi | Sarı, yuvarlatılmış dikdörtgen (hap değil), 2.5 px çerçeve + `md` gölge, basınca gömülür. |
+| `Button` | Eylemler | `primary` sarı + gölge (ekranda bir kez), `secondary` beyaz + çerçeve + küçük gölge, `ghost` çerçevesiz pano-mavisi **altı çizili** metin, `destructive` mercan dolgu + kurşun metin (yalnızca onayda); `danger` ghost/secondary metnini kırmızı yapar. Devre dışı: düz sıra grisi, gölgesiz. |
+| `IconButton` | Geri, "⋯", satır içi | 48 pt dokunma; zorunlu `accessibilityLabel`. `variant`: `plain` (varsayılan), `tonal` (sıra dolgulu küçük kare), **`square`** (46 pt beyaz kare + gölge; üst çubukta bağlamdan otomatik). |
+| `IconButtonVariantContext` | Özel üst çubuk | `Provider value="square"` içindeki `IconButton`'lar kare olur. |
+| `OverflowMenu` | İkincil eylemler | Eylem panel kapanınca çalışır; ikon kutuları çerçeveli. |
+| `ConfirmSheet` | Geri alınamaz eylem onayı | `confirmLabel` eylem adı, `loading`; mercan "sil" düğmesi. |
+| `Sheet` | Seçici / panel | Kurşun çerçeveli kâğıt, `lg` üst köşe, kalın tutamaç; `description`, `onDismissed`, kapat `${testID}-close`. |
+| `ListRow` | Liste satırı | `plain` / **`card`** (bkz. §9.3); `number`, `leading`, `trailing`, `action`, `children`, `divider`, `onLongPress`. |
+| `IconTile` | Satır başı / boş durum ikonu | Kurşun çerçeveli kâğıt kare (46; `lg` 64 eğik + gölgeli). `tone` → tonun `soft` kâğıdı, **`paper`** → doğrudan kâğıt rengi. |
+| `SectionHeader` | Bölüm başlığı | `headline` + **`CountBubble`** + tek çerçeveli küçük eylem (`secondary sm`). |
+| `SearchField` | Liste araması | Beyaz, 2.5 px kurşun çerçeve, `sm` radius; odakta mavi sert gölge; `${testID}-clear`. |
+| `TextField` | Form alanı | Beyaz, 2.5 px kurşun çerçeve; odakta mavi, hatada kırmızı sert gölge + kırmızı kenar + ikonlu mesaj; `multiline` ≥ 3 satır. |
+| `SelectField` | Seçici alan | Beyaz + çerçeve; Sheet açar. |
+| `ChipGroup` | Satır içi seçenekler | Kompakt, sarar; tek ya da `multiple`; ton isteğe bağlı. |
+| `SegmentedChoice` | 2–4 seçenekli değer | radiogroup; kalın kurşun çerçeveli şerit, ayırıcılar kurşun; seçili = ton dolgusu + kurşun yazı + ✓ (tonsuzsa kurşun dolgu + beyaz yazı). Genişlik/sarma mantığı v2 ile aynı: etiket asla "Gelm…" diye kesilmez. |
+| `OptionChip` / `OptionGrid` | Eşit sütunlu seçenek ızgarası | Seçili: ton dolgusu + 2.5 px çerçeve + `xs` gölge + ✓; seçilmemiş: beyaz + 2 px çerçeve + çerçeveli ton noktası. |
+| `SegmentedTabs` | Görünüm değiştirme | tablist; seçili = kurşun dolgu + beyaz yazı (mockup `.tabs`). |
+| `Chip` | Filtre / tarih çipi | `sm` radius (hap değil), 2.5 px çerçeve; seçili = kurşun dolgu. |
+| `Badge` | Olağan dışı durum | Ton `soft` kâğıdı + 1.5 px çerçeve + 800 yazı; satırda en fazla bir. |
+| `Banner` | Satır içi bilgi/hata | Ton `soft` kâğıdı + 2.5 px çerçeve, kurşun yazı; eylem `secondary sm`. |
+| `Toast` (`ToastProvider`/`useToast`) | Kısa onay | Kurşun kâğıt + **sarı** sert gölge, beyaz 800 yazı, ton renginde ikon. |
+| `EmptyState` | Boş liste | Eğik ikon kutusu + `headline`; tek sarı eylem + isteğe bağlı ikinci yol. |
+| `Avatar` | Öğrenci | Yuvarlatılmış kare, 2 px çerçeve, kâğıt rengi zemin. |
+| `Card` | Gerçekten birlikte okunan içerik | `variant`: `outlined` (beyaz + çerçeve + `sm` gölge), `muted`, **`paper`** (`paper` rengi + `lg` gölge); `tape`, `tapeRotate`, `shadowSize`, `shadowOn="board"`. |
+| `LoadingState`, `Text`, `Icon`, `StickyFooter` | v2'deki gibi | `StickyFooter` doğrudan değil `Screen footer` ile; üstte 2.5 px kurşun çizgi. |
 
-Geriye uyum: v1'in adları ve prop'ları çalışır (`RuledPaper` kaldırıldı). `ListRow ruled` artık yalnızca numara
-sütununu ayırır (kırmızı çizgi yok). `colors.marginRule`, `layout.marginRuleWidth`,
-`palette.satir/murekkep/kenarCizgisi` kullanımdan kalktı (sessiz ayraç rengine eşlendi).
+### Yeni ortak bileşenler (v3)
+
+| Bileşen | API (özet) | Ne için |
+|---|---|---|
+| `Stamp` | `word="AFERİN"`, `value="+1"`, `size=108`, `rotate=-14`, `animate`, `accessibilityLabel?`, `style` | Mor "Aferin" damgası. Mutlak konumlandırın; dokunmayı engellemez. `animate` → 380 ms'de iner (reduced motion'da yok). Tekrar basmak için `key`. Etiket yoksa dekoratif. |
+| `StarSticker` | `size=18`, `rotate`, `color`, `outlined=true` | Kurşun çerçeveli sarı yıldız çıkartması (bugünün artıları, hero süsü). Dekoratif; sayı ayrıca yazılır. |
+| `Tape` | `paper="sari"`, `rotate=-4`, `offsetX`, `style`; `tapeRotation(i)` | Kartı panoya tutturan eğri bant (mutlak, üst kenarda). |
+| `PaperCard` | `paper?`, `tape?: boolean \| PaperName`, `tapeIndex`, `onBoard`, `onPress` | Bantlı kâğıt kart (kalın çerçeve + `lg` gölge); bant rengi/eğimi `tapeIndex`'ten kararlı türer. `onBoard` → gölge `boardDeep`. Sınıf modu karoları için. |
+| `Board` | `children`, `style` | Mavi pano zemini (`colors.board`, `flex: 1`). Web'de odak halkasını sarıya çevirir. |
+| `HeroBlock` | `title`, `subtitle?`, `paper="nane"`, `tape="sari" \| false`, `sticker`, `children` | Sınıf kimlik bloğu: 80 pt sınıf adı kâğıt üstünde (5 harften uzun ad ≈ 560/harf sayısı pt'ye küçülür, en az 30); alt satıra avatar yığını + `Pill` konur. Yatay boşluğu çağıran verir (bant/gölge taşar). |
+| `Pill` | `label`, `tone="ink" \| "paper"`, `accessibilityLabel?` | "28 öğrenci" / "11 işaret" hapı. |
+| `CountBubble` | `value`, `size=30` | Kurşun daire içinde beyaz sayı (bölüm başlığı yanında). |
+
+Geriye uyum: v1/v2 adları ve prop'ları çalışır. `colors.marginRule`, `layout.marginRuleWidth`,
+`palette.satir/murekkep/kenarCizgisi/tukenmez`, `fontFamilies.displayBold/displaySemiBold/textSemiBold`
+**@deprecated**'dır (yeni değerlere eşlenir). Anlamı değişen token'lar: `palette.sira`, `colors.border`
+(artık soluk çizgi; alan kenarı `outline`), `colors.primary` (pano mavisi), `tones.*.onSolid` (beyaz → kurşun),
+`tones.*.soft/onSoft`, `radii.*`, `layout.hairline` (1 → 2), `layout.inputBorder*` (1.5/2 → 2.5),
+`layout.rowHeight` (64 → 72), `layout.headerHeight` (52 → 62), `layout.buttonHeightSm` (40 → 44),
+`layout.fabHeight` (56 → 58), `layout.stepBar` (4 → 10), `elevation.*`, `typography.*`.
 
 ## 11. Erişilebilirlik
 
-- Her dokunulabilir öğede `accessibilityRole` + `accessibilityLabel`; çiplerde
-  `selected/checked`; butonda `disabled/busy`. Satır içi çiplerin etiketi bağlamlı:
-  "Ayşe Yılmaz: Geldi".
-- Hata metinleri `accessibilityLiveRegion="polite"`; toast duyurulur.
-- `Stepper` `progressbar` rolüyle "Adım 2 / 3: Öğrenciler" okur.
-- Giriş alanları dolgulu olsa da görünür etiketlidir; odak ve hata 2 px kenarla gösterilir.
+- Her dokunulabilir öğede `accessibilityRole` + `accessibilityLabel`; çiplerde `selected/checked`; butonda
+  `disabled/busy`. Satır içi çiplerin etiketi bağlamlı: "Ayşe Yılmaz: Geldi".
+- **Kontrast ≥ 4.5:1 (metin), ≥ 3:1 (çerçeve/ikon).** Kalın kurşun çerçeve (18:1) tüm girişleri ve düğmeleri
+  zeminden ayırır; renk dolguları (mercan, gök, turuncu) üstlerinde **kurşun** yazı taşıdığı için ≥ 6.5:1.
+  Ölçümler `src/theme/theme.test.ts` içinde otomatik doğrulanır.
+- **Durum asla yalnız renkle verilmez:** seçili çipte ✓, işaretlerde +/−, sayılar, yıldız çıkartması ve damga
+  metni ("AFERİN +1") her zaman var.
+- **Odak halkası (web):** tüm etkileşimli öğelerde 3 px pano mavisi halka, çerçevenin 2 px dışında
+  (`public/index.html`); mavi panoda (`Board`) sarı. Metin alanları ayrıca mavi sert gölgeyle odağı gösterir
+  (kenar kalınlığı değişmez, yerleşim kımıldamaz).
+- **Hareketi azalt** (`useReducedMotion`): damga düşmez (son hâliyle belirir), çip ölçeği ve sheet kayması kapanır.
+- **Dekoratif öğeler** (`Tape`, `StarSticker`, `Stamp` etiketsiz, hero çıkartması) ekran okuyucudan gizlidir;
+  bilgi her zaman metindedir.
+- Hata metinleri `accessibilityLiveRegion="polite"`; toast duyurulur. `Stepper` `progressbar` rolüyle okur.
+- Giriş alanları görünür etiketlidir; hata kırmızı kenar + ikon + metinle (renk tek başına değil).
+- Sert gölge `pointerEvents` ve dokunma alanını değiştirmez; basılı hâl (gömülme) 120 ms içinde geri bildirim verir.
 
-## 12. Yapılmayacaklar
+### Web / laptop notları
+
+- Masaüstünde uygulama 720 px'lik ortalı **kâğıt sütun**dadır (`AppFrame`): noktalı defter masası üstünde,
+  2.5 px kurşun çerçeveli, üst köşeleri yuvarlak, sağa 6 px sert gölgeli (mockup `.sheet`). Çerçeve içindeki
+  dar sütunlar (giriş, kayıt) çerçevenin ortasında durur.
+- **Uygulama çubuğu** (mockup `.appbar`, 68 pt): yalnızca masaüstü genişliğinde ve oturum açıkken kâğıt sütunun üstünde —
+  sarı logo + "Sınıf Defteri", sağda ad + avatar (`features/auth/WebAppBar`, `AppFrame` `header` prop'u). Bilgi amaçlıdır
+  (dokunulabilir öğe yok), gezinmeyi etkilemez; Sınıf modu tam ekran `Modal` olduğu için çubuğu kaplar. `AuthProvider`
+  `AppFrame`'in dışına alındı (çubuk kimliğe ihtiyaç duyar).
+- Panel (sheet / menü) satırlarında ayraç düz kalır; yuvarlak vurgu yalnızca basılıyken görünür.
+- Numarası olmayan sınıf listesinde boş numara sütunu ayrılmaz.
+- Telefon tarayıcısında dokunma gecikmesi (`touch-action: manipulation`) ve gri vurgu kapalıdır.
+
+## 12. Galeri ve önizleme
+
+Tüm bileşenler tek sayfada: `docs/design/ui-gallery.tsx.txt` dosyasını `app/gallery.tsx` olarak kopyalayın,
+web'i derleyin/çalıştırın (`npx expo start --web` ya da `expo export -p web` + `scripts/e2e/web-serve.mjs`),
+`/gallery` adresini açın ve mockup ile yan yana karşılaştırın. **İşiniz bitince `app/gallery.tsx`'i silin**
+(üretime gitmemeli). Playwright ile ekran görüntüsü alırken telefon için 390×844, laptop için 1440×900 kullanın.
+
+## 13. Aşama 2: ekran ekran yapılacaklar (mockup'a göre)
+
+Aşama 1 temel + ortak bileşenleri verdi. Ekranlar henüz mockup yerleşimine getirilmedi; her ekranda
+yapı/akış/navigasyon **değişmeden** yalnızca görsel uyarlama yapılır.
+
+| Ekran | Yapılacak |
+|---|---|
+| **Giriş / kayıt** (`AuthPage`) | **Yapıldı.** Uygulama işareti: sarı kare logo + kurşun çerçeve + `md` gölge, hafif eğik, yanında küçük yıldız (mockup `.logo`; marka imzası olduğundan "tek sarı" kuralının bilinçli istisnası); `display` başlık; alanlar zaten v3. |
+| **Sınıflarım** (`ClassesScreen`) | **Yapıldı** (bkz. §9.1, §9.3). Sınıf satırı = `ListRow variant="card"` ya da özel kart: solda 90 pt renkli etiket bloğu (`paperCycle` sırasıyla, 30 pt Bricolage sınıf adı, 2.5 px sağ kenar), ortada ders + "N form", sağda büyük öğrenci sayısı (`heading` 24) + "öğrenci". Başlığın sağında büyük `StarSticker` (64, 14°). Başlık altı "Günaydın, …" 17 pt muted. FAB zaten yeni. |
+| **Sınıf** (`ClassDetailScreen`) | **Yapıldı** (avatar yığını için `listStudentPreview`: ilk 4 öğrenci, hata sessiz). Büyük başlık yerine `HeroBlock` (sınıf adı 80 pt nane, ders, bant, çıkartma, avatar yığını 4 × 34 pt (−6 bindirme) + `Pill "28 öğrenci"`). `SectionHeader` zaten v3 ("Formlar" + `CountBubble` + "+ Form"). Form satırları = `ListRow variant="card"` + `IconTile paper=…` (form başına sabit kâğıt rengi: yoklama nane, artı/eksi gök, sözlü lila, ödev turuncu) ve 3 sn kuralı: `Badge` ("Birikimli"). "Öğrenciler" satırı pembe ikon kutulu kart + sağda sayı + chevron. |
+| **Form doldurma / artı-eksi** (`formview/*`, `MarkRow`) | **Yapıldı, "Sınıf modu" düğmesi hariç** (o düğme Sınıf modu işinde; `FormShell`'in o bölgesine dokunulmadı) — bkz. §9.7. Sekme şeridi (`SegmentedTabs`) + **lila "Sınıf modu" butonu** (mockup `.cmb`: `secondary` benzeri, lila dolgu, `present` ikonu; şimdi ghost). Gün çubuğu: "Bugün, 8 Ekim" + sağda `Pill` ("N işaret"); geçmiş güne gidilemeyen ok soluk. Satır: okul no (`mno`) + ad (800) + altında yıldız çıkartmaları + yeşil "Bugün +N"; sağda tek satır sayaç: kare **−** (beyaz, çerçeveli) · net (`Bricolage 22`) · yeşil **+** (`tones.positive.solid`, `xs` gölge). Mevcut iki geniş "Artı/Eksi" düğmesi satırı (`tones.soft` dolgulu `Pressable`) mockup'taki sayaca çevrilir; geri al/toast `Toast` bileşenine (sarı gölge) taşınır. Yoklama gibi günlük formlar zaten `SegmentedChoice`/`ChipGroup` v3'te; satır ayraçları 2 px. |
+| **Öğrenciler / düzenleme paneli** | **Yapıldı.** `ListRow plain` + solda `Avatar sm` (kâğıt rengi, kare); sayı `Pill paper` (seçim modunda `ink` "N seçili"); panel alanları v3. |
+| **Geçmiş** (`HistorySummary/Day/Timeline`) | **Yapıldı** (`TotalsCard`, `ToneDot`; bkz. §9.7). `Chip` ve `SegmentedChoice` v3'te; toplam kutusu `Card muted`/`paper`, net sayılar `display`/`title`; nokta renkleri `tones.*.solid` (çerçeveli nokta için `strokes.fine`). |
+| **Sihirbaz** (`CreateClass/Collect/Review`) | **Kontrol edildi.** Büyük oranda otomatik değişti; fotoğraf küçük resim/önizleme çerçeveleri `strokes.thin` kurşun yapıldı; form seçenek düzenleyicide alanlar beyaz + kurşun çerçeve, ton örnekleri çerçeveli. OCR satırları 2 px ayraçla zaten v3. |
+| **Hesap** (`account`) | **Yapıldı.** Üstte kimlik kartı (`Card paper nane` + sarı bant, `Avatar lg`, ad, e-posta); bölümler 2 px ayraçla; "Hesabımı sil" `danger` ghost. Giriş noktası olmadığı için `ListRow card` kullanılmadı. |
+| **Sınıf modu** (`classroom/*`) | **En büyük iş.** Zemin `Board`; üst çubuk: beyaz logo, 32 pt başlık (beyaz), mint sınıf çipi, beyaz gün seçici (çerçeveli), sağda **sarı toplam kutusu** (yıldız + 34 pt sayı + "artı bugün", gölge `boardDeep`), beyaz arama/çıkış düğmeleri (`boardDeep` gölge). Karolar = `PaperCard onBoard` (7×4 ızgara hedefi; ad `Bricolage 26`, soyad muted, sağ üstte kurşun **puan dairesi** 50 pt — 0/eksi'de beyaz + çerçeve, altında yıldız çıkartmaları (en çok 5), altta kare **−** + geniş beyaz "+ Artı" (yeşil daire içinde +, `xs` gölge)). Alt çubuk: "Her adım ilerlemedir" (beyaz 22 pt) / **kutlama şeridi** (sarı kâğıt, "Kerem, emeğine sağlık", mor mühür + siyah "+1" hapı). **Damga:** `Stamp animate` kartın sağ altına (108 pt), kart 3 px çöker (`pressedIn`), puan yaylanır, yeni `StarSticker` yapışır; aynı karta tekrar basınca yeni `key`. Eksi: damga/renk değişimi yok, kart gölgesi 1 sn kısalır. Seçenek genişliği hesabı `layout.ts` `typography.heading`'e bağlı — ayrıştırın (bkz. §4). Sütun sayısı sabit ızgara yerine mevcut dinamik hesap korunabilir; mockup 7×4'tür. Sözlü formunda "½" düğmesi "−"nin yanında. |
+| **Web laptop çerçevesi** | **Yapıldı** (bkz. §11 "Web / laptop notları"): `WebAppBar`, `AppFrame` `header` prop'u üzerinden. |
+
+Her ekran için kabul: (1) hex/font/sihirli sayı yok; (2) ekranda tek sarı öğe; (3) 390×844 ve 1440×900'de
+mockup ile yan yana ekran görüntüsü; (4) `npm run typecheck && npm run lint && npm test` yeşil; (5) hareketi azalt açıkken
+damga/animasyon kapalı.
+
+## 14. Yapılmayacaklar
 
 - Ekranda birden fazla sarı öğe; sarıyı metin ya da ikon rengi yapmak.
-- Bölümleri kartlara koymak; aynı radius/gölgeyi her şeye vermek; dekoratif çizgi ve degrade.
+- Her şeyi kart + gölgeye koymak; aynı çerçeve/gölge seviyesini her öğeye vermek; **yumuşak gölge, degrade, bulanıklık**.
+- Doğrudan `boxShadow`/hex/`2.5` gibi sihirli kalınlık yazmak (`hardShadow`, `pressedIn`, `strokes`, `colors.outline` kullanın).
+- Mor rengi damga dışında kullanmak; mercan/pastel dolguyu metin rengi yapmak.
 - Büyük harf etiket, eyebrow, tek kelime vurgusu, "A · B · C" meta dizisi, buton sonunda "→".
 - Sağ üstte birden fazla ikon; ikincil eylemleri sayfaya buton olarak dizmek.
 - Her satırda aynı bilgiyi tekrarlamak (sınıf adı, tarih).
 - 2 cümleden uzun açıklama; özür dileyen ya da belirsiz hata; "Tamam/Gönder" butonu.
 - 48 pt'den küçük dokunma alanı; yalnızca ikonlu FAB.
-- Durumu yalnızca renkle anlatmak.
+- Durumu yalnızca renkle (ya da yalnızca çıkartmayla) anlatmak.
+- Gölge taşan öğeyi `overflow: hidden` kapsayıcıya koymak (gölge kırpılır).
 - Tema dışında hex, font adı, sihirli sayı.
+
+## Sınıf modu
+
+Sınıf modu, onaylı `docs/design/pano-ve-damga.html` mockup'ının mavi **Pano ve Damga** dilini
+kullanır. Öğretmen laptop ekranını projeksiyona ya da etkileşimli tahtaya yansıtır; aynı akış
+telefonda tek sütunla çalışır. Kod: `src/features/classroom/`.
+
+**Giriş ve durum paylaşımı.** Form ekranındaki “Sınıf modu” düğmesi tam ekran modal açar;
+web'de destek varsa tarayıcı tam ekranına geçilir. Çıkış düğmesi ve Esc normal forma döner,
+modal kapanınca sahip olunan tam ekran bırakılır. Form ekranının hook örneği paylaşılır:
+seçili gün, kaydedilmemiş taslak, anında kaydedilen birikimli işaretler ve geri alma korunur.
+
+**Üst çubuk.** `Board` üstünde beyaz kitap simgesi ve 32 pt Bricolage form başlığı vardır.
+Mint kâğıt çipi, `className` verilirse sınıf adını, verilmezse öğrenci sayısını gösterir.
+Mevcut `DayBar` beyaz, kurşun çerçeveli bir kapsayıcıdadır: önceki gün, takvim ve bugünden
+öteye gitmeyen sonraki gün mantığı korunur. Sarı toplam kutusu 34 pt sayı ve yıldızla seçili
+günün **olumlu işaret adedini** gösterir; yarım artı bir işarettir, puan toplamı değildir.
+Artı/eksi ve sözlüde etiket “artı”, diğer formlarda “olumlu”dur. Arama ad veya okul
+numarasıyla her zaman erişilebilir. Başlığın altında beyaz yazıyla tüm sıfır olmayan günlük
+seçenek toplamları, eksiler ve varsa net görünür; arama bu sınıf toplamlarını değiştirmez.
+
+**Kart.** `PaperCard onBoard`: beyaz kâğıt, kalın kurşun çerçeve, koyu pano gölgesi, kararlı
+renk/eğimde bant. Ad 26/28 pt Bricolage; son sözcük soyad olarak ayrı, muted satırda gösterilir.
+Uzun ad ve etiketler kesilmeden sarar. Sağ üstte en az 50 pt puan dairesi: pozitif net kurşun
+zeminde beyaz; sıfır/eksi beyaz zeminde kurşun çerçeve. Kesirli net ve puansız birikimli
+formların toplam sayısı korunur. Altında en fazla beş `StarSticker` ve “net”/“toplam” etiketi.
+Yıldızlar dekoratiftir; gerçek sayılar ayrıca metinle gösterilir. Okul numarası, varsa seçili
+günün işaretleri ve kaldırılmış seçenek sayısı görünür. Birikimli kartta o öğrencinin seçili
+gündeki son işaretini geri alan düğme vardır; o gün işaret yoksa pasiftir.
+
+**Az seçenek, az öğe.** Standart Artı (+1), Eksi (−1), varsa Yarım artı (+0,5) için tek eylem
+satırı: beyaz çerçeveli kare **−**, sözlüde yanında **½**, sonra geniş beyaz **+ Artı**
+(yeşil daire içinde +, küçük sert gölge). Birikimli sayılar düğmelere ayrı rozetler eklemek
+yerine hemen altta “3 Artı · 1 Eksi” gibi metinlerle, sıfırlar dahil gösterilir.
+
+**2–12 özel seçenek.** Kısaltmanın anlamı belirsiz olabilecek formlarda tam etiketli seçenekler
+kart içinde iki sütun olarak sarar; menüye saklanmaz. Ton, `+ / − / ! / ○` şekliyle de anlaşılır.
+Birikimlide düğmede sayı; günlükte seçili düğmede ton dolgusu ve ✓ vardır. Günlük seçenekler
+radio grubudur; aynı seçeneğe tekrar basmak seçimi kaldırır. “Kaydet” ve kaydedilmemiş öğrenci
+sayısı alt çubuktadır, kaydetme sırasında seçenekler pasiftir.
+
+**Dinamik ızgara.** Sabit 7×4 yerine en fazla 9 sütun kullanılır. Artı/eksi kart tabanı 184 pt:
+1440 px'te **7 sütun**, 1280'de 6, 1920'de 9; telefonda tek sütun. Üç puan seçeneği için 264 pt,
+özel seçenekler için 284 pt taban kullanılır. Boşluk 16 pt; `layout.ts` ölçüleri ortak
+`typography.heading` boyutundan bağımsızdır. 30–45 öğrenci için bütün sayıları, günlük bilgiyi,
+geri almayı ve 48 pt dokunma alanlarını korumak adına satır yüksekliği içeriğe göre büyür;
+**28 kartın dört satırının kaydırmasız sığması garanti edilmez**. Kalan kartlara dikey
+kaydırma ve aramayla erişilir. Kartlar puana göre sıralanmaz; arama bandın rengini değiştirmez.
+
+**Olumlu geri bildirim.** İşaretlenen karta mor `Stamp` (108 pt, “AFERİN +1” / “+0,5”) basılır.
+150 ms'de kart 3 px çöker, 260 ms'de puan yaylanır, 420 ms'de son yıldız yapışır. Damga kısa
+süre sonra kalkar; dokunmayı engellemez. Her dokunuşun ayrı sıra anahtarı vardır, aynı
+milisaniyedeki hızlı tekrarlar bile yeni damga basar. Eksi/uyarı/nötr işaretlerde damga,
+cezalandırıcı renk değişimi veya hareket yoktur. Hareketi azalt açıksa damga son hâliyle
+statik belirir; kart, puan, yıldız ve alt şerit animasyonu çalışmaz. Geri alma, seçim kaldırma,
+gün değişimi ve kayıt hatası ilgili geçici kutlamayı temizler.
+
+**Alt şerit.** Tek canlı bölge, öncelik: kapatılana kadar kalan hata › kutlama › bildirim ›
+boşta beyaz “Her adım ilerlemedir”. Kutlama sarı kâğıt, mor yıldızlı mühür ve kurşun “+1”
+hapıdır; sıcak ifadeler sırayla “…, bir adım daha”, “…, emeğine sağlık”, “…, böyle devam”.
+Olumlu işaret için ayrıca “eklendi” bildirimi tekrarlanmaz. `useClassroomNotifications` ve
+Toast `routeTo` kayıt/geri alma sonuçlarını modal içinde gösterir; çıkışta normal Toast'a
+geri döner. Sağda genel “Geri al”, günlükte sarı “Kaydet”. Sarı toplam ve kutlama kâğıdı,
+Sınıf moduna ait vurgu istisnasıdır.

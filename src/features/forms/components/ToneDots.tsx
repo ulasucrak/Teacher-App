@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { radii, spacing, tones } from '@/theme';
+import { colors, radii, spacing, strokes, tones } from '@/theme';
 import type { FormOption } from '@/types/database';
 
 /**
@@ -20,5 +20,5 @@ export function ToneDots({ options }: { options: readonly Pick<FormOption, 'tone
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  dot: { width: spacing.sm, height: spacing.sm, borderRadius: radii.full },
+  dot: { width: spacing.md, height: spacing.md, borderRadius: radii.full, borderWidth: strokes.fine, borderColor: colors.outline },
 });

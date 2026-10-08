@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-labelledby="t">
+  <title id="t">Sınıf Defteri — favicon (küçük boy kesimi)</title>
+  <rect width="1024" height="1024" rx="229" fill="#FFC62E"/>
+  <g transform="translate(-40.96 -40.96) scale(1.08)"><path fill="#FFFFFF" d="M362 160 H756 A72 72 0 0 1 828 232 V792 A72 72 0 0 1 756 864 H362 A16 16 0 0 1 346 848 V176 A16 16 0 0 1 362 160ZM268 160 H308 A16 16 0 0 1 324 176 V848 A16 16 0 0 1 308 864 H268 A72 72 0 0 1 196 792 V232 A72 72 0 0 1 268 160Z"/>
+  <path fill="#1D2129" d="M268 160 H308 A16 16 0 0 1 324 176 V848 A16 16 0 0 1 308 864 H268 A72 72 0 0 1 196 792 V232 A72 72 0 0 1 268 160Z"/>
+  <path fill="#17744A" d="M405 308 A80 80 0 1 1 565 308 A80 80 0 1 1 405 308Z"/>
+  <path fill="#17744A" d="M609 308 A80 80 0 1 1 769 308 A80 80 0 1 1 609 308Z"/>
+  <path fill="#B3261E" d="M405 512 A80 80 0 1 1 565 512 A80 80 0 1 1 405 512Z"/>
+  <path fill="#17744A" d="M609 512 A80 80 0 1 1 769 512 A80 80 0 1 1 609 512Z"/>
+  <path fill="#17744A" d="M405 716 A80 80 0 1 1 565 716 A80 80 0 1 1 405 716Z"/>
+  <path fill="#2446B0" d="M609 716 A80 80 0 1 1 769 716 A80 80 0 1 1 609 716Z"/></g>
+</svg>

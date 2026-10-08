@@ -1,8 +1,9 @@
 import { useNavigation, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { Banner, BottomActionBar, Button, LoadingState, Screen, useToast } from '@/components/ui';
+import { useLeaveGuard } from '@/lib/useLeaveGuard';
 import { spacing } from '@/theme';
 import type { StudentRow } from '@/types/database';
 
@@ -97,27 +98,13 @@ function AddStudents({ classId, className, existing, initialMethod }: AddStudent
   const collector = useStudentCollector(existing, initialMethod);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const allowLeave = useRef(false);
   const { dirty } = collector;
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (allowLeave.current || !dirty) return;
-      event.preventDefault();
-      Alert.alert('Liste silinsin mi?', 'Eklemediğiniz öğrenciler kaybolur.', [
-        { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Listeyi sil',
-          style: 'destructive',
-          onPress: () => {
-            allowLeave.current = true;
-            navigation.dispatch(event.data.action);
-          },
-        },
-      ]);
-    });
-    return unsubscribe;
-  }, [navigation, dirty]);
+  // Eklenmemiş liste varken çıkışta onay (web'de tarayıcı geri tuşu ve yenileme dahil).
+  const { leave } = useLeaveGuard({
+    dirty,
+    prompt: () => ({ title: 'Liste silinsin mi?', message: 'Eklemediğiniz öğrenciler kaybolur.', confirmText: 'Listeyi sil' }),
+  });
 
   // iOS'ta kaydırarak geri dönüş beforeRemove ile durdurulamaz: liste varken kapalı.
   useEffect(() => {
@@ -133,15 +120,16 @@ function AddStudents({ classId, className, existing, initialMethod }: AddStudent
     setError(null);
     try {
       const count = await insertStudents(classId, drafts);
-      allowLeave.current = true;
       toast.show(`${count} öğrenci eklendi`);
-      if (router.canGoBack()) router.back();
-      else router.replace(`/class/${classId}`);
+      leave(() => {
+        if (router.canGoBack()) router.back();
+        else router.replace(`/class/${classId}`);
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setSaving(false);
     }
-  }, [classId, flush, router, saving, toast]);
+  }, [classId, flush, leave, router, saving, toast]);
 
   const count = collector.drafts.length;
   const canSave = count > 0 || collector.hasPending;

@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { spacing, type ToneName } from '@/theme';
 
 import { OptionChip } from './OptionChip';
+import { useRovingRadio } from './SegmentedChoice.interaction';
 
 export interface OptionGridItem {
   key: string;
@@ -33,27 +34,34 @@ export function OptionGrid({
   contextLabel,
   testIDPrefix,
 }: OptionGridProps) {
+  const selectedIndex = options.findIndex((o) => o.key === value);
+  const roving = useRovingRadio(options.length, selectedIndex, (i) => onChange(options[i].key), disabled);
   const rows: OptionGridItem[][] = [];
   for (let i = 0; i < options.length; i += columns) {
     rows.push(options.slice(i, i + columns));
   }
 
   return (
-    <View style={styles.grid} accessibilityRole="radiogroup" accessibilityLabel={contextLabel}>
+    <View style={styles.grid} accessibilityRole="radiogroup" accessibilityLabel={contextLabel} {...roving.groupProps}>
       {rows.map((row, rowIndex) => (
         <View key={rowIndex} style={styles.row}>
-          {row.map((option) => (
-            <OptionChip
-              key={option.key}
-              label={option.label}
-              tone={option.tone}
-              selected={value === option.key}
-              disabled={disabled}
-              onPress={() => onChange(option.key)}
-              accessibilityLabel={contextLabel ? `${contextLabel}: ${option.label}` : option.label}
-              testID={testIDPrefix ? `${testIDPrefix}-${option.key}` : undefined}
-            />
-          ))}
+          {row.map((option, i) => {
+            const web = roving.itemProps(rowIndex * columns + i);
+            return (
+              <OptionChip
+                key={option.key}
+                label={option.label}
+                tone={option.tone}
+                selected={value === option.key}
+                disabled={disabled}
+                onPress={() => onChange(option.key)}
+                accessibilityLabel={contextLabel ? `${contextLabel}: ${option.label}` : option.label}
+                testID={testIDPrefix ? `${testIDPrefix}-${option.key}` : undefined}
+                pressableRef={web.ref}
+                tabIndex={web.tabIndex}
+              />
+            );
+          })}
           {Array.from({ length: columns - row.length }, (_, i) => (
             <View key={`pad-${i}`} style={styles.pad} />
           ))}
