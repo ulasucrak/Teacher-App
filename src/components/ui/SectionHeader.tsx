@@ -3,6 +3,7 @@ import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { layout, spacing } from '@/theme';
 
 import { Button } from './Button';
+import { CountBubble } from './CountBubble';
 import type { IconName } from './Icon';
 import { Text } from './Text';
 
@@ -22,7 +23,7 @@ export interface SectionHeaderProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/** Bölüm başlığı: başlık + sayı solda, en fazla bir hafif eylem sağda. */
+/** Bölüm başlığı: iri başlık + kurşun sayı dairesi solda, en fazla bir çerçeveli küçük eylem sağda (mockup `.sec`). */
 export function SectionHeader({
   title,
   count,
@@ -37,21 +38,17 @@ export function SectionHeader({
   return (
     <View style={[styles.row, padded && styles.padded, style]}>
       <View style={styles.titles}>
-        <Text variant="heading" accessibilityRole="header">
+        <Text variant="headline" accessibilityRole="header">
           {title}
         </Text>
-        {count !== undefined ? (
-          <Text variant="bodySmall" tone="muted">
-            {String(count)}
-          </Text>
-        ) : null}
+        {count !== undefined ? <CountBubble value={count} /> : null}
       </View>
       {actionLabel && onAction ? (
         <Button
           label={actionLabel}
           onPress={onAction}
           icon={actionIcon}
-          variant="ghost"
+          variant="secondary"
           size="sm"
           fullWidth={false}
           accessibilityLabel={actionAccessibilityLabel}
@@ -72,6 +69,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   padded: { paddingHorizontal: layout.pageX },
-  titles: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexShrink: 1 },
-  action: { marginRight: -spacing.md },
+  titles: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
+  // Düğmenin sert gölgesi için sağda pay bırakılır.
+  action: { marginRight: spacing.xs },
 });

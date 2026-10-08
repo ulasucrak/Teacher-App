@@ -12,9 +12,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, layout, spacing } from '@/theme';
+import { colors, layout, spacing, strokes } from '@/theme';
 
-import { IconButton } from './IconButton';
+import { IconButton, IconButtonVariantContext } from './IconButton';
 import { StickyFooter } from './StickyFooter';
 import { Text } from './Text';
 
@@ -80,6 +80,7 @@ export function Screen({
   const showBar = showBack || Boolean(headerRight) || (Boolean(title) && !largeTitle);
 
   const bar = showBar ? (
+    <IconButtonVariantContext.Provider value="square">
     <View style={[styles.bar, headerDivider && styles.barDivider]}>
       <View style={styles.side}>
         {showBack ? (
@@ -95,16 +96,17 @@ export function Screen({
       </View>
       <View style={[styles.side, styles.sideRight]}>{headerRight}</View>
     </View>
+    </IconButtonVariantContext.Provider>
   ) : null;
 
   const big =
     title && largeTitle ? (
       <View style={[styles.largeTitle, !showBar && styles.largeTitleTop, !padded && styles.padded]}>
-        <Text variant="title" accessibilityRole="header">
+        <Text variant="poster" accessibilityRole="header">
           {title}
         </Text>
         {subtitle ? (
-          <Text variant="bodySmall" tone="muted">
+          <Text variant="body" tone="muted">
             {subtitle}
           </Text>
         ) : null}
@@ -159,13 +161,13 @@ const styles = StyleSheet.create({
     minHeight: layout.headerHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.lg,
   },
-  barDivider: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
-  side: { minWidth: layout.minTouch * 2, flexDirection: 'row', alignItems: 'center' },
+  barDivider: { borderBottomWidth: strokes.base, borderBottomColor: colors.outline },
+  side: { minWidth: layout.squareButton + spacing.xl, flexDirection: 'row', alignItems: 'center' },
   sideRight: { justifyContent: 'flex-end' },
   barTitle: { flex: 1, paddingHorizontal: spacing.xs },
-  largeTitle: { marginTop: spacing.xs, marginBottom: spacing.xl, gap: spacing.xxs },
+  largeTitle: { marginTop: spacing.sm, marginBottom: spacing.xl, gap: spacing.xs },
   largeTitleTop: { marginTop: spacing.xxl },
   scrollContent: { flexGrow: 1 },
   padded: { paddingHorizontal: layout.pageX },

@@ -1,8 +1,17 @@
+import { createContext, useContext } from 'react';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, iconSize, layout, radii } from '@/theme';
+import { colors, hardShadow, iconSize, layout, pressedIn, radii, strokes } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
+
+export type IconButtonVariant = 'plain' | 'tonal' | 'square';
+
+/**
+ * Üst çubuk içinde (`Screen`) ikon düğmeleri, ekranlar değişmeden kare "pul" görünümü alır
+ * (mockup `.sq`). Değeri bu bağlam taşır; açıkça verilen `variant` her zaman önceliklidir.
+ */
+export const IconButtonVariantContext = createContext<IconButtonVariant>('plain');
 
 export interface IconButtonProps {
   icon: IconName;
@@ -13,8 +22,11 @@ export interface IconButtonProps {
   color?: string;
   size?: number;
   disabled?: boolean;
-  /** `plain`: yalnızca ikon (varsayılan), `tonal`: sıra grisi daire (sheet kapat, satır içi eylem). */
-  variant?: 'plain' | 'tonal';
+  /**
+   * `plain`: yalnızca ikon (varsayılan; alan içi düğmeler), `tonal`: sıra grisi küçük kare çerçeveli
+   * (sheet kapat, satır içi eylem), `square`: beyaz 46 pt kare + kalın çerçeve + sert gölge (üst çubuk).
+   */
+  variant?: IconButtonVariant;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -28,10 +40,12 @@ export function IconButton({
   color = colors.text,
   size = iconSize.xl,
   disabled = false,
-  variant = 'plain',
+  variant,
   style,
   testID,
 }: IconButtonProps) {
+  const inherited = useContext(IconButtonVariantContext);
+  const kind = variant ?? inherited;
   return (
     <Pressable
       testID={testID}
@@ -44,8 +58,10 @@ export function IconButton({
       hitSlop={4}
       style={({ pressed }) => [
         styles.base,
-        variant === 'tonal' && styles.tonal,
-        pressed && (variant === 'tonal' ? styles.tonalPressed : styles.pressed),
+        kind === 'tonal' && styles.tonal,
+        kind === 'square' && styles.square,
+        kind === 'square' && (pressed ? pressedIn('xs') : hardShadow('xs')),
+        pressed && (kind === 'tonal' ? styles.tonalPressed : kind === 'plain' ? styles.pressed : styles.squarePressed),
         disabled && styles.disabled,
         style,
       ]}
@@ -61,10 +77,24 @@ const styles = StyleSheet.create({
     height: layout.minTouch,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.full,
+    borderRadius: radii.sm,
   },
-  tonal: { backgroundColor: colors.surfaceMuted },
+  tonal: {
+    width: layout.minTouch - 4,
+    height: layout.minTouch - 4,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: strokes.thin,
+    borderColor: colors.outline,
+  },
+  square: {
+    width: layout.squareButton,
+    height: layout.squareButton,
+    backgroundColor: colors.surface,
+    borderWidth: strokes.base,
+    borderColor: colors.outline,
+  },
   pressed: { backgroundColor: colors.pressedOverlay },
   tonalPressed: { backgroundColor: colors.rule },
+  squarePressed: { backgroundColor: colors.surfaceMuted },
   disabled: { opacity: 0.4 },
 });

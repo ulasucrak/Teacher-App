@@ -7,16 +7,16 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, iconSize, layout, radii, spacing } from '@/theme';
+import { colors, hardShadow, iconSize, layout, pressedIn, radii, spacing, strokes } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
 
 /**
- * - `primary`: sarı kalem — ekrandaki TEK ana eylem.
- * - `secondary`: sıra grisi — yan eylem ("Tekrar dene", "Vazgeç").
- * - `ghost`: mavi metin — bağlantı gibi hafif eylem ("Şifremi unuttum").
- * - `destructive`: kırmızı — yalnızca onay adımında ("Sınıfı sil").
+ * - `primary`: sarı — ekrandaki TEK ana eylem (kalın kurşun çerçeve + sert gölge).
+ * - `secondary`: beyaz kâğıt + kurşun çerçeve + küçük gölge — yan eylem ("Tekrar dene", "Vazgeç", "+ Form").
+ * - `ghost`: çerçevesiz pano-mavisi metin — bağlantı gibi hafif eylem ("Şifremi unuttum").
+ * - `destructive`: mercan dolgu + kurşun metin — yalnızca onay adımında ("Sınıfı sil").
  */
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 
@@ -46,20 +46,22 @@ interface VariantColors {
   bg: string;
   bgPressed: string;
   fg: string;
+  /** Çerçeve + gölge var mı (ghost ve devre dışı: yok). */
+  boxed: boolean;
 }
 
 const variantColors: Record<ButtonVariant, VariantColors> = {
-  primary: { bg: colors.accent, bgPressed: colors.accentPressed, fg: colors.onAccent },
-  secondary: { bg: colors.surfaceMuted, bgPressed: colors.rule, fg: colors.text },
-  ghost: { bg: 'transparent', bgPressed: colors.pressedOverlay, fg: colors.primary },
-  destructive: { bg: colors.danger, bgPressed: colors.dangerPressed, fg: colors.textInverse },
+  primary: { bg: colors.accent, bgPressed: colors.accentPressed, fg: colors.onAccent, boxed: true },
+  secondary: { bg: colors.surface, bgPressed: colors.surfaceMuted, fg: colors.text, boxed: true },
+  ghost: { bg: 'transparent', bgPressed: colors.pressedOverlay, fg: colors.primary, boxed: false },
+  destructive: { bg: colors.dangerSolid, bgPressed: colors.dangerSolidPressed, fg: colors.onDangerSolid, boxed: true },
 };
 
 const disabledColors: Record<ButtonVariant, VariantColors> = {
-  primary: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted },
-  destructive: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted },
-  secondary: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted },
-  ghost: { bg: 'transparent', bgPressed: 'transparent', fg: colors.textMuted },
+  primary: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted, boxed: false },
+  destructive: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted, boxed: false },
+  secondary: { bg: colors.surfaceMuted, bgPressed: colors.surfaceMuted, fg: colors.textMuted, boxed: false },
+  ghost: { bg: 'transparent', bgPressed: 'transparent', fg: colors.textMuted, boxed: false },
 };
 
 export function Button({
@@ -80,6 +82,8 @@ export function Button({
   const inactive = disabled || loading;
   const base = disabled ? disabledColors[variant] : variantColors[variant];
   const palette = danger && !disabled && (variant === 'ghost' || variant === 'secondary') ? { ...base, fg: colors.danger } : base;
+  // Birincil/yıkıcı büyük gölge; ikincil ve küçük düğmeler bir kademe hafif.
+  const shadow = variant === 'secondary' || size === 'sm' ? 'sm' : 'md';
 
   return (
     <Pressable
@@ -96,6 +100,9 @@ export function Button({
         size === 'sm' ? styles.sm : styles.md,
         fullWidth ? styles.full : styles.inline,
         { backgroundColor: pressed ? palette.bgPressed : palette.bg },
+        palette.boxed ? styles.boxed : disabled && variant !== 'ghost' ? styles.disabledBox : null,
+        // Basınca "gömülme": gölge kapanır, düğme gölgenin yerine oturur.
+        palette.boxed ? (pressed ? pressedIn(shadow) : hardShadow(shadow)) : null,
         style,
       ]}
     >
@@ -109,7 +116,7 @@ export function Button({
           variant={size === 'md' ? 'bodyStrong' : 'label'}
           color={palette.fg}
           numberOfLines={1}
-          style={styles.label}
+          style={[styles.label, variant === 'ghost' && styles.ghostLabel]}
         >
           {label}
         </Text>
@@ -128,6 +135,10 @@ const styles = StyleSheet.create({
   sm: { minHeight: layout.buttonHeightSm, borderRadius: radii.sm, paddingHorizontal: spacing.md },
   full: { alignSelf: 'stretch' },
   inline: { alignSelf: 'flex-start' },
+  boxed: { borderWidth: strokes.base, borderColor: colors.outline },
+  // Devre dışı: düz, gölgesiz; soluk çerçeve — "basılamaz" okunur.
+  disabledBox: { borderWidth: strokes.thin, borderColor: colors.border },
   content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   label: { flexShrink: 1 },
+  ghostLabel: { textDecorationLine: 'underline' },
 });

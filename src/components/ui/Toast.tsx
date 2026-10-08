@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AccessibilityInfo, Animated, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, elevation, iconSize, layout, motion, radii, spacing, tones, type ToneName } from '@/theme';
+import { colors, hardShadow, iconSize, layout, motion, radii, spacing, tones, type ToneName } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Text } from './Text';
@@ -83,8 +83,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {toast ? (
         <View pointerEvents="none" style={[styles.host, { bottom: insets.bottom + spacing.huge + spacing.xxxl }]}>
           <Animated.View style={[styles.toast, { opacity }]} accessibilityLiveRegion="polite">
-            <Icon name={kindIcon[toast.kind]} size={iconSize.lg} color={tones[kindTone[toast.kind]].soft} />
-            <Text variant="label" tone="inverse" style={styles.text}>
+            <Icon name={kindIcon[toast.kind]} size={iconSize.lg} color={tones[kindTone[toast.kind]].solid} />
+            <Text variant="bodyStrong" tone="inverse" style={styles.text}>
               {toast.message}
             </Text>
           </Animated.View>
@@ -103,14 +103,15 @@ export function useToast(): ToastContextValue {
 const styles = StyleSheet.create({
   host: { position: 'absolute', left: layout.pageX, right: layout.pageX, alignItems: 'center' },
   toast: {
-    ...elevation.overlay,
+    // Kurşun kâğıt + sarı sert gölge (mockup `.toast`): panoya iliştirilmiş not.
+    ...hardShadow('md', colors.accent),
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     backgroundColor: colors.text,
     borderRadius: radii.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     maxWidth: layout.readableWidth,
   },
   text: { flexShrink: 1 },

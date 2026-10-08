@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, layout, radii, strokes } from '@/theme';
 
 import { selectionA11y } from './a11y';
 import { Text } from './Text';
@@ -19,7 +19,10 @@ export interface SegmentedTabsProps<K extends string> {
   testIDPrefix?: string;
 }
 
-/** 2–4 görünüm arasında geçiş (değer seçimi için `SegmentedChoice`). */
+/**
+ * 2–4 görünüm arasında geçiş (değer seçimi için `SegmentedChoice`). Kalın kurşun çerçeveli şerit;
+ * seçili sekme kurşun dolgu + beyaz yazı (mockup `.tabs`). Sekmeleri ayıran çizgiyi şeridin kurşun zemini çizer.
+ */
 export function SegmentedTabs<K extends string>({
   tabs,
   value,
@@ -39,9 +42,9 @@ export function SegmentedTabs<K extends string>({
             accessibilityRole="tab"
             accessibilityLabel={tab.label}
             {...selectionA11y({ selected })}
-            style={({ pressed }) => [styles.tab, selected ? styles.selected : pressed && styles.pressed]}
+            style={({ pressed }) => [styles.tab, selected ? styles.selected : pressed ? styles.pressed : styles.idle]}
           >
-            <Text variant="label" tone={selected ? 'default' : 'muted'} numberOfLines={1}>
+            <Text variant="bodyStrong" color={selected ? colors.textInverse : colors.text} numberOfLines={1}>
               {tab.label}
             </Text>
           </Pressable>
@@ -54,23 +57,21 @@ export function SegmentedTabs<K extends string>({
 const styles = StyleSheet.create({
   track: {
     flexDirection: 'row',
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.outline,
+    borderWidth: strokes.base,
+    borderColor: colors.outline,
     borderRadius: radii.sm,
-    padding: spacing.xs,
-    gap: spacing.xs,
+    overflow: 'hidden',
+    gap: strokes.thin,
   },
   tab: {
     flex: 1,
-    minHeight: layout.chipHeight - spacing.xs,
+    minHeight: layout.chipHeight,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.sm - spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 8,
   },
-  selected: {
-    backgroundColor: colors.surface,
-    borderWidth: layout.hairline,
-    borderColor: colors.rule,
-  },
-  pressed: { backgroundColor: colors.rule },
+  idle: { backgroundColor: colors.surface },
+  selected: { backgroundColor: colors.outline },
+  pressed: { backgroundColor: colors.surfaceMuted },
 });

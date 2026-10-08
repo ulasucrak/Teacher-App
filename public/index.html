@@ -34,11 +34,15 @@
       [role='tab'] {
         touch-action: manipulation;
       }
-      /* Klavye odağı: tüm etkileşimli öğelerde aynı 2 px mavi (tükenmez) halka; içeri alınır, kırpılmaz.
-         Metin alanları kendi kenarıyla odağı gösterir (TextField / SearchField). */
+      /* Klavye odağı (v3): tüm etkileşimli öğelerde aynı 3 px pano-mavisi halka, kurşun çerçevenin 2 px dışında
+         (sert gölgeyi ve çerçeveyi örtmez). Mavi panoda (Board, data-board) halka sarıdır.
+         Metin alanları kendi mavi sert gölgesiyle odağı gösterir (TextField / SearchField). */
       [tabindex]:focus-visible {
-        outline: 2px solid #2446b0;
-        outline-offset: -2px;
+        outline: 3px solid #2d3a8c;
+        outline-offset: 2px;
+      }
+      [data-board] [tabindex]:focus-visible {
+        outline-color: #ffd23f;
       }
       input:focus-visible,
       textarea:focus-visible {

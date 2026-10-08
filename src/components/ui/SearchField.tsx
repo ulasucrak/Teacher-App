@@ -1,7 +1,7 @@
 import { useState, type Ref } from 'react';
 import { Platform, StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, fontScale, iconSize, layout, radii, spacing, typography } from '@/theme';
+import { colors, fontScale, hardShadow, iconSize, layout, radii, spacing, typography } from '@/theme';
 
 import { Icon } from './Icon';
 import { IconButton } from './IconButton';
@@ -21,7 +21,7 @@ export interface SearchFieldProps {
   testID?: string;
 }
 
-/** Görünür etiketsiz arama alanı: sıra grisi hap, büyüteç, yazınca temizle düğmesi. */
+/** Görünür etiketsiz arama alanı: beyaz, kalın kurşun çerçeveli (mockup `.search`), büyüteç, yazınca temizle düğmesi. Odakta mavi sert gölge. */
 export function SearchField({
   value,
   onChangeText,
@@ -82,14 +82,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     minHeight: layout.minTouch,
-    borderRadius: radii.full,
-    // Odak: TextField ile aynı dil (beyaz zemin + 2 px mavi kenar); kenar hep ayrılı, odakta yer değişmez.
-    borderWidth: layout.inputBorderFocus,
-    borderColor: 'transparent',
-    backgroundColor: colors.surfaceMuted,
-    paddingLeft: spacing.lg - layout.inputBorderFocus,
+    borderRadius: radii.sm,
+    // Odak: TextField ile aynı dil (kurşun kenar + mavi sert gölge); kenar hep aynı, odakta yer değişmez.
+    borderWidth: layout.inputBorder,
+    borderColor: colors.outline,
+    backgroundColor: colors.surface,
+    paddingLeft: spacing.lg - layout.inputBorder,
     paddingRight: spacing.xxs,
   },
-  wrapFocused: { backgroundColor: colors.surface, borderColor: colors.primary },
+  wrapFocused: hardShadow('xs', colors.primary),
   input: { ...typography.body, flex: 1, color: colors.text, paddingVertical: spacing.sm, ...noBrowserOutline },
 });

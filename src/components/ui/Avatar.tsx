@@ -1,6 +1,6 @@
 import { Image, StyleSheet, View } from 'react-native';
 
-import { colors, radii, typography } from '@/theme';
+import { colors, fontFamilies, radii, strokes, typography } from '@/theme';
 
 import { getAvatarColor, getInitials } from './avatarUtils';
 import { Text } from './Text';
@@ -13,10 +13,11 @@ export interface AvatarProps {
   imageUri?: string | null;
 }
 
-/** Öğrenci avatarı: fotoğraf yoksa baş harfler, isimden sabit renk. Ekran okuyucudan gizli. */
+/** Öğrenci avatarı: yuvarlatılmış kare, ince kurşun çerçeve; fotoğraf yoksa baş harfler, isimden sabit kâğıt rengi. Ekran okuyucudan gizli. */
 export function Avatar({ name, size = 'md', imageUri }: AvatarProps) {
   const dim = sizes[size];
-  const frame = { width: dim, height: dim, borderRadius: radii.full };
+  // Mockup `.av`: kare köşeli (radius ≈ %26), ince kurşun çerçeve.
+  const frame = { width: dim, height: dim, borderRadius: Math.max(radii.xs - 2, Math.round(dim * 0.26)) };
 
   if (imageUri) {
     return (
@@ -37,7 +38,7 @@ export function Avatar({ name, size = 'md', imageUri }: AvatarProps) {
       testID="avatar"
     >
       <Text
-        style={[typography.number, { fontSize: Math.round(dim * 0.38), lineHeight: Math.round(dim * 0.5) }]}
+        style={[typography.number, { fontFamily: fontFamilies.textExtraBold, fontSize: Math.round(dim * 0.38), lineHeight: Math.round(dim * 0.5) }]}
         maxFontSizeMultiplier={1}
       >
         {getInitials(name)}
@@ -47,6 +48,6 @@ export function Avatar({ name, size = 'md', imageUri }: AvatarProps) {
 }
 
 const styles = StyleSheet.create({
-  fallback: { alignItems: 'center', justifyContent: 'center' },
-  image: { backgroundColor: colors.surfaceMuted },
+  fallback: { alignItems: 'center', justifyContent: 'center', borderWidth: strokes.thin, borderColor: colors.outline },
+  image: { backgroundColor: colors.surfaceMuted, borderWidth: strokes.thin, borderColor: colors.outline },
 });
