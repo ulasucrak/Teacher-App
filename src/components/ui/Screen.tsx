@@ -25,6 +25,8 @@ export interface ScreenProps {
    */
   title?: string;
   largeTitle?: boolean;
+  /** Büyük başlığın sağında süs (ör. `StarSticker`); yalnızca `largeTitle` ile. Dekoratif olmalı (ekran okuyucudan gizli). */
+  largeTitleAccessory?: ReactNode;
   /** Büyük başlığın altında tek satır soluk bilgi ("28 öğrenci"). Yalnızca `largeTitle` ile. */
   subtitle?: string;
   /**
@@ -57,6 +59,7 @@ export interface ScreenProps {
 export function Screen({
   title,
   largeTitle = false,
+  largeTitleAccessory,
   subtitle,
   back,
   headerRight,
@@ -102,13 +105,20 @@ export function Screen({
   const big =
     title && largeTitle ? (
       <View style={[styles.largeTitle, !showBar && styles.largeTitleTop, !padded && styles.padded]}>
-        <Text variant="poster" accessibilityRole="header">
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text variant="body" tone="muted">
-            {subtitle}
+        <View style={styles.largeTitleText}>
+          <Text variant="poster" accessibilityRole="header">
+            {title}
           </Text>
+          {subtitle ? (
+            <Text variant="body" tone="muted">
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+        {largeTitleAccessory ? (
+          <View style={styles.accessory} accessible={false} importantForAccessibility="no-hide-descendants">
+            {largeTitleAccessory}
+          </View>
         ) : null}
       </View>
     ) : null;
@@ -167,7 +177,9 @@ const styles = StyleSheet.create({
   side: { minWidth: layout.squareButton + spacing.xl, flexDirection: 'row', alignItems: 'center' },
   sideRight: { justifyContent: 'flex-end' },
   barTitle: { flex: 1, paddingHorizontal: spacing.xs },
-  largeTitle: { marginTop: spacing.sm, marginBottom: spacing.xl, gap: spacing.xs },
+  largeTitle: { marginTop: spacing.sm, marginBottom: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  largeTitleText: { flex: 1, gap: spacing.xs },
+  accessory: { marginRight: spacing.xs, pointerEvents: 'none' },
   largeTitleTop: { marginTop: spacing.xxl },
   scrollContent: { flexGrow: 1 },
   padded: { paddingHorizontal: layout.pageX },

@@ -68,10 +68,13 @@ describe('RepeatableFormView', () => {
     await renderView();
 
     expect(mocked.getTallies).toHaveBeenCalledWith('f2', { day: todayIso() });
-    expect(screen.getByTestId('mark-row-0-day')).toHaveTextContent('Bugün: 1 Artı');
-    expect(screen.getByTestId('mark-row-0-total')).toHaveTextContent('Toplam: 5 Artı, 2 Eksi');
+    expect(screen.getByTestId('mark-row-0-day')).toHaveTextContent('Bugün +1');
     expect(screen.getByTestId('mark-row-0-net')).toHaveTextContent('+3');
-    expect(screen.getByTestId('mark-row-1-empty')).toHaveTextContent('Henüz işaret yok');
+    // Toplam sayılar net'in erişilebilir metninde: satır tek satır sayaçtır, ayrıca "Toplam: …" satırı yok.
+    expect(screen.getByLabelText('Ali Yılmaz: net +3. 5 Artı, 2 Eksi')).toBeOnTheScreen();
+    // İşareti olmayan satırda ne "Bugün" satırı ne geri alma düğmesi vardır; net sönük "0".
+    expect(screen.queryByTestId('mark-row-1-day')).toBeNull();
+    expect(screen.queryByTestId('mark-row-1-undo')).toBeNull();
     expect(screen.getByTestId('mark-row-1-net')).toHaveTextContent('0');
     expect(screen.getByTestId('mark-day-trailing')).toHaveTextContent('1 işaret');
   });
@@ -85,7 +88,7 @@ describe('RepeatableFormView', () => {
     await screen.findByTestId('mark-row-0');
 
     expect(mocked.getTallies).toHaveBeenLastCalledWith('f2', { day: past });
-    expect(screen.getByTestId('mark-row-0-day')).toHaveTextContent(`${formatShortDate(past)}: 1 Artı`);
+    expect(screen.getByTestId('mark-row-0-day')).toHaveTextContent(`${formatShortDate(past)} +1`);
     await fireEvent.press(screen.getByTestId('mark-row-1-eksi'));
     expect(mocked.addMark).toHaveBeenLastCalledWith({ formId: 'f2', studentId: 's2', optionKey: 'eksi', markDate: past });
     await fireEvent.press(screen.getByTestId('mark-row-0-undo'));
@@ -115,7 +118,7 @@ describe('RepeatableFormView', () => {
     await fireEvent.press(screen.getByTestId('mark-row-1-arti'));
     // Sunucu yanıtı gelmeden sayı artar (iyimser güncelleme).
     expect(screen.getByTestId('mark-row-1-net')).toHaveTextContent('+1');
-    expect(screen.getByTestId('mark-row-1-day')).toHaveTextContent('Bugün: 1 Artı');
+    expect(screen.getByTestId('mark-row-1-day')).toHaveTextContent('Bugün +1');
     expect(mocked.addMark).toHaveBeenCalledWith({
       formId: 'f2',
       studentId: 's2',
@@ -136,7 +139,7 @@ describe('RepeatableFormView', () => {
     await fireEvent.press(screen.getByTestId('mark-row-1-arti'));
 
     expect(mocked.addMark).toHaveBeenCalledTimes(3);
-    expect(screen.getByTestId('mark-row-1-day')).toHaveTextContent('Bugün: 1 Artı, 2 Eksi');
+    expect(screen.getByTestId('mark-row-1-day')).toHaveTextContent('Bugün +1 −2');
     expect(screen.getByTestId('mark-row-1-net')).toHaveTextContent('−1');
     expect(screen.getByTestId('mark-day-trailing')).toHaveTextContent('4 işaret');
   });
@@ -147,7 +150,8 @@ describe('RepeatableFormView', () => {
 
     await fireEvent.press(screen.getByTestId('mark-row-1-arti'));
     expect(await screen.findByText(/Sunucuya ulaşılamadı/)).toBeOnTheScreen();
-    await waitFor(() => expect(screen.getByTestId('mark-row-1-empty')).toBeOnTheScreen());
+    await waitFor(() => expect(screen.queryByTestId('mark-row-1-day')).toBeNull());
+    expect(screen.getByTestId('mark-row-1-net')).toHaveTextContent('0');
     expect(screen.queryByText('Ayşe Kaya: Artı eklendi')).toBeNull();
   });
 
@@ -157,7 +161,8 @@ describe('RepeatableFormView', () => {
     await fireEvent.press(await screen.findByRole('button', { name: 'Geri al' }));
 
     await waitFor(() => expect(mocked.removeMark).toHaveBeenCalledWith('m1'));
-    expect(screen.getByTestId('mark-row-1-empty')).toBeOnTheScreen();
+    expect(screen.queryByTestId('mark-row-1-day')).toBeNull();
+    expect(screen.getByTestId('mark-row-1-net')).toHaveTextContent('0');
     expect(screen.queryByText('Ayşe Kaya: Artı eklendi')).toBeNull();
   });
 
@@ -168,23 +173,23 @@ describe('RepeatableFormView', () => {
     await fireEvent.press(await screen.findByRole('button', { name: 'Geri al' }));
 
     expect(await screen.findByText(/İşaret geri alınamadı/)).toBeOnTheScreen();
-    expect(screen.getByTestId('mark-row-1-day')).toHaveTextContent('Bugün: 1 Artı');
+    expect(screen.getByTestId('mark-row-1-day')).toHaveTextContent('Bugün +1');
   });
 
   it("undoes a student's last mark of today from the row", async () => {
     mocked.undoLastMark.mockResolvedValueOnce(mark('m0', 'arti'));
     await renderView();
 
-    // Yalnızca bugün işareti olan öğrencide etkin.
-    expect(screen.getByTestId('mark-row-1-undo')).toBeDisabled();
+    // Yalnızca bugün işareti olan öğrencide görünür.
+    expect(screen.queryByTestId('mark-row-1-undo')).toBeNull();
     await fireEvent.press(screen.getByTestId('mark-row-0-undo'));
 
     await waitFor(() =>
       expect(mocked.undoLastMark).toHaveBeenCalledWith({ formId: 'f2', studentId: 's1', markDate: todayIso() }),
     );
     await waitFor(() => expect(screen.getByTestId('mark-row-0-net')).toHaveTextContent('+2'));
-    expect(screen.getByTestId('mark-row-0-total')).toHaveTextContent('Toplam: 4 Artı, 2 Eksi');
-    expect(screen.getByTestId('mark-row-0-undo')).toBeDisabled();
+    expect(screen.getByLabelText('Ali Yılmaz: net +2. 4 Artı, 2 Eksi')).toBeOnTheScreen();
+    expect(screen.queryByTestId('mark-row-0-undo')).toBeNull();
   });
 
   it('shows a retryable error when the counts cannot be loaded', async () => {

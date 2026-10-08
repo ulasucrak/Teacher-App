@@ -8,14 +8,16 @@ export interface PillProps {
   label: string;
   /** `ink`: kurşun hap + beyaz yazı (mockup `.blackpill`, varsayılan). `paper`: beyaz hap + kurşun çerçeve. */
   tone?: 'ink' | 'paper';
+  /** Ekran okuyucu metni; verilmezse `label`. */
+  accessibilityLabel?: string;
   testID?: string;
 }
 
 /** Kısa özet hapı: "28 öğrenci", "11 işaret". Etkileşimsiz; tek satır. */
-export function Pill({ label, tone = 'ink', testID }: PillProps) {
+export function Pill({ label, tone = 'ink', accessibilityLabel, testID }: PillProps) {
   const ink = tone === 'ink';
   return (
-    <View testID={testID} style={[styles.pill, ink ? styles.ink : styles.paper]} accessibilityRole="text" accessibilityLabel={label}>
+    <View testID={testID} style={[styles.pill, ink ? styles.ink : styles.paper]} accessibilityRole="text" accessibilityLabel={accessibilityLabel ?? label}>
       <Text variant="label" color={ink ? colors.textInverse : colors.text} numberOfLines={1}>
         {label}
       </Text>

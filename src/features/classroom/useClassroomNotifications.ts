@@ -9,12 +9,13 @@ interface Notification {
   kind: ToastKind;
 }
 
-export function useClassroomNotifications() {
+export function useClassroomNotifications(onError?: () => void) {
   const { routeTo } = useToast();
   const [notification, setNotification] = useState<Notification | null>(null);
   const show = useCallback((message: string, kind: ToastKind = 'success') => {
+    if (kind === 'error') onError?.();
     setNotification({ message, kind });
-  }, []);
+  }, [onError]);
   const dismiss = useCallback(() => setNotification(null), []);
 
   useEffect(() => routeTo(show), [routeTo, show]);

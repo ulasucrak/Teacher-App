@@ -7,15 +7,20 @@ import { colors, palette, radii, spacing, strokes } from '@/theme';
 /**
  * Web: telefon için tasarlanmış ekranlar masaüstünde ortada, okunur genişlikte durur.
  * Geniş tarayıcıda "defter masası" görünümü: noktalı zemin üstünde kalın kurşun çerçeveli, sağa sert
- * gölgeli bir kâğıt sütun (mockup `.dotbg` + `.sheet`). Dar tarayıcılarda (mobil web) tam genişliktir.
+ * gölgeli bir kâğıt sütun (mockup `.dotbg` + `.sheet`); üstünde isteğe bağlı `header` (uygulama çubuğu). Dar
+ * tarayıcılarda (mobil web) tam genişliktir ve `header` çizilmez.
  */
-export function AppFrame({ children }: { children: ReactNode }) {
+export function AppFrame({ children, header }: { children: ReactNode; header?: ReactNode }) {
   const { width } = useWindowDimensions();
   // Çerçeve yalnızca iki yanında boşluk kaldığında (masaüstü) anlamlıdır.
   const framed = width > WEB_MAX_CONTENT_WIDTH;
   return (
-    <View style={[styles.page, framed && styles.desk]}>
-      <View style={[styles.frame, framed && styles.framed]}>{children}</View>
+    <View style={styles.root}>
+      {/* Laptop uygulama çubuğu (mockup `.appbar`): yalnızca masaüstü genişliğinde, kâğıt sütunun üstünde. */}
+      {framed ? header : null}
+      <View style={[styles.page, framed && styles.desk]}>
+        <View style={[styles.frame, framed && styles.framed]}>{children}</View>
+      </View>
     </View>
   );
 }
@@ -27,6 +32,7 @@ const dots = {
 } as object;
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   page: { flex: 1, alignItems: 'center', backgroundColor: colors.background },
   desk: {
     backgroundColor: palette.defter,

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
 import { colors, hardShadow, paper, radii, spacing, strokes, type PaperName } from '@/theme';
 
@@ -37,7 +37,14 @@ export function HeroBlock({ title, subtitle, paper: paperName = 'nane', tape = '
           <StarSticker size={64} rotate={14} />
         </View>
       ) : null}
-      <Text variant="hero" accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
+      <Text
+        variant="hero"
+        accessibilityRole="header"
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.5}
+        style={heroSize(title)}
+      >
         {title}
       </Text>
       {subtitle ? (
@@ -48,6 +55,16 @@ export function HeroBlock({ title, subtitle, paper: paperName = 'nane', tape = '
       {children ? <View style={styles.footer}>{children}</View> : null}
     </View>
   );
+}
+
+/** Uzun adlar ("Matematik kulübü") 80 pt'ta taşar; web'de `adjustsFontSizeToFit` çalışmadığı için uzunluğa göre küçültülür. */
+const HERO_MAX = 80;
+const HERO_MIN = 30;
+// Ortalama harf genişliği ≈ 0,5 em; telefon sütununda (≈ 310 pt) ad tek satıra sığsın: boyut ≈ 560 / harf sayısı.
+const HERO_BUDGET = 560;
+function heroSize(title: string): TextStyle | undefined {
+  const size = Math.max(HERO_MIN, Math.min(HERO_MAX, Math.floor(HERO_BUDGET / Math.max(title.length, 1))));
+  return size >= HERO_MAX ? undefined : { fontSize: size, lineHeight: Math.round(size * 0.9), letterSpacing: -size * 0.05 };
 }
 
 const styles = StyleSheet.create({

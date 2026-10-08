@@ -2,8 +2,8 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Banner, Button, Screen, SectionHeader, Text, TextField } from '@/components/ui';
-import { useAuth } from '@/features/auth';
+import { Avatar, Banner, Button, Card, Screen, SectionHeader, Text, TextField } from '@/components/ui';
+import { getDisplayName, useAuth } from '@/features/auth';
 import { colors, layout, spacing } from '@/theme';
 
 import { ChangePasswordForm } from './components/ChangePasswordForm';
@@ -17,6 +17,7 @@ export function AccountScreen() {
   const storedName = typeof user?.user_metadata.full_name === 'string' ? user.user_metadata.full_name : '';
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const fullName = nameDraft ?? storedName;
+  const displayName = getDisplayName(user);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -45,6 +46,20 @@ export function AccountScreen() {
   return (
     <Screen title="Hesap" back={() => router.canGoBack() ? router.back() : router.replace('/')} testID="account-screen"
       contentStyle={styles.content}>
+      {/* Kimlik kartı (mockup'un kâğıt blokları): hesap sahibi bir bakışta görünür; düzenleme aşağıdaki alanlarda. */}
+      <Card variant="paper" paper="nane" tape="sari" tapeRotate={-5} shadowSize="md" style={styles.identity} testID="account-identity">
+        <Avatar name={displayName || user?.email || '?'} size="lg" />
+        <View style={styles.identityText}>
+          <Text variant="headline" numberOfLines={1}>
+            {displayName}
+          </Text>
+          {user?.email ? (
+            <Text variant="bodySmall" numberOfLines={1}>
+              {user.email}
+            </Text>
+          ) : null}
+        </View>
+      </Card>
       <View style={styles.section}>
         <SectionHeader title="Hesap bilgileriniz" />
         <TextField label="E-posta" value={user?.email ?? ''} editable={false} testID="account-email" />
@@ -74,6 +89,8 @@ export function AccountScreen() {
 
 const styles = StyleSheet.create({
   content: { gap: spacing.xl },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.sm },
+  identityText: { flex: 1, minWidth: 0, gap: spacing.xxs },
   section: { gap: spacing.md },
   divider: { height: layout.hairline, backgroundColor: colors.rule },
   deleteButton: { backgroundColor: colors.dangerMuted },

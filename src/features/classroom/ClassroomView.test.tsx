@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { Animated } from 'react-native';
 
 import { Providers } from '@/features/forms/test-utils';
@@ -6,6 +6,7 @@ import { plusMinusForm, tally } from '@/features/formview/fixtures';
 import type { MarkBoard } from '@/features/formview/useMarkBoard';
 import { todayIso } from '@/features/sessions/date';
 import type { SessionFill } from '@/features/sessions/hooks/useSessionFill';
+import { motion } from '@/theme';
 
 import { ClassroomView } from './ClassroomView';
 import * as presentation from './presentation';
@@ -40,21 +41,23 @@ const onExit = jest.fn();
 const hidden = { includeHiddenElements: true };
 beforeEach(() => { jest.clearAllMocks(); mockReduced = false; });
 
-it('shows every total on the option buttons, the fractional net, the day marks and the class day summary; search keeps totals', async () => {
+it('shows every total below quick controls, the fractional net, the day marks and the class day summary; search keeps totals', async () => {
   const data = board();
   await render(<ClassroomView form={form} board={data} day={day} onDay={data.changeDay} onExit={onExit} />, { wrapper: Providers });
   expect(screen.getByTestId('classroom-net-s1')).toHaveTextContent('+2,5');
-  expect(screen.getByTestId('classroom-s1-arti-count')).toHaveTextContent('3');
-  expect(screen.getByTestId('classroom-s1-eksi-count')).toHaveTextContent('1');
-  expect(screen.getByTestId('classroom-s1-half-count')).toHaveTextContent('1');
-  expect(screen.getByTestId('classroom-s2-eksi-count')).toHaveTextContent('0');
+  expect(screen.getByTestId('classroom-s1-arti-count')).toHaveTextContent('3 Artı');
+  expect(screen.getByTestId('classroom-s1-eksi-count')).toHaveTextContent('1 Eksi');
+  expect(screen.getByTestId('classroom-s1-half-count')).toHaveTextContent('1 Yarım artı');
+  expect(screen.getByTestId('classroom-s2-eksi-count')).toHaveTextContent('0 Eksi');
   expect(screen.getByTestId('classroom-day-s1')).toHaveTextContent('Bugün: 1 Artı');
   // "işaret yok" her kartta tekrarlanmaz.
   expect(screen.queryByTestId('classroom-day-s2')).toBeNull();
   expect(screen.getByText('No 12')).toBeOnTheScreen();
   expect(screen.getByTestId('classroom-summary')).toHaveTextContent(/2 öğrenci/);
   expect(screen.getByTestId('classroom-summary')).toHaveTextContent(/1 Artı/);
-  expect(screen.getByTestId('classroom-summary').props.accessibilityLabel).toBe('2 öğrenci. Bugün: 1 Artı');
+  expect(screen.getByTestId('classroom-positive-total')).toHaveTextContent(/1/);
+  expect(screen.getByTestId('classroom-summary-net')).toHaveTextContent('Net +1');
+  expect(screen.getByTestId('classroom-summary').props.accessibilityLabel).toBe('2 öğrenci. Bugün: 1 Artı. Net +1');
   // Tonlar renkten bağımsız şekille de ayrılır.
   expect(screen.getAllByTestId('tone-mark-positive', hidden).length).toBeGreaterThan(0);
   expect(screen.getAllByTestId('tone-mark-negative', hidden).length).toBeGreaterThan(0);
@@ -73,19 +76,20 @@ it('marks, celebrates only positive actions on the tile and in the strip, undoes
   await fireEvent.press(screen.getByTestId('classroom-s1-eksi'));
   expect(data.mark).toHaveBeenLastCalledWith('s1', 'eksi');
   expect(screen.queryByTestId('classroom-celebration')).toBeNull();
-  expect(screen.queryByTestId('classroom-delta-s1', hidden)).toBeNull();
+  expect(screen.queryByTestId('classroom-stamp-s1', hidden)).toBeNull();
   await fireEvent.press(screen.getByTestId('classroom-s1-arti'));
   expect(data.mark).toHaveBeenLastCalledWith('s1', 'arti');
   expect(screen.getByTestId('classroom-celebration')).toHaveTextContent('Ali, bir adım daha');
-  expect(screen.getByTestId('classroom-delta-s1', hidden)).toHaveTextContent('+1');
+  expect(screen.getByTestId('classroom-stamp-s1', hidden)).toHaveTextContent(/AFERİN\+1/);
   // Kutlama, eski "eklendi" bildiriminin yerini alır; tek şerit.
   expect(screen.queryByTestId('classroom-notification')).toBeNull();
   await fireEvent.press(screen.getByTestId('classroom-s1-half'));
   expect(screen.getByTestId('classroom-celebration')).toHaveTextContent('Ali, emeğine sağlık');
-  expect(screen.getByTestId('classroom-delta-s1', hidden)).toHaveTextContent('+0,5');
+  expect(screen.getByTestId('classroom-stamp-s1', hidden)).toHaveTextContent(/AFERİN\+0,5/);
   await fireEvent.press(screen.getByTestId('classroom-undo-s1'));
   expect(data.undoStudent).toHaveBeenCalledWith('s1');
   expect(screen.queryByTestId('classroom-celebration')).toBeNull();
+  expect(screen.queryByTestId('classroom-stamp-s1', hidden)).toBeNull();
   expect(screen.getByTestId('classroom-idle')).toHaveTextContent('Her adım ilerlemedir');
   await fireEvent.press(screen.getByTestId('classroom-undo'));
   expect(data.undoLast).toHaveBeenCalled();
@@ -109,10 +113,10 @@ it('keeps positive feedback static with reduced motion and releases fullscreen o
   const view = await render(<ClassroomView form={form} board={data} day={day} onDay={data.changeDay} onExit={onExit} />, { wrapper: Providers });
   await fireEvent.press(screen.getByTestId('classroom-s1-half'));
   expect(screen.getByTestId('classroom-celebration')).toHaveTextContent('Ali, bir adım daha');
-  // Yalnız opaklık vurgusu: yükselen çip ve yaylanma yok.
-  expect(screen.queryByTestId('classroom-delta-s1', hidden)).toBeNull();
+  // Reduced motion keeps the static stamp, without card/score/sticker movement.
+  expect(screen.getByTestId('classroom-stamp-s1', hidden)).toHaveTextContent(/AFERİN\+0,5/);
   expect(spring).not.toHaveBeenCalled();
-  expect(screen.getByTestId('classroom-glow-s1', hidden)).toBeOnTheScreen();
+  expect(screen.getByTestId('classroom-stamp-s1', hidden)).toBeOnTheScreen();
   await view.unmount();
   expect(presentation.releasePresentationFullscreen).toHaveBeenCalled();
   spring.mockRestore();
@@ -153,4 +157,63 @@ it('prevents stale daily writes while the selected day is loading', async () => 
   await render(<ClassroomView form={form} fill={fill} day={day} onDay={jest.fn()} onExit={onExit} />, { wrapper: Providers });
   expect(screen.getByTestId('classroom-save')).toBeDisabled();
   expect(screen.queryByTestId('classroom-s1-arti')).toBeNull();
+});
+
+it('keeps twelve custom options and their counts visible, including negative marks and removed options', async () => {
+  const options = Array.from({ length: 12 }, (_, i) => ({ key: `o${i}`, label: `Seçenek ${i + 1}`, tone: i === 11 ? 'negative' as const : 'neutral' as const, score: i === 11 ? -1 : 1 }));
+  const data = board();
+  data.rows = [tally({ studentId: 's1', fullName: 'Ali Veli Yılmaz', counts: { o0: 2, o11: 3, old: 4 }, dayCounts: { o0: 1, o11: 2 } })];
+  await render(<ClassroomView form={{ ...form, options }} board={data} day={day} onDay={data.changeDay} onExit={onExit} />, { wrapper: Providers });
+  for (const option of options) expect(screen.getByTestId(`classroom-s1-${option.key}`)).toBeOnTheScreen();
+  expect(screen.getByText('Ali Veli')).toBeOnTheScreen();
+  expect(screen.getByText('Yılmaz')).toBeOnTheScreen();
+  expect(screen.getByTestId('classroom-s1-o11-count')).toHaveTextContent('3');
+  expect(screen.getByText('4 kaldırılmış seçenek')).toBeOnTheScreen();
+  expect(screen.getByTestId('classroom-net-s1')).toHaveTextContent('−1');
+  expect(screen.getByTestId('classroom-summary')).toHaveTextContent(/2 Seçenek 12/);
+  expect(screen.getByTestId('classroom-summary-net')).toHaveTextContent('Net −1');
+  await fireEvent.press(screen.getByTestId('classroom-s1-o11'));
+  expect(data.mark).toHaveBeenLastCalledWith('s1', 'o11');
+  expect(screen.queryByTestId('classroom-stamp-s1', hidden)).toBeNull();
+});
+
+it('replaces the positive stamp on rapid taps, caps stickers at five, and gives minus no animation', async () => {
+  const data = board();
+  data.rows = [tally({ studentId: 's1', fullName: 'Ali', counts: { arti: 8 } })];
+  const spring = jest.spyOn(Animated, 'spring');
+  const now = jest.spyOn(Date, 'now').mockReturnValue(Date.now());
+  await render(<ClassroomView form={plusMinusForm} board={data} day={day} onDay={data.changeDay} onExit={onExit} />, { wrapper: Providers });
+  expect(within(screen.getByTestId('classroom-stars-s1')).getAllByText('★', hidden)).toHaveLength(10);
+  await fireEvent.press(screen.getByTestId('classroom-s1-arti'));
+  const first = screen.getByTestId('classroom-stamp-s1', hidden);
+  await fireEvent.press(screen.getByTestId('classroom-s1-arti'));
+  const second = screen.getByTestId('classroom-stamp-s1', hidden);
+  expect(second).not.toBe(first);
+  expect(data.mark).toHaveBeenCalledTimes(2);
+  spring.mockClear();
+  await fireEvent.press(screen.getByTestId('classroom-s1-eksi'));
+  expect(screen.queryByTestId('classroom-stamp-s1', hidden)).toBeNull();
+  expect(spring).not.toHaveBeenCalled();
+  now.mockRestore();
+  spring.mockRestore();
+});
+
+
+it('expires a stamp and does not replay it when search remounts the card', async () => {
+  jest.useFakeTimers();
+  mockReduced = true;
+  try {
+    const data = board();
+    await render(<ClassroomView form={form} board={data} day={day} onDay={data.changeDay} onExit={onExit} />, { wrapper: Providers });
+    await fireEvent.press(screen.getByTestId('classroom-s1-arti'));
+    expect(screen.getByTestId('classroom-stamp-s1', hidden)).toBeOnTheScreen();
+    await act(async () => { jest.advanceTimersByTime(motion.duration.slow * 3 + 1); });
+    expect(screen.queryByTestId('classroom-stamp-s1', hidden)).toBeNull();
+    await fireEvent.changeText(screen.getByTestId('classroom-search'), 'zz');
+    await fireEvent.changeText(screen.getByTestId('classroom-search'), 'Ali');
+    expect(screen.getByTestId('classroom-student-s1')).toBeOnTheScreen();
+    expect(screen.queryByTestId('classroom-stamp-s1', hidden)).toBeNull();
+  } finally {
+    jest.useRealTimers();
+  }
 });

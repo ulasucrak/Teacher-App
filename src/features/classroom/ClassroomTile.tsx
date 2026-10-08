@@ -1,12 +1,12 @@
 import { memo, useEffect, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { Icon, IconButton, Text, selectionA11y } from '@/components/ui';
+import { Icon, IconButton, PaperCard, Stamp, StarSticker, Text, selectionA11y } from '@/components/ui';
 import { REMOVED_OPTION_KEY, computeNet, countItems, countText, formatCounts, formatNet, totalCount, type OptionCounts } from '@/features/history';
-import { colors, layout, motion, radii, spacing, tones, typography, type ToneName } from '@/theme';
+import { colors, hardShadow, layout, motion, pressedIn, radii, spacing, tones, type ToneName } from '@/theme';
 import type { FormOption } from '@/types/database';
 
-import { MARK_SIZE, OPTION_FONT, SLOT_SIZE, TILE_PADDING, optionButtonWidth } from './layout';
+import { MARK_SIZE, OPTION_FONT, TILE_PADDING, hasQuickOptions, quickOption, type QuickOption } from './layout';
 import { ToneMark } from './ToneMark';
 
 export interface ClassroomStudent {
@@ -15,31 +15,24 @@ export interface ClassroomStudent {
   number: string | null;
   counts: OptionCounts;
   dayCounts: OptionCounts;
-  /** Günlük formda seçili seçenek. */
   selected?: string | null;
 }
 
-/**
- * Bir öğrencinin son işaretine verilen tepki. Her işarette yeni nesne gelir (animasyon baştan
- * başlar); öğrenci başına saklanır, başka kart işaretlenince bu kartın hareketi yarıda kalmaz.
- */
 export interface TilePulse {
   tone: ToneName;
-  /** Olumlu işarette nette yükselen değer ("+1", "+0,5"); diğerlerinde null. */
   delta: string | null;
-  /** Hareketi azalt kapalıysa true: yükselme ve yaylanma; değilse yalnız vurgu (opaklık). */
   animate: boolean;
-  /** Dokunuş anı (ms). Kart sonradan yeniden çizilirse (arama, kaydırma) eski tepki oynatılmaz. */
+  /** Unique gesture sequence, even when two taps share the same millisecond. */
+  key: number;
   at: number;
 }
 
 interface ClassroomTileProps {
   student: ClassroomStudent;
   options: readonly FormOption[];
-  /** Birikimli: her dokunuş bir işaret (sayılar düğmede). Günlük: tek seçim. */
   repeatable: boolean;
   width: number;
-  /** "Bugün" ya da "6 Ekim 2026": seçili günün kısa adı. */
+  tapeIndex: number;
   dayLabel: string;
   disabled: boolean;
   undoing: boolean;
@@ -49,163 +42,159 @@ interface ClassroomTileProps {
 }
 
 const useNativeDriver = Platform.OS !== 'web';
-/** Vurgunun ekranda kalma süresi: arka sıradan fark edilecek kadar, sonraki dokunuşu bekletmeyecek kadar. */
 const HOLD_MS = motion.duration.slow * 3;
-/** "+1" çipinin ömrü: kutlama şeridinin yarısı; okunacak kadar görünür kalır, sonra söner. */
-const RISE_MS = motion.toastVisibleMs / 2;
-const POP_SCALE = 1.12;
 
-/**
- * Sınıf modunda bir öğrenci: ad (28 pt), numara ve seçili günün sayıları, net puan ve seçenek
- * düğmeleri. İşaret verilince yalnız bu kart tepki verir: kısa vurgu (opaklık), olumlu işarette
- * nette "+1" yükselir ve net sayısı yaylanır. Hareketi azalt açıksa yalnız vurgu kalır.
- */
+/** A taped paper card: identity, net, stickers and one clear row of score controls. */
 export const ClassroomTile = memo(function ClassroomTile({
-  student, options, repeatable, width, dayLabel, disabled, undoing, pulse, onMark, onUndo,
+  student, options, repeatable, width, tapeIndex, dayLabel, disabled, undoing, pulse, onMark, onUndo,
 }: ClassroomTileProps) {
-  const [glow] = useState(() => new Animated.Value(0));
-  const [rise] = useState(() => new Animated.Value(0));
+  const [expiredKey, setExpiredKey] = useState<number | null>(null);
+  const [mountedAt] = useState(() => Date.now());
+  const activePulse = pulse?.tone === 'positive' && pulse.key !== expiredKey && pulse.at + HOLD_MS > mountedAt ? pulse : null;
+  const animateStamp = !!activePulse?.animate && activePulse.at >= mountedAt - 100;
+  const [thud] = useState(() => new Animated.Value(0));
   const [pop] = useState(() => new Animated.Value(1));
-  const celebrate = pulse?.tone === 'positive';
-  const lift = celebrate && !!pulse?.animate && !!pulse.delta;
+  const [sticker] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
-    if (!pulse || Date.now() - pulse.at > HOLD_MS) return;
-    // Hızlı ardışık dokunuşlar önceki hareketi keser; son durum her zaman verinin kendisidir.
-    glow.stopAnimation();
-    rise.stopAnimation();
-    pop.stopAnimation();
-    glow.setValue(1);
-    rise.setValue(0);
+    thud.setValue(0);
     pop.setValue(1);
-    const parts: Animated.CompositeAnimation[] = [
-      Animated.sequence([
-        Animated.delay(HOLD_MS),
-        Animated.timing(glow, { toValue: 0, duration: motion.duration.slow, easing: motion.easing.standard, useNativeDriver }),
-      ]),
-    ];
-    if (pulse.tone === 'positive' && pulse.animate) {
-      // Doğrusal ilerleme; yavaşlayan yükselme ve geç sönme aşağıdaki interpolasyonda.
-      parts.push(Animated.timing(rise, { toValue: 1, duration: RISE_MS, easing: Easing.linear, useNativeDriver }));
-      parts.push(Animated.sequence([
-        Animated.timing(pop, { toValue: POP_SCALE, duration: motion.duration.fast, easing: motion.easing.standard, useNativeDriver }),
-        Animated.spring(pop, { toValue: 1, friction: 4, tension: 160, useNativeDriver }),
-      ]));
+    sticker.setValue(1);
+    if (!pulse || pulse.tone !== 'positive' || Date.now() - pulse.at >= HOLD_MS) return;
+    const timer = setTimeout(() => setExpiredKey(pulse.key), Math.max(0, HOLD_MS - (Date.now() - pulse.at)));
+    let animation: Animated.CompositeAnimation | undefined;
+    if (pulse.animate && pulse.at >= mountedAt - 100) {
+      sticker.setValue(0);
+      animation = Animated.parallel([
+        Animated.sequence([
+          Animated.delay(150),
+          Animated.timing(thud, { toValue: 3, duration: 100, useNativeDriver }),
+          Animated.timing(thud, { toValue: 0, duration: 150, useNativeDriver }),
+        ]),
+        Animated.sequence([
+          Animated.delay(260),
+          Animated.timing(pop, { toValue: 1.12, duration: motion.duration.fast, useNativeDriver }),
+          Animated.spring(pop, { toValue: 1, friction: 4, tension: 160, useNativeDriver }),
+        ]),
+        Animated.sequence([
+          Animated.delay(420),
+          Animated.spring(sticker, { toValue: 1, friction: 5, tension: 160, useNativeDriver }),
+        ]),
+      ]);
+      animation.start();
     }
-    const animation = Animated.parallel(parts);
-    animation.start();
-    return () => {
-      animation.stop();
-      // Kesilen hareket ara değerde kalmasın (yeni dokunuş ya da kartın kaldırılması).
-      glow.setValue(0);
-      rise.setValue(1);
-      pop.setValue(1);
-    };
-  }, [pulse, glow, rise, pop]);
+    return () => { clearTimeout(timer); animation?.stop(); };
+  }, [pulse, thud, pop, sticker, mountedAt]);
 
   const net = computeNet(student.counts, options);
   const total = totalCount(student.counts);
   const dayTotal = totalCount(student.dayCounts);
   const removed = countItems(student.counts, options).find((item) => item.key === REMOVED_OPTION_KEY);
-  // Seçili günün sayıları yalnız işaret varsa yazılır ("işaret yok" 40 kartta tekrar etmez).
-  const dayText = repeatable && dayTotal > 0 ? `${dayLabel}: ${formatCounts(student.dayCounts, options)}` : null;
-  const showMeta = repeatable || !!student.number || !!removed;
   const score = net !== null ? formatNet(net) : repeatable ? String(total) : null;
-  const glowTone = pulse?.tone === 'positive' ? tones.positive : null;
+  const quick = hasQuickOptions(options);
+  const ordered = quick ? [...options].sort((a, b) => {
+    const order = { minus: 0, half: 1, plus: 2 };
+    return order[quickOption(a)!] - order[quickOption(b)!];
+  }) : options;
+  const positiveCount = options.reduce((sum, option) => sum + (option.tone === 'positive' ? student.counts[option.key] ?? 0 : 0), 0);
+  const stars = Math.min(positiveCount, 5);
+  const words = student.full_name.trim().split(/\s+/);
+  const surname = words.length > 1 ? words.pop() : null;
+  const dayText = repeatable && dayTotal > 0 ? `${dayLabel}: ${formatCounts(student.dayCounts, options)}` : null;
 
   return (
-    <View style={[styles.tile, { width }]} testID={`classroom-student-${student.id}`}>
-      <Animated.View
-        pointerEvents="none"
-        importantForAccessibility="no-hide-descendants"
-        style={[
-          styles.glow,
-          glowTone ? { backgroundColor: glowTone.soft, borderColor: glowTone.solid } : styles.glowNeutral,
-          { opacity: glow },
-        ]}
-        testID={`classroom-glow-${student.id}`}
-      />
-      <View style={styles.top}>
-        <View style={styles.identity}>
-          <Text variant="bodyStrong" style={styles.name} numberOfLines={2}>{student.full_name}</Text>
-          {showMeta ? (
-            <View style={styles.meta}>
-              {student.number ? <Text variant="number" tone="muted">{`No ${student.number}`}</Text> : null}
-              {dayText ? (
-                <Text variant="label" tone="muted" numberOfLines={1} style={styles.metaText} testID={`classroom-day-${student.id}`}>{dayText}</Text>
-              ) : null}
-              {removed ? <Text variant="label" tone="muted" numberOfLines={1} style={styles.metaText}>{countText(removed)}</Text> : null}
-            </View>
+    <Animated.View style={{ width, transform: [{ translateX: thud }, { translateY: thud }] }}>
+      <PaperCard
+        onBoard
+        tapeIndex={tapeIndex}
+        style={[styles.tile, activePulse && styles.celebrating, activePulse && hardShadow('xs', colors.boardDeep)]}
+        testID={`classroom-student-${student.id}`}
+      >
+        <View style={styles.top}>
+          <View style={styles.identity}>
+            <Text variant="heading" style={styles.name}>{words.join(' ')}</Text>
+            {surname ? <Text variant="label" tone="muted">{surname}</Text> : null}
+          </View>
+          {score !== null ? (
+            <Animated.View
+              style={[styles.score, (net ?? total) > 0 ? styles.scorePositive : styles.scoreZero, { transform: [{ scale: pop }] }]}
+              accessible
+              accessibilityLabel={net !== null ? `${student.full_name}: net ${score}` : `${student.full_name}: toplam ${score} işaret`}
+            >
+              <Text
+                variant="heading"
+                color={(net ?? total) > 0 ? colors.textInverse : colors.text}
+                maxFontSizeMultiplier={1.2}
+                style={[styles.scoreValue, score.length > 4 && styles.scoreLong]}
+                testID={`classroom-net-${student.id}`}
+              >{score}</Text>
+            </Animated.View>
           ) : null}
         </View>
-        {score !== null ? (
-          <Animated.View
-            style={[styles.score, { transform: [{ scale: pop }] }]}
-            accessible
-            accessibilityLabel={net !== null ? `${student.full_name}: net ${score}` : `${student.full_name}: toplam ${score} işaret`}
-          >
-            <Text variant="display" align="right" testID={`classroom-net-${student.id}`} style={styles.scoreValue}>{score}</Text>
-            <Text variant="label" tone="muted" align="right">{net !== null ? 'net' : 'toplam'}</Text>
-            {lift ? (
-              <Animated.View
-                pointerEvents="none"
-                importantForAccessibility="no-hide-descendants"
-                style={[
-                  styles.delta,
-                  {
-                    opacity: rise.interpolate({ inputRange: [0, 0.06, 0.75, 1], outputRange: [0, 1, 1, 0] }),
-                    transform: [{ translateY: rise.interpolate({ inputRange: [0, 0.2, 1], outputRange: [spacing.sm, 0, -spacing.lg] }) }],
-                  },
-                ]}
-                testID={`classroom-delta-${student.id}`}
-              >
-                <Text variant="title" color={tones.positive.onSolid}>{pulse?.delta}</Text>
-              </Animated.View>
-            ) : null}
-          </Animated.View>
+        <View style={styles.stickers} testID={`classroom-stars-${student.id}`}>
+          {Array.from({ length: stars }, (_, index) => (
+            <Animated.View key={index} style={activePulse && index === stars - 1 ? { transform: [{ scale: sticker }] } : undefined}>
+              <StarSticker size={19} rotate={index % 2 ? 8 : -8} />
+            </Animated.View>
+          ))}
+          {score !== null ? <Text variant="caption" tone="muted" style={styles.netLabel}>{net !== null ? 'net' : 'toplam'}</Text> : null}
+        </View>
+        <View style={styles.actions} accessibilityRole={repeatable ? 'toolbar' : 'radiogroup'} accessibilityLabel={`${student.full_name} için seçenekler`}>
+          {ordered.map((option) => (
+            <OptionButton
+              key={option.key}
+              option={option}
+              kind={quick ? quickOption(option) : null}
+              repeatable={repeatable}
+              count={student.counts[option.key] ?? 0}
+              selected={student.selected === option.key}
+              disabled={disabled}
+              studentName={student.full_name}
+              onPress={() => onMark(student, option)}
+              testID={`classroom-${student.id}-${option.key}`}
+            />
+          ))}
+        </View>
+        {repeatable && quick ? (
+          <View style={styles.counts} testID={`classroom-counts-${student.id}`}>
+            {options.map((option) => (
+              <Text key={option.key} variant="caption" testID={`classroom-${student.id}-${option.key}-count`}>
+                {`${student.counts[option.key] ?? 0} ${option.label}`}
+              </Text>
+            ))}
+          </View>
         ) : null}
-      </View>
-      <View
-        style={styles.actions}
-        accessibilityRole={repeatable ? 'toolbar' : 'radiogroup'}
-        accessibilityLabel={`${student.full_name} için seçenekler`}
-      >
-        {options.map((option) => (
-          <OptionButton
-            key={option.key}
-            option={option}
-            repeatable={repeatable}
-            count={student.counts[option.key] ?? 0}
-            selected={student.selected === option.key}
-            disabled={disabled}
-            studentName={student.full_name}
-            onPress={() => onMark(student, option)}
-            testID={`classroom-${student.id}-${option.key}`}
-          />
-        ))}
-        {repeatable ? (
-          undoing ? (
-            <View style={styles.undoBusy}><ActivityIndicator color={colors.primary} /></View>
+        {removed ? <Text variant="caption" tone="muted">{countText(removed)}</Text> : null}
+        <View style={styles.meta}>
+          <View style={styles.metaText}>
+            {student.number ? <Text variant="caption" tone="muted">{`No ${student.number}`}</Text> : null}
+            {dayText ? <Text variant="caption" tone="muted" testID={`classroom-day-${student.id}`}>{dayText}</Text> : null}
+          </View>
+          {repeatable ? undoing ? (
+            <View style={styles.undoBusy} accessibilityLabel={`${student.full_name}: geri alınıyor`}><ActivityIndicator color={colors.primary} /></View>
           ) : (
             <IconButton
               icon="undo"
-              variant="tonal"
-              color={colors.text}
+              color={colors.textMuted}
               accessibilityLabel={`${student.full_name}: son işareti geri al`}
               accessibilityHint={`${dayLabel} verilen son işareti siler`}
               disabled={disabled || dayTotal === 0}
               onPress={() => onUndo(student.id)}
               testID={`classroom-undo-${student.id}`}
             />
-          )
+          ) : null}
+        </View>
+        {activePulse ? (
+          <Stamp key={activePulse.key} value={activePulse.delta ?? '+1'} animate={animateStamp} style={styles.stamp} testID={`classroom-stamp-${student.id}`} />
         ) : null}
-      </View>
-    </View>
+      </PaperCard>
+    </Animated.View>
   );
 });
 
 interface OptionButtonProps {
   option: FormOption;
+  kind: QuickOption | null;
   repeatable: boolean;
   count: number;
   selected: boolean;
@@ -215,18 +204,13 @@ interface OptionButtonProps {
   testID: string;
 }
 
-/**
- * Seçenek düğmesi: çerçeveli, ton renginde [işaret] Etiket. Birikimlide sağda toplam sayı rozeti
- * (sayı varsa dolgulu, sıfırsa halka). Günlükte seçili düğme dolgulu ve ton işaretinin yerinde ✓:
- * seçim renkten bağımsız (dolgu + şekil) okunur, genişlik değişmez.
- */
-function OptionButton({ option, repeatable, count, selected, disabled, studentName, onPress, testID }: OptionButtonProps) {
+function OptionButton({ option, kind, repeatable, count, selected, disabled, studentName, onPress, testID }: OptionButtonProps) {
   const tone = tones[option.tone];
   const filled = !repeatable && selected;
-  const fg = filled ? tone.onSolid : tone.onSoft;
+  const square = kind === 'minus' || kind === 'half';
   const a11y = repeatable
     ? { accessibilityRole: 'button' as const, accessibilityState: { disabled }, accessibilityHint: `Toplam ${count}. Bir işaret ekler.` }
-    : { accessibilityRole: 'radio' as const, ...selectionA11y({ checked: selected, selected, disabled }) };
+    : { accessibilityRole: 'radio' as const, ...selectionA11y({ checked: selected, selected, disabled }), accessibilityHint: selected ? 'Tekrar dokununca seçimi kaldırır' : 'Bu öğrencinin günlük değerini seçer' };
   return (
     <Pressable
       testID={testID}
@@ -236,83 +220,49 @@ function OptionButton({ option, repeatable, count, selected, disabled, studentNa
       {...a11y}
       style={({ pressed }) => [
         styles.option,
-        { flexBasis: optionButtonWidth(option.label, repeatable) },
-        filled
-          ? { backgroundColor: pressed ? tone.solidPressed : tone.solid, borderColor: pressed ? tone.solidPressed : tone.solid }
-          : { backgroundColor: pressed ? tone.soft : colors.surface, borderColor: tone.solid },
+        kind ? square ? styles.squareOption : styles.plusOption : styles.genericOption,
+        { backgroundColor: filled ? tone.solid : colors.surface },
+        pressed ? pressedIn('xs') : hardShadow('xs'),
         disabled && styles.disabled,
       ]}
     >
-      {filled ? (
-        <Icon name="check" size={MARK_SIZE} color={fg} />
-      ) : (
-        <ToneMark tone={option.tone} color={fg} size={MARK_SIZE} />
-      )}
-      <Text variant="bodyStrong" color={fg} numberOfLines={1} style={styles.optionLabel}>{option.label}</Text>
-      {repeatable ? (
-        <View style={[styles.slot, count > 0 ? { backgroundColor: tone.solid } : { borderColor: tone.solid, borderWidth: layout.inputBorderFocus }]}>
-          <Text variant="bodyStrong" color={count > 0 ? tone.onSolid : tone.onSoft} style={styles.count} testID={`${testID}-count`}>
-            {String(count)}
-          </Text>
+      {kind === 'half' ? <Text variant="bodyStrong" style={styles.half}>½</Text> : (
+        <View style={kind === 'plus' ? styles.plusCircle : undefined}>
+          <ToneMark tone={option.tone} color={colors.text} size={kind === 'plus' ? 16 : MARK_SIZE} />
         </View>
-      ) : null}
+      )}
+      {!square ? <Text variant="bodyStrong" style={styles.optionLabel}>{option.label}</Text> : null}
+      {filled ? <Icon name="check" size={16} color={colors.text} /> : null}
+      {repeatable && !kind ? <Text variant="label" testID={`${testID}-count`}>{String(count)}</Text> : null}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  tile: {
-    flexGrow: 0,
-    flexShrink: 1,
-    padding: TILE_PADDING,
-    gap: spacing.sm,
-    borderWidth: layout.hairline,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-  },
-  glow: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: radii.md, borderWidth: layout.inputBorderFocus },
-  glowNeutral: { borderColor: colors.text },
-  top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  identity: { flex: 1, gap: spacing.xxs },
-  name: { fontSize: typography.title.fontSize, lineHeight: typography.title.lineHeight },
-  meta: { flexDirection: 'row', alignItems: 'center', columnGap: spacing.md, minHeight: typography.label.lineHeight },
-  metaText: { flexShrink: 1 },
-  score: { alignItems: 'flex-end', minWidth: layout.minTouch },
-  scoreValue: { fontVariant: ['tabular-nums'] },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm },
-  option: {
-    flexGrow: 1,
-    flexShrink: 0,
-    minHeight: layout.minTouch,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radii.sm,
-    borderWidth: layout.inputBorderFocus,
-  },
+  tile: { flex: 1, padding: TILE_PADDING, gap: spacing.xs, minHeight: 166, overflow: 'visible' },
+  celebrating: { backgroundColor: tones.positive.soft },
+  top: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
+  identity: { flex: 1 },
+  name: { fontSize: 26, lineHeight: 28, letterSpacing: -0.5 },
+  score: { minWidth: 50, minHeight: 50, paddingHorizontal: spacing.xs, borderRadius: radii.full, alignItems: 'center', justifyContent: 'center', borderWidth: layout.stroke, borderColor: colors.outline },
+  scorePositive: { backgroundColor: colors.outline },
+  scoreZero: { backgroundColor: colors.surface },
+  scoreValue: { fontSize: 21, lineHeight: 26, fontVariant: ['tabular-nums'] },
+  scoreLong: { fontSize: 17, lineHeight: 22 },
+  stickers: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, minHeight: 24 },
+  netLabel: { marginLeft: 'auto' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'stretch', gap: spacing.sm, marginTop: 'auto', paddingVertical: spacing.xs },
+  option: { minHeight: layout.minTouch, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingHorizontal: spacing.xs, borderRadius: radii.sm, borderWidth: layout.stroke, borderColor: colors.outline },
+  squareOption: { width: layout.minTouch, flexShrink: 0 },
+  plusOption: { flex: 1 },
+  genericOption: { flexBasis: '47%', flexGrow: 1, flexShrink: 1 },
+  optionLabel: { fontSize: OPTION_FONT, lineHeight: 22, flexShrink: 1 },
+  plusCircle: { width: 26, height: 26, borderRadius: radii.full, borderWidth: 2, borderColor: colors.outline, backgroundColor: colors.plus, alignItems: 'center', justifyContent: 'center' },
+  half: { fontSize: 24, lineHeight: 28 },
   disabled: { opacity: 0.5 },
-  optionLabel: { fontSize: OPTION_FONT, lineHeight: typography.heading.lineHeight, flexShrink: 1 },
-  slot: {
-    minWidth: SLOT_SIZE,
-    height: SLOT_SIZE,
-    paddingHorizontal: spacing.xs,
-    borderRadius: radii.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  count: { fontVariant: ['tabular-nums'] },
+  counts: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, rowGap: spacing.xxs },
+  meta: { flexDirection: 'row', alignItems: 'center' },
+  metaText: { flex: 1 },
   undoBusy: { width: layout.minTouch, height: layout.minTouch, alignItems: 'center', justifyContent: 'center' },
-  // Netin hemen solunda: "+1" puana eklenir gibi görünür, adı kapatmaz.
-  delta: {
-    position: 'absolute',
-    top: 0,
-    right: '100%',
-    marginRight: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.full,
-    backgroundColor: tones.positive.solid,
-  },
+  stamp: { position: 'absolute', right: 4, bottom: 2, zIndex: 3 },
 });

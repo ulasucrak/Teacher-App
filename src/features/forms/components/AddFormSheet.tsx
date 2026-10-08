@@ -1,11 +1,11 @@
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 
 import { Banner, IconTile, Sheet, Text, type IconName } from '@/components/ui';
-import { colors, layout, radii, spacing } from '@/theme';
+import { colors, layout, radii, spacing, type PaperName } from '@/theme';
 
 import { sameTitle } from '../format';
 import { formModeLabels } from '../mode';
-import { PRESETS, presetFormValues, presetIcon, type ModeChoice, type PresetId } from '../presets';
+import { PRESETS, formPaper, presetFormValues, presetIcon, type ModeChoice, type PresetId } from '../presets';
 import { ModeChoiceField } from './ModeChoiceField';
 
 export interface AddFormSheetProps {
@@ -61,6 +61,7 @@ export function AddFormSheet({
           <SheetRow
             key={p.id}
             icon={presetIcon(p.id)}
+            paper={formPaper(p.id)}
             label={p.title}
             hint={exists ? `${mode}. Bu sınıfta var` : mode}
             busy={busyPreset === p.id}
@@ -84,6 +85,8 @@ export function AddFormSheet({
 
 interface SheetRowProps {
   icon: IconName;
+  /** İkon kutusunun kâğıt rengi (hazır formlarda formun kimlik rengi). */
+  paper?: PaperName;
   label: string;
   hint?: string;
   busy?: boolean;
@@ -93,7 +96,7 @@ interface SheetRowProps {
   testID: string;
 }
 
-function SheetRow({ icon, label, hint, busy = false, disabled = false, last = false, onPress, testID }: SheetRowProps) {
+function SheetRow({ icon, paper, label, hint, busy = false, disabled = false, last = false, onPress, testID }: SheetRowProps) {
   return (
     <Pressable
       testID={testID}
@@ -104,7 +107,7 @@ function SheetRow({ icon, label, hint, busy = false, disabled = false, last = fa
       accessibilityState={{ disabled, busy }}
       style={({ pressed }) => [styles.row, !last && styles.divider, pressed && styles.pressed]}
     >
-      <IconTile icon={icon} />
+      <IconTile icon={icon} paper={paper} />
       <View style={styles.texts}>
         <Text variant="bodyStrong">{label}</Text>
         {hint ? (

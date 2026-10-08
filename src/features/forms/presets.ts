@@ -1,4 +1,5 @@
 import type { IconName } from '@/components/ui';
+import type { PaperName } from '@/theme';
 import type { FormMode, FormOption } from '@/types/database';
 
 export type PresetId = 'yoklama' | 'odev' | 'sozlu' | 'katilim' | 'artieksi';
@@ -121,12 +122,38 @@ export function presetIcon(idOrTitle: string | null | undefined): IconName {
     case 'odev':
       return 'book';
     case 'sozlu':
-      return 'person';
+      return 'speech';
     case 'katilim':
       return 'people';
     case 'artieksi':
-      return 'plus';
+      return 'plusMinus';
     default:
       return 'list';
+  }
+}
+
+/** Özel formların ikon kutusu için kâğıt renkleri (sarı ana eyleme ayrılmıştır). */
+const CUSTOM_PAPERS: readonly PaperName[] = ['gok', 'nane', 'pembe', 'lila', 'turuncu'];
+
+/**
+ * Formun kimlik rengi (ikon kutusu): şablonla aynı adlı formlar sabit renk taşır — yoklama nane, artı/eksi gök,
+ * sözlü lila, ödev kontrolü turuncu, derse katılım pembe (mockup). Özel formlar sıraya göre döner.
+ */
+export function formPaper(idOrTitle: string | null | undefined, index = 0): PaperName {
+  const key = (idOrTitle ?? '').trim().toLocaleLowerCase('tr-TR');
+  const preset = PRESETS.find((p) => p.id === key || p.title.toLocaleLowerCase('tr-TR') === key);
+  switch (preset?.id) {
+    case 'yoklama':
+      return 'nane';
+    case 'artieksi':
+      return 'gok';
+    case 'sozlu':
+      return 'lila';
+    case 'odev':
+      return 'turuncu';
+    case 'katilim':
+      return 'pembe';
+    default:
+      return CUSTOM_PAPERS[Math.abs(index) % CUSTOM_PAPERS.length];
   }
 }

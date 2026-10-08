@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet } from 'react-native';
 
 import { Text } from '@/components/ui';
-import { colors, elevation, layout, motion, radii, spacing } from '@/theme';
+import { colors, hardShadow, layout, motion, radii, spacing } from '@/theme';
 
 export const UNDO_VISIBLE_MS = 6000;
 
@@ -16,7 +16,7 @@ export interface UndoBarProps {
 }
 
 /**
- * Toplu işlem sonrası geri alma bandı (Toast eylem desteklemediği için yerel).
+ * Toplu işlem sonrası geri alma bandı (Toast eylem desteklemediği için yerel; görünümü Toast ile aynı).
  * Liste alanının altında, alt çubuğun hemen üstünde durur.
  */
 export function UndoBar({ message, onUndo, onDismiss, bottom = spacing.md }: UndoBarProps) {
@@ -35,7 +35,7 @@ export function UndoBar({ message, onUndo, onDismiss, bottom = spacing.md }: Und
 
   return (
     <Animated.View style={[styles.bar, { opacity, bottom }]} accessibilityLiveRegion="polite">
-      <Text variant="label" tone="inverse" style={styles.text}>
+      <Text variant="bodyStrong" tone="inverse" style={styles.text}>
         {message}
       </Text>
       <Pressable
@@ -45,7 +45,7 @@ export function UndoBar({ message, onUndo, onDismiss, bottom = spacing.md }: Und
         hitSlop={spacing.xs}
         style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
       >
-        <Text variant="label" color={colors.primaryMuted}>
+        <Text variant="bodyStrong" color={colors.accent}>
           Geri al
         </Text>
       </Pressable>
@@ -55,7 +55,8 @@ export function UndoBar({ message, onUndo, onDismiss, bottom = spacing.md }: Und
 
 const styles = StyleSheet.create({
   bar: {
-    ...elevation.overlay,
+    // Toast ile aynı dil: kurşun zemin + sarı sert gölge; sarı yazı kurşun üstünde 12:1.
+    ...hardShadow('md', colors.accent),
     position: 'absolute',
     left: layout.pageX,
     right: layout.pageX,
@@ -64,9 +65,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: colors.text,
     borderRadius: radii.md,
-    paddingLeft: spacing.lg,
+    paddingLeft: spacing.lg + spacing.xxs,
     paddingRight: spacing.xs,
-    minHeight: layout.minTouch + spacing.sm,
+    minHeight: layout.fabHeight,
   },
   text: { flex: 1 },
   action: {

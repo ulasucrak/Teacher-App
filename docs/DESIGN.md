@@ -9,9 +9,10 @@ font adı ya da rastgele boşluk sayısı yazılmaz.
 Tarayıcıda açıp bu belgeyle birlikte okuyun; belge ile mockup çelişirse mockup kazanır, belge
 düzeltilir. Bileşenleri tek sayfada görmek için bkz. §12 ("Galeri").
 
-**Geçiş durumu (aşama 1 tamam):** token'lar ve `@/components/ui` v3'e geçti; ekranlar (sınıf listesi,
-sınıf, form doldurma, Sınıf modu…) henüz yalnızca yeni bileşenleri/token'ları devralarak değişti,
-mockup'taki yerleşimlerine **aşama 2**'de getirilecek — bkz. §13.
+**Geçiş durumu:** aşama 1 (token'lar + `@/components/ui`) tamam. **Aşama 2'de öğretmen ekranları mockup'a
+getirildi** (giriş, Sınıflarım, Sınıf + `HeroBlock`, Artı/eksi tek satır sayaç, Geçmiş toplam kartı, öğrenci
+listesi, hesap, laptop uygulama çubuğu — bkz. §13); **Sınıf modu** ekranı ayrı iştir ve henüz bu belgedeki
+"Sınıf modu" bölümünün eski (v2 yerleşimli) tarifindedir.
 
 ## 0. Neden yeniden? v1 denetimi (tarihsel; en çok kalabalık yaratan 7 sorun)
 
@@ -237,9 +238,10 @@ Ekran görevleri bu kalıplara uyar. Her ekranda **tek ana eylem**, en fazla **b
 
 ### 9.1 Ekran başlığı
 
-- **Kök ekranlar** (Sınıflarım, Sınıf): `Screen title largeTitle subtitle` — solda `poster` (44) başlık,
-  altında tek satır soluk bilgi ("28 öğrenci"). Sınıf ekranında başlık yerine `HeroBlock` (mockup; aşama 2).
-  Sağ üstte "⋯".
+- **Kök ekranlar** (Sınıflarım, Sınıf): Sınıflarım `Screen title largeTitle subtitle largeTitleAccessory` —
+  solda `poster` (44) başlık, altında tek satır soluk selam ("Günaydın, Selin Hanım": sabah Günaydın, gündüz
+  İyi günler, akşam İyi akşamlar), sağda süs `StarSticker` (64, 14°). Sınıf ekranında başlık yerine `HeroBlock`
+  (sınıf adı 80 pt nane kâğıtta, bant, çıkartma, avatar yığını + `Pill "28 öğrenci"`). Sağ üstte "⋯".
 - **Alt ekranlar** (Form doldurma, düzenleme): üst çubukta geri + ortalı `heading` başlık + "⋯"; çubuğun
   altında `headerDivider` ile 2.5 px kurşun çizgi (mockup `.bar.ruled`).
 - **Üst çubuk düğmeleri** (`Screen` bar'ı ve `WizardHeader`) otomatik olarak 46 pt kare "pul" olur
@@ -266,7 +268,13 @@ Ekran görevleri bu kalıplara uyar. Her ekranda **tek ana eylem**, en fazla **b
   noktaları için (formlar, sınıflar; mockup `.fcard` / `.cls`).
 - Okul numarası `number` prop'u ile solda dar, soluk, sağa hizalı sütun.
 - Her satırda aynı olan bilgi (sınıf adı vb.) satıra yazılmaz; başlıkta bir kez yazılır.
-- Giriş noktası satırı: `leading={<IconTile icon=… paper="nane" />}` + başlık + tek satır açıklama.
+- Giriş noktası satırı: `variant="card"` + `leading={<IconTile icon=… paper="nane" />}` + başlık + tek satır açıklama.
+  Form kartı (`FormListRow`) ikon kutusunu `formPaper(başlık)` ile boyar (yoklama nane, artı/eksi gök, sözlü lila,
+  ödev kontrolü turuncu, derse katılım pembe; özel formlar sıraya göre, sarı hariç); "Öğrenciler" kartı pembe.
+- **Sınıf kartı** (`ClassListRow`, mockup `.cls`): solda 90 pt kâğıt renkli etiket bloğunda sınıf adı
+  (`paperCycle` sırası: nane, gök, lila, turuncu, pembe — sarı ana eyleme ayrıldığı için atlanır; uzun ad küçülür),
+  ortada "N form" / "Henüz form yok", sağda `heading` 24 öğrenci sayısı + "öğrenci" ve chevron; kalın çerçeve +
+  `md` gölge, basınca gömülür. Erişilebilir ad değişmedi: "5/B, 28 öğrenci, 4 form".
 
 ### 9.4 İkincil eylemler (`OverflowMenu`)
 
@@ -313,6 +321,19 @@ alt çubukta "Öğrencileri ekle").
   tek satır soluk metin.
 - Alt çubuk: `BottomActionBar primary="Kaydet"`, `hint` kaydedilmemiş sayısı. Kaydedince toast
   "Kaydedildi". Kaydedilmemiş değişiklikle çıkışta sistem Alert'i kalır (gezinme koruması).
+
+**Artı / eksi (birikimli) satırı** (`MarkRow`, mockup `.mrow`): solda okul no, ortada ad (800) ve altında bugünün
+artıları kadar `StarSticker` (en çok 3) + yeşil "Bugün +N" (yalnız eksi varsa soluk "Bugün −N"; geçmiş günde
+"6 Eki +N"), yanında küçük ↶ ("son işareti geri al", yalnız o günde işaret varsa). Sağda tek satır sayaç: kare
+beyaz **−** · net (Bricolage 22; 0 soluk) · yeşil **+** (`tones.positive.solid`, `xs` gölge). Formun ilk olumlu
+seçeneği "+", ilk olumsuz seçeneği "−" olur; başka seçenekler ("Yarım artı") adın altında küçük ton çipleri olarak
+kalır (bugünün sayısıyla). `testID`'ler aynı: `mark-row-N`, `-name`, `-net`, `-day`, `-undo`, `-<seçenekAnahtarı>`.
+"Toplam: …" satırı kalktı (toplam sayılar net'in erişilebilir metninde); işareti olmayan satırda ek metin yok.
+Geri alma bandı (`UndoBar`) `Toast` ile aynı görünümdedir (kurşun + sarı gölge, sarı "Geri al").
+Gün çubuğu (`DayBar`): ok + takvim + tarih, sağda kurşun `Pill` ("17 işaret" / "21/28").
+
+**Geçmiş:** "Sınıf toplamı" `TotalsCard` (nane kâğıt, `md` gölge, net `display`); sayım noktaları (`ToneDot`) ton
+dolgusu + 1.5 px kurşun çerçeve; gün başlıkları kalın (800), kayıt ayraçları 2 px.
 
 ### 9.8 Boş durumlar
 
@@ -477,7 +498,7 @@ Tüm dokunulabilir bileşenler `testID` alır (liste içerenler `testIDPrefix` �
 
 | Bileşen | Ne zaman | Notlar (v3) |
 |---|---|---|
-| `Screen` | Her ekranın kökü | `title`, `largeTitle` (`poster` 44), `subtitle`, `back`, `headerRight` (tek öğe), `header` (özel), `footer`, `fab`, `scroll`, `headerDivider` (2.5 px kurşun çizgi). Bar düğmeleri kare "pul". |
+| `Screen` | Her ekranın kökü | `title`, `largeTitle` (`poster` 44), `largeTitleAccessory` (başlık sağında süs), `subtitle`, `back`, `headerRight` (tek öğe), `header` (özel), `footer`, `fab`, `scroll`, `headerDivider` (2.5 px kurşun çizgi). Bar düğmeleri kare "pul". |
 | `WizardHeader` / `Stepper` | Sihirbaz adımları | Adım çubuğu: 10 pt, kurşun çerçeveli; tamamlanan kurşun, kalan beyaz. |
 | `BottomActionBar` | Görev ekranının alt eylemi | `primary` (sarı), `secondary` (sol), `hint`. Düğmeler arası 16. |
 | `Fab` | Liste ekranının ana eylemi | Sarı, yuvarlatılmış dikdörtgen (hap değil), 2.5 px çerçeve + `md` gölge, basınca gömülür. |
@@ -515,8 +536,8 @@ Tüm dokunulabilir bileşenler `testID` alır (liste içerenler `testIDPrefix` �
 | `Tape` | `paper="sari"`, `rotate=-4`, `offsetX`, `style`; `tapeRotation(i)` | Kartı panoya tutturan eğri bant (mutlak, üst kenarda). |
 | `PaperCard` | `paper?`, `tape?: boolean \| PaperName`, `tapeIndex`, `onBoard`, `onPress` | Bantlı kâğıt kart (kalın çerçeve + `lg` gölge); bant rengi/eğimi `tapeIndex`'ten kararlı türer. `onBoard` → gölge `boardDeep`. Sınıf modu karoları için. |
 | `Board` | `children`, `style` | Mavi pano zemini (`colors.board`, `flex: 1`). Web'de odak halkasını sarıya çevirir. |
-| `HeroBlock` | `title`, `subtitle?`, `paper="nane"`, `tape="sari" \| false`, `sticker`, `children` | Sınıf kimlik bloğu: 80 pt sınıf adı kâğıt üstünde; alt satıra avatar yığını + `Pill` konur. |
-| `Pill` | `label`, `tone="ink" \| "paper"` | "28 öğrenci" / "11 işaret" hapı. |
+| `HeroBlock` | `title`, `subtitle?`, `paper="nane"`, `tape="sari" \| false`, `sticker`, `children` | Sınıf kimlik bloğu: 80 pt sınıf adı kâğıt üstünde (5 harften uzun ad ≈ 560/harf sayısı pt'ye küçülür, en az 30); alt satıra avatar yığını + `Pill` konur. Yatay boşluğu çağıran verir (bant/gölge taşar). |
+| `Pill` | `label`, `tone="ink" \| "paper"`, `accessibilityLabel?` | "28 öğrenci" / "11 işaret" hapı. |
 | `CountBubble` | `value`, `size=30` | Kurşun daire içinde beyaz sayı (bölüm başlığı yanında). |
 
 Geriye uyum: v1/v2 adları ve prop'ları çalışır. `colors.marginRule`, `layout.marginRuleWidth`,
@@ -551,7 +572,10 @@ Geriye uyum: v1/v2 adları ve prop'ları çalışır. `colors.marginRule`, `layo
 - Masaüstünde uygulama 720 px'lik ortalı **kâğıt sütun**dadır (`AppFrame`): noktalı defter masası üstünde,
   2.5 px kurşun çerçeveli, üst köşeleri yuvarlak, sağa 6 px sert gölgeli (mockup `.sheet`). Çerçeve içindeki
   dar sütunlar (giriş, kayıt) çerçevenin ortasında durur.
-- Mockup'taki laptop "uygulama çubuğu" (logo + kullanıcı adı) aşama 2'de değerlendirilecek (bkz. §13).
+- **Uygulama çubuğu** (mockup `.appbar`, 68 pt): yalnızca masaüstü genişliğinde ve oturum açıkken kâğıt sütunun üstünde —
+  sarı logo + "Sınıf Defteri", sağda ad + avatar (`features/auth/WebAppBar`, `AppFrame` `header` prop'u). Bilgi amaçlıdır
+  (dokunulabilir öğe yok), gezinmeyi etkilemez; Sınıf modu tam ekran `Modal` olduğu için çubuğu kaplar. `AuthProvider`
+  `AppFrame`'in dışına alındı (çubuk kimliğe ihtiyaç duyar).
 - Panel (sheet / menü) satırlarında ayraç düz kalır; yuvarlak vurgu yalnızca basılıyken görünür.
 - Numarası olmayan sınıf listesinde boş numara sütunu ayrılmaz.
 - Telefon tarayıcısında dokunma gecikmesi (`touch-action: manipulation`) ve gri vurgu kapalıdır.
@@ -570,16 +594,16 @@ yapı/akış/navigasyon **değişmeden** yalnızca görsel uyarlama yapılır.
 
 | Ekran | Yapılacak |
 |---|---|
-| **Giriş / kayıt** (`AuthPage`) | Uygulama işareti: sarı kare logo + kurşun çerçeve (mockup `.logo`); `display` başlık; alanlar zaten v3. |
-| **Sınıflarım** (`ClassesScreen`) | Sınıf satırı = `ListRow variant="card"` ya da özel kart: solda 90 pt renkli etiket bloğu (`paperCycle` sırasıyla, 30 pt Bricolage sınıf adı, 2.5 px sağ kenar), ortada ders + "N form", sağda büyük öğrenci sayısı (`heading` 24) + "öğrenci". Başlığın sağında büyük `StarSticker` (64, 14°). Başlık altı "Günaydın, …" 17 pt muted. FAB zaten yeni. |
-| **Sınıf** (`ClassDetailScreen`) | Büyük başlık yerine `HeroBlock` (sınıf adı 80 pt nane, ders, bant, çıkartma, avatar yığını 4 × 34 pt (−6 bindirme) + `Pill "28 öğrenci"`). `SectionHeader` zaten v3 ("Formlar" + `CountBubble` + "+ Form"). Form satırları = `ListRow variant="card"` + `IconTile paper=…` (form başına sabit kâğıt rengi: yoklama nane, artı/eksi gök, sözlü lila, ödev turuncu) ve 3 sn kuralı: `Badge` ("Birikimli"). "Öğrenciler" satırı pembe ikon kutulu kart + sağda sayı + chevron. |
-| **Form doldurma / artı-eksi** (`formview/*`, `MarkRow`) | Sekme şeridi (`SegmentedTabs`) + **lila "Sınıf modu" butonu** (mockup `.cmb`: `secondary` benzeri, lila dolgu, `present` ikonu; şimdi ghost). Gün çubuğu: "Bugün, 8 Ekim" + sağda `Pill` ("N işaret"); geçmiş güne gidilemeyen ok soluk. Satır: okul no (`mno`) + ad (800) + altında yıldız çıkartmaları + yeşil "Bugün +N"; sağda tek satır sayaç: kare **−** (beyaz, çerçeveli) · net (`Bricolage 22`) · yeşil **+** (`tones.positive.solid`, `xs` gölge). Mevcut iki geniş "Artı/Eksi" düğmesi satırı (`tones.soft` dolgulu `Pressable`) mockup'taki sayaca çevrilir; geri al/toast `Toast` bileşenine (sarı gölge) taşınır. Yoklama gibi günlük formlar zaten `SegmentedChoice`/`ChipGroup` v3'te; satır ayraçları 2 px. |
-| **Öğrenciler / düzenleme paneli** | `ListRow plain` v3'te; avatar kare. Başlık altı `SearchField` zaten v3. |
-| **Geçmiş** (`HistorySummary/Day/Timeline`) | `Chip` ve `SegmentedChoice` v3'te; toplam kutusu `Card muted`/`paper`, net sayılar `display`/`title`; nokta renkleri `tones.*.solid` (çerçeveli nokta için `strokes.fine`). |
-| **Sihirbaz** (`CreateClass/Collect/Review`) | Büyük oranda otomatik değişti; kontrol: fotoğraf önizleme çerçeveleri (`PhotoStrip`, `PhotoPanel`) `strokes.thin` kurşun, OCR satırları 2 px ayraç. |
-| **Hesap** (`account`) | `ListRow card` giriş noktaları + `danger` ghost "Hesabımı sil"; kontrol edin. |
+| **Giriş / kayıt** (`AuthPage`) | **Yapıldı.** Uygulama işareti: sarı kare logo + kurşun çerçeve + `md` gölge, hafif eğik, yanında küçük yıldız (mockup `.logo`; marka imzası olduğundan "tek sarı" kuralının bilinçli istisnası); `display` başlık; alanlar zaten v3. |
+| **Sınıflarım** (`ClassesScreen`) | **Yapıldı** (bkz. §9.1, §9.3). Sınıf satırı = `ListRow variant="card"` ya da özel kart: solda 90 pt renkli etiket bloğu (`paperCycle` sırasıyla, 30 pt Bricolage sınıf adı, 2.5 px sağ kenar), ortada ders + "N form", sağda büyük öğrenci sayısı (`heading` 24) + "öğrenci". Başlığın sağında büyük `StarSticker` (64, 14°). Başlık altı "Günaydın, …" 17 pt muted. FAB zaten yeni. |
+| **Sınıf** (`ClassDetailScreen`) | **Yapıldı** (avatar yığını için `listStudentPreview`: ilk 4 öğrenci, hata sessiz). Büyük başlık yerine `HeroBlock` (sınıf adı 80 pt nane, ders, bant, çıkartma, avatar yığını 4 × 34 pt (−6 bindirme) + `Pill "28 öğrenci"`). `SectionHeader` zaten v3 ("Formlar" + `CountBubble` + "+ Form"). Form satırları = `ListRow variant="card"` + `IconTile paper=…` (form başına sabit kâğıt rengi: yoklama nane, artı/eksi gök, sözlü lila, ödev turuncu) ve 3 sn kuralı: `Badge` ("Birikimli"). "Öğrenciler" satırı pembe ikon kutulu kart + sağda sayı + chevron. |
+| **Form doldurma / artı-eksi** (`formview/*`, `MarkRow`) | **Yapıldı, "Sınıf modu" düğmesi hariç** (o düğme Sınıf modu işinde; `FormShell`'in o bölgesine dokunulmadı) — bkz. §9.7. Sekme şeridi (`SegmentedTabs`) + **lila "Sınıf modu" butonu** (mockup `.cmb`: `secondary` benzeri, lila dolgu, `present` ikonu; şimdi ghost). Gün çubuğu: "Bugün, 8 Ekim" + sağda `Pill` ("N işaret"); geçmiş güne gidilemeyen ok soluk. Satır: okul no (`mno`) + ad (800) + altında yıldız çıkartmaları + yeşil "Bugün +N"; sağda tek satır sayaç: kare **−** (beyaz, çerçeveli) · net (`Bricolage 22`) · yeşil **+** (`tones.positive.solid`, `xs` gölge). Mevcut iki geniş "Artı/Eksi" düğmesi satırı (`tones.soft` dolgulu `Pressable`) mockup'taki sayaca çevrilir; geri al/toast `Toast` bileşenine (sarı gölge) taşınır. Yoklama gibi günlük formlar zaten `SegmentedChoice`/`ChipGroup` v3'te; satır ayraçları 2 px. |
+| **Öğrenciler / düzenleme paneli** | **Yapıldı.** `ListRow plain` + solda `Avatar sm` (kâğıt rengi, kare); sayı `Pill paper` (seçim modunda `ink` "N seçili"); panel alanları v3. |
+| **Geçmiş** (`HistorySummary/Day/Timeline`) | **Yapıldı** (`TotalsCard`, `ToneDot`; bkz. §9.7). `Chip` ve `SegmentedChoice` v3'te; toplam kutusu `Card muted`/`paper`, net sayılar `display`/`title`; nokta renkleri `tones.*.solid` (çerçeveli nokta için `strokes.fine`). |
+| **Sihirbaz** (`CreateClass/Collect/Review`) | **Kontrol edildi.** Büyük oranda otomatik değişti; fotoğraf küçük resim/önizleme çerçeveleri `strokes.thin` kurşun yapıldı; form seçenek düzenleyicide alanlar beyaz + kurşun çerçeve, ton örnekleri çerçeveli. OCR satırları 2 px ayraçla zaten v3. |
+| **Hesap** (`account`) | **Yapıldı.** Üstte kimlik kartı (`Card paper nane` + sarı bant, `Avatar lg`, ad, e-posta); bölümler 2 px ayraçla; "Hesabımı sil" `danger` ghost. Giriş noktası olmadığı için `ListRow card` kullanılmadı. |
 | **Sınıf modu** (`classroom/*`) | **En büyük iş.** Zemin `Board`; üst çubuk: beyaz logo, 32 pt başlık (beyaz), mint sınıf çipi, beyaz gün seçici (çerçeveli), sağda **sarı toplam kutusu** (yıldız + 34 pt sayı + "artı bugün", gölge `boardDeep`), beyaz arama/çıkış düğmeleri (`boardDeep` gölge). Karolar = `PaperCard onBoard` (7×4 ızgara hedefi; ad `Bricolage 26`, soyad muted, sağ üstte kurşun **puan dairesi** 50 pt — 0/eksi'de beyaz + çerçeve, altında yıldız çıkartmaları (en çok 5), altta kare **−** + geniş beyaz "+ Artı" (yeşil daire içinde +, `xs` gölge)). Alt çubuk: "Her adım ilerlemedir" (beyaz 22 pt) / **kutlama şeridi** (sarı kâğıt, "Kerem, emeğine sağlık", mor mühür + siyah "+1" hapı). **Damga:** `Stamp animate` kartın sağ altına (108 pt), kart 3 px çöker (`pressedIn`), puan yaylanır, yeni `StarSticker` yapışır; aynı karta tekrar basınca yeni `key`. Eksi: damga/renk değişimi yok, kart gölgesi 1 sn kısalır. Seçenek genişliği hesabı `layout.ts` `typography.heading`'e bağlı — ayrıştırın (bkz. §4). Sütun sayısı sabit ızgara yerine mevcut dinamik hesap korunabilir; mockup 7×4'tür. Sözlü formunda "½" düğmesi "−"nin yanında. |
-| **Web laptop çerçevesi** | İsteğe bağlı: mockup'taki 68 pt uygulama çubuğu (sarı logo + "Sınıf Defteri" + kullanıcı + avatar) `AppFrame.web` dışında, kimlik bilgisine ihtiyaç duyduğu için `(app)/_layout` düzeyinde — navigasyon yapısını etkilemeden yapılabilir ya da bırakılabilir (ürün kararı). |
+| **Web laptop çerçevesi** | **Yapıldı** (bkz. §11 "Web / laptop notları"): `WebAppBar`, `AppFrame` `header` prop'u üzerinden. |
 
 Her ekran için kabul: (1) hex/font/sihirli sayı yok; (2) ekranda tek sarı öğe; (3) 390×844 ve 1440×900'de
 mockup ile yan yana ekran görüntüsü; (4) `npm run typecheck && npm run lint && npm test` yeşil; (5) hareketi azalt açıkken
@@ -602,82 +626,64 @@ damga/animasyon kapalı.
 
 ## Sınıf modu
 
-> **v3 durumu:** aşağıdaki açıklama **şu anki (v2 dilinde) uygulamayı** tarif eder; renkler/çerçeveler
-> `src/theme` ile otomatik v3'e geçti ama yerleşim hâlâ v2'dir. **Hedef görünüm mockup'tadır**
-> (`docs/design/pano-ve-damga.html`, "Sınıf modu: laptop 1440×900"): mavi pano üstünde bantlı kâğıt
-> karolar, puan dairesi, yıldız çıkartmaları ve artı verilince basılan mor "Aferin" damgası. Aşama 2'de
-> bu bölüm mockup'a göre yeniden yazılacak; ayrıntılı iş listesi §13'tedir. Okunabilirlik kuralları
-> (arka sıradan okunur boyutlar, durumun yalnız renkle verilmemesi) **geçerlidir**.
+Sınıf modu, onaylı `docs/design/pano-ve-damga.html` mockup'ının mavi **Pano ve Damga** dilini
+kullanır. Öğretmen laptop ekranını projeksiyona ya da etkileşimli tahtaya yansıtır; aynı akış
+telefonda tek sütunla çalışır. Kod: `src/features/classroom/`.
 
-Öğretmen laptop ekranını projeksiyona ya da etkileşimli tahtaya yansıtıp işaretlemeyi sınıfın
-önünde yapar. Yoğunluk projeksiyona göre ayarlanır. Kod: `src/features/classroom/`.
+**Giriş ve durum paylaşımı.** Form ekranındaki “Sınıf modu” düğmesi tam ekran modal açar;
+web'de destek varsa tarayıcı tam ekranına geçilir. Çıkış düğmesi ve Esc normal forma döner,
+modal kapanınca sahip olunan tam ekran bırakılır. Form ekranının hook örneği paylaşılır:
+seçili gün, kaydedilmemiş taslak, anında kaydedilen birikimli işaretler ve geri alma korunur.
 
-**Mockup'tan hedef özellikler (kısa):** kalın çerçeve + koyu pano projeksiyonda soluklaşmaz;
-28 karo 7×4 kaydırmasız; ad ≥ 26 px ve 800; "+ Artı" yeşil daire + sayı + yıldız her zaman (durum yalnız
-renkle verilmez); damga dokunmayı engellemez, yeniden basılınca eskisinin yerini alır; eksi'de damga yok;
-"Hareketi azalt" açıkken damga düşmez, son hâliyle belirir; toplam yalnız artıları sayar.
+**Üst çubuk.** `Board` üstünde beyaz kitap simgesi ve 32 pt Bricolage form başlığı vardır.
+Mint kâğıt çipi, `className` verilirse sınıf adını, verilmezse öğrenci sayısını gösterir.
+Mevcut `DayBar` beyaz, kurşun çerçeveli bir kapsayıcıdadır: önceki gün, takvim ve bugünden
+öteye gitmeyen sonraki gün mantığı korunur. Sarı toplam kutusu 34 pt sayı ve yıldızla seçili
+günün **olumlu işaret adedini** gösterir; yarım artı bir işarettir, puan toplamı değildir.
+Artı/eksi ve sözlüde etiket “artı”, diğer formlarda “olumlu”dur. Arama ad veya okul
+numarasıyla her zaman erişilebilir. Başlığın altında beyaz yazıyla tüm sıfır olmayan günlük
+seçenek toplamları, eksiler ve varsa net görünür; arama bu sınıf toplamlarını değiştirmez.
 
-**Giriş.** Form ekranında "İşaretle | Geçmiş" sekmelerinin sağında `ghost` "Sınıf modu" (`people`
-ikonu, küçük boy). Ayrı satır tutmaz. Web'de destek varsa tam ekran açılır; "Sınıf modundan çık"
-(dar ekranda "Çık") ve Esc normal forma döner. Aynı hook örneği kullanılır: seçili gün,
-kaydedilmemiş taslak ve geri alma ortaktır.
+**Kart.** `PaperCard onBoard`: beyaz kâğıt, kalın kurşun çerçeve, koyu pano gölgesi, kararlı
+renk/eğimde bant. Ad 26/28 pt Bricolage; son sözcük soyad olarak ayrı, muted satırda gösterilir.
+Uzun ad ve etiketler kesilmeden sarar. Sağ üstte en az 50 pt puan dairesi: pozitif net kurşun
+zeminde beyaz; sıfır/eksi beyaz zeminde kurşun çerçeve. Kesirli net ve puansız birikimli
+formların toplam sayısı korunur. Altında en fazla beş `StarSticker` ve “net”/“toplam” etiketi.
+Yıldızlar dekoratiftir; gerçek sayılar ayrıca metinle gösterilir. Okul numarası, varsa seçili
+günün işaretleri ve kaldırılmış seçenek sayısı görünür. Birikimli kartta o öğrencinin seçili
+gündeki son işaretini geri alan düğme vardır; o gün işaret yoksa pasiftir.
 
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│ Artı / eksi  ‹ Bugün ›  40 öğrenci  + 7 Artı  − 2 Eksi  (⌕ Ad…)  [✕ Çık] │
-├──────────────────────────────────────────────────────────────────────────┤
-│ ┌────────────────────────────┐ ┌────────────────────────────┐ ┌──────── │
-│ │ Ayşe Yılmaz            +3  │ │ Mehmet Kaya       (+1)  +1 │ │ …       │
-│ │ No 1101  Bugün: 3 Artı net │ │ No 1102  Bugün: 1 Artı net │ │         │
-│ │ [+ Artı ❸] [− Eksi ⓪]  (↶) │ │ [+ Artı ❶] [− Eksi ⓪]  (↶) │ │         │
-│ └────────────────────────────┘ └────────────────────────────┘ └──────── │
-├──────────────────────────────────────────────────────────────────────────┤
-│ [ (+) Mehmet Kaya, bir adım daha                ]  [↶ Geri al] [Kaydet]  │
-└──────────────────────────────────────────────────────────────────────────┘
-```
+**Az seçenek, az öğe.** Standart Artı (+1), Eksi (−1), varsa Yarım artı (+0,5) için tek eylem
+satırı: beyaz çerçeveli kare **−**, sözlüde yanında **½**, sonra geniş beyaz **+ Artı**
+(yeşil daire içinde +, küçük sert gölge). Birikimli sayılar düğmelere ayrı rozetler eklemek
+yerine hemen altta “3 Artı · 1 Eksi” gibi metinlerle, sıfırlar dahil gösterilir.
 
-**Okunabilirlik (arka sıra).** Öğrenci adı 28 pt Atkinson (en fazla 2 satır, kesilmez), net
-puan `display` (40 pt Bricolage), seçenek etiketi 19–20 pt, kutlama şeridi `title`. Numara ve
-günün sayıları 15 pt soluk: öğretmen içindir. Kurşun/beyaz 18.4:1, ton dolguları üstünde kurşun
-≥ 6.5:1. Projektörün soldurduğu açık zeminlere anlam yüklenmez: kart ve düğme kenarı kalın kurşun
-(`colors.outline`); durum ton dolgusu + ✓/sayı ile verilir.
+**2–12 özel seçenek.** Kısaltmanın anlamı belirsiz olabilecek formlarda tam etiketli seçenekler
+kart içinde iki sütun olarak sarar; menüye saklanmaz. Ton, `+ / − / ! / ○` şekliyle de anlaşılır.
+Birikimlide düğmede sayı; günlükte seçili düğmede ton dolgusu ve ✓ vardır. Günlük seçenekler
+radio grubudur; aynı seçeneğe tekrar basmak seçimi kaldırır. “Kaydet” ve kaydedilmemiş öğrenci
+sayısı alt çubuktadır, kaydetme sırasında seçenekler pasiftir.
 
-**Kart.** Satır 1: ad + sağda net ("net" alt yazısı; puansız birikimli formda "toplam"). Satır 2:
-"No 1101" + yalnız o gün işaret varsa "Bugün: 2 Artı, 1 Eksi" ("işaret yok" kartlarda tekrar
-etmez). Satır 3: seçenek düğmeleri (48 pt, eşit genişlikte büyür) + birikimlide öğrencinin o
-günkü son işaretini geri alan `tonal` ↶. Kaldırılmış seçenek sayısı varsa satır 2'de yazılır.
+**Dinamik ızgara.** Sabit 7×4 yerine en fazla 9 sütun kullanılır. Artı/eksi kart tabanı 184 pt:
+1440 px'te **7 sütun**, 1280'de 6, 1920'de 9; telefonda tek sütun. Üç puan seçeneği için 264 pt,
+özel seçenekler için 284 pt taban kullanılır. Boşluk 16 pt; `layout.ts` ölçüleri ortak
+`typography.heading` boyutundan bağımsızdır. 30–45 öğrenci için bütün sayıları, günlük bilgiyi,
+geri almayı ve 48 pt dokunma alanlarını korumak adına satır yüksekliği içeriğe göre büyür;
+**28 kartın dört satırının kaydırmasız sığması garanti edilmez**. Kalan kartlara dikey
+kaydırma ve aramayla erişilir. Kartlar puana göre sıralanmaz; arama bandın rengini değiştirmez.
 
-**Seçenek düğmesi = [ton işareti] Etiket [yuva].** Düğmeler çerçevelidir (beyaz zemin, 2 px ton
-kenarı, ton renginde metin); 40 kartta 80 dolgulu kırmızı/yeşil düğme hem kalabalık hem
-cezalandırıcı görünüyordu. Dolgu yalnız **durumu** gösterir:
-- Birikimli: yuvada toplam sayı rozeti; sayı varsa dolgulu ton + beyaz rakam, sıfırsa halka.
-- Günlük (radio): seçili düğme dolgulu ve ton işaretinin yerinde ✓; genişlik değişmez.
+**Olumlu geri bildirim.** İşaretlenen karta mor `Stamp` (108 pt, “AFERİN +1” / “+0,5”) basılır.
+150 ms'de kart 3 px çöker, 260 ms'de puan yaylanır, 420 ms'de son yıldız yapışır. Damga kısa
+süre sonra kalkar; dokunmayı engellemez. Her dokunuşun ayrı sıra anahtarı vardır, aynı
+milisaniyedeki hızlı tekrarlar bile yeni damga basar. Eksi/uyarı/nötr işaretlerde damga,
+cezalandırıcı renk değişimi veya hareket yoktur. Hareketi azalt açıksa damga son hâliyle
+statik belirir; kart, puan, yıldız ve alt şerit animasyonu çalışmaz. Geri alma, seçim kaldırma,
+gün değişimi ve kayıt hatası ilgili geçici kutlamayı temizler.
 
-**Ton işaretleri** (`ToneMark`, çizgiyle çizilir): olumlu `+`, olumsuz `−`, uyarı `!`, nötr `○`.
-Ton renk görülmeden de ayrılır (renk körlüğü, soluk projektör). Başlıktaki sınıf özeti de aynı
-işaretleri kullanır. Sıralama, sıralı liste ya da "en iyiler" yok.
-
-**Yoğunluk.** Sütun sayısı seçenek düğmelerinin tek satıra sığdığı en dar karttan hesaplanır
-(`layout.ts`; kart 280–420 pt, en fazla 6 sütun). 40 öğrencili artı/eksi: 1920×1080'de 5 sütun,
-30 öğrenci kaydırmadan görünür; 1280×720'de 3 sütun, 12 öğrenci; telefonda tek sütun. Kalanlar
-kaydırma ve her zaman açık arama ile. Başlık tek satır, alt çubuk sabit yükseklikte; bildirim
-ızgarayı itmez.
-
-**Geri bildirim ve hareket** (yalnız işaretlenen kart hareket eder):
-- Her işarette kart kısa süre vurgulanır (opaklık; olumluda yeşil zemin + kenar, diğerlerinde
-  kurşun kenar — eksi kırmızı yanıp sönmez).
-- Olumlu işarette netin solunda "+1" / "+0,5" çipi belirir, yavaşça yükselip söner (~1,2 sn) ve
-  net sayısı bir kez yaylanır (spring). Hızlı ardışık dokunuş önceki hareketi keser; sayılar her
-  zaman veriden gelir, animasyon sonucu beklenmez.
-- Hareketi azalt açıksa yükselme ve yaylanma yok; yalnız vurgu (opaklık) ve şerit.
-
-**Alt şerit: tek canlı bölge.** Öncelik: hata (kırmızı dolgu, kapatılana kadar kalır) › kutlama
-(yeşil dolgu, `+` işareti, 28 pt "Ayşe Yılmaz, bir adım daha" / "…, emeğine sağlık" / "…, böyle
-devam"; çocuğa "sen" diye, ünlemsiz) › bildirim (kurşun dolgu: "Ali: Eksi eklendi",
-"Kaydedildi") › boşta "Her adım ilerlemedir". Olumlu işaretin ayrıca "eklendi" bildirimi
-gösterilmez. Sağda "Geri al" (son işaret / son seçim) ve günlük formda kaydedilmemiş sayısı +
-sarı "Kaydet" (ekrandaki tek sarı öğe). Birikimli işaretler anında kaydedilir.
-
-**Yapılmayacaklar.** Dolgulu düğme duvarı; anlamı yalnız renkle vermek; birden fazla kartı ya da
-sürekli hareket ettirmek; ızgarayı iten üst bildirim; "işaret yok" gibi her kartta aynı metin;
-öğrencileri puana göre sıralamak.
+**Alt şerit.** Tek canlı bölge, öncelik: kapatılana kadar kalan hata › kutlama › bildirim ›
+boşta beyaz “Her adım ilerlemedir”. Kutlama sarı kâğıt, mor yıldızlı mühür ve kurşun “+1”
+hapıdır; sıcak ifadeler sırayla “…, bir adım daha”, “…, emeğine sağlık”, “…, böyle devam”.
+Olumlu işaret için ayrıca “eklendi” bildirimi tekrarlanmaz. `useClassroomNotifications` ve
+Toast `routeTo` kayıt/geri alma sonuçlarını modal içinde gösterir; çıkışta normal Toast'a
+geri döner. Sağda genel “Geri al”, günlükte sarı “Kaydet”. Sarı toplam ve kutlama kâğıdı,
+Sınıf moduna ait vurgu istisnasıdır.

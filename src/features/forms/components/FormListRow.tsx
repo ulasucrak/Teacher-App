@@ -7,7 +7,7 @@ import type { FormMode } from '@/types/database';
 
 import type { FormListItem } from '../api';
 import { formModeLabels } from '../mode';
-import { presetIcon } from '../presets';
+import { formPaper, presetIcon } from '../presets';
 
 interface FormListRowProps {
   form: FormListItem;
@@ -32,7 +32,7 @@ export function lastSessionLabel(date: string | null, mode: FormMode = 'daily'):
 }
 
 /**
- * Kompakt form satırı: ikon, ad, son kayıt; sağda "⋯". Birikimli formda "Birikimli" rozeti
+ * Form kartı (mockup `.fcard`): kâğıt renkli ikon kutusu, ad, son kayıt; sağda "⋯". Birikimli formda "Birikimli" rozeti
  * (günde bir kez olan olağan türdür, rozetsiz). Uzun basış da menüyü açar.
  */
 export function FormListRow({ form, index, onOpen, onMore, busy = false, openHint }: FormListRowProps) {
@@ -43,7 +43,8 @@ export function FormListRow({ form, index, onOpen, onMore, busy = false, openHin
     <ListRow
       title={form.title}
       subtitle={subtitle}
-      leading={<IconTile icon={presetIcon(form.title)} />}
+      variant="card"
+      leading={<IconTile icon={presetIcon(form.title)} paper={formPaper(form.title, index)} />}
       showChevron={false}
       onPress={busy ? undefined : onOpen}
       onLongPress={onMore}

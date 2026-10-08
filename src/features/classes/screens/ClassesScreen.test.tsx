@@ -65,8 +65,10 @@ describe('ClassesScreen', () => {
 
     expect(await screen.findByText('5/B')).toBeOnTheScreen();
     expect(screen.getByText('Sınıflarım')).toBeOnTheScreen();
-    expect(screen.getByText('Merhaba, Ayşe Yılmaz')).toBeOnTheScreen();
-    expect(screen.getByText('32 öğrenci')).toBeOnTheScreen();
+    // Selam günün saatine göre değişir; ad her zaman sonda.
+    expect(screen.getByText(/^(Günaydın|İyi günler|İyi akşamlar), Ayşe Yılmaz$/)).toBeOnTheScreen();
+    expect(screen.getByLabelText('5/B, 32 öğrenci, 3 form')).toBeOnTheScreen();
+    expect(screen.getByText('32')).toBeOnTheScreen();
     expect(screen.getByText('3 form')).toBeOnTheScreen();
     expect(screen.getByText('Henüz form yok')).toBeOnTheScreen();
 

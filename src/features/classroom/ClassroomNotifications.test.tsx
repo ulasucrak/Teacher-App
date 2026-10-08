@@ -108,6 +108,8 @@ it('automatically catches a failed mark from the existing board hook', async () 
   await openBoard();
   await fireEvent.press(screen.getByTestId('classroom-s1-arti'));
   expect(notification()).toHaveTextContent('İşaret kaydedilemedi. Bağlantınızı kontrol edip tekrar deneyin.');
+  expect(screen.queryByTestId('classroom-stamp-s1', { includeHiddenElements: true })).toBeNull();
+  expect(screen.queryByTestId('classroom-celebration')).toBeNull();
 });
 
 it('celebrates a positive mark instead of repeating its success, confirms other marks and undo in the modal', async () => {

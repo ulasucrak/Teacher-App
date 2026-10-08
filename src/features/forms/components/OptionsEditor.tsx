@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Button, Icon, Text } from '@/components/ui';
-import { colors, fontScale, iconSize, layout, radii, spacing, tones, typography } from '@/theme';
+import { colors, fontScale, iconSize, layout, radii, spacing, strokes, tones, typography } from '@/theme';
 import type { FormOptionTone } from '@/types/database';
 
 import {
@@ -282,27 +282,27 @@ const styles = StyleSheet.create({
     marginLeft: -spacing.sm,
   },
   pressed: { backgroundColor: colors.pressedOverlay },
-  swatch: { width: SWATCH, height: SWATCH, borderRadius: radii.full },
+  swatch: { width: SWATCH, height: SWATCH, borderRadius: radii.full, borderWidth: strokes.thin, borderColor: colors.outline },
   inputWrap: {
     flex: 1,
     minHeight: layout.minTouch,
     borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: layout.inputBorderFocus,
-    borderColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
+    borderWidth: strokes.thin,
+    borderColor: colors.outline,
     justifyContent: 'center',
   },
   scoreWrap: {
     width: SCORE_WIDTH,
     minHeight: layout.minTouch,
     borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: layout.inputBorderFocus,
-    borderColor: colors.surfaceMuted,
+    backgroundColor: colors.surface,
+    borderWidth: strokes.thin,
+    borderColor: colors.outline,
     justifyContent: 'center',
   },
   scoreInput: { textAlign: 'center', paddingHorizontal: spacing.xs },
-  inputFocused: { backgroundColor: colors.surface, borderColor: colors.primary },
+  inputFocused: { borderColor: colors.primary },
   inputError: { borderColor: colors.danger },
   input: {
     ...typography.body,

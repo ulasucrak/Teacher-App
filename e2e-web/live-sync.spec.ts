@@ -130,8 +130,11 @@ test.describe('canlı eşitleme (iki pencere, aynı hesap)', () => {
 
       // Geri alma: A, Ada'nın son işaretini geri alır → B'de silinir.
       await tid(a, 'mark-row-0-undo').click();
-      await expect(tid(a, 'mark-row-0-empty')).toBeVisible();
-      await expect(tid(b, 'mark-row-0-empty')).toBeVisible(live);
+      // Geri alınınca satırda "Bugün" satırı kalmaz, net 0'a döner.
+      await expect(tid(a, 'mark-row-0-net')).toHaveText('0');
+      await expect(tid(a, 'mark-row-0-day')).toHaveCount(0);
+      await expect(tid(b, 'mark-row-0-net')).toHaveText('0', live);
+      await expect(tid(b, 'mark-row-0-day')).toHaveCount(0, live);
       await expect(tid(b, 'mark-day-trailing')).toHaveText('1 işaret', live);
 
       // B geçmiş özetini açık tutar; A yeni işaret verir → özet güncellenir.
