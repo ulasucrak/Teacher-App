@@ -27,10 +27,35 @@
         height: 100%;
         flex: 1;
       }
+      /* Telefon tarayıcısında dokunma: gri vurgu ve çift dokunma gecikmesi olmasın. */
+      html {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+      }
+      [role='button'],
+      [role='radio'],
+      [role='checkbox'],
+      [role='tab'] {
+        touch-action: manipulation;
+      }
+      /* Klavye odağı (v3): tüm etkileşimli öğelerde aynı 3 px pano-mavisi halka, kurşun çerçevenin 2 px dışında
+         (sert gölgeyi ve çerçeveyi örtmez). Mavi panoda (Board, data-board) halka sarıdır.
+         Metin alanları kendi mavi sert gölgesiyle odağı gösterir (TextField / SearchField). */
+      [tabindex]:focus-visible {
+        outline: 3px solid #2d3a8c;
+        outline-offset: 2px;
+      }
+      [data-board] [tabindex]:focus-visible {
+        outline-color: #ffd23f;
+      }
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: none;
+      }
     </style>
     <!--
       Genel web cilası. Renkler src/theme/colors.ts ile aynıdır:
-      kağıt #FFFFFF (zemin), sıra #F2F3F5 (masaüstü sayfa zemini), kurşun #1D2129, tükenmez #2446B0 (odak).
+      kağıt #FFFFFF (zemin), defter #F6F5F2 (masaüstü sayfa zemini), kurşun #141414, pano-mavisi #2D3A8C (odak).
     -->
     <style id="app-global">
       html {
@@ -43,7 +68,7 @@
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
           sans-serif;
-        color: #1d2129;
+        color: #141414;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
@@ -54,12 +79,13 @@
         -webkit-tap-highlight-color: transparent;
       }
 
-      /* Odak: fareyle tıklamada halka yok; klavyeyle gezinmede uygulama renginde halka. */
+      /* Odak: fareyle tıklamada halka yok; klavyeyle gezinmede v3 halkası (yukarıdaki [tabindex] kuralıyla
+         aynı pano-mavisi; tabindex'siz öğeler için de geçerli, pano içindeki sarı halkayı ezmez). */
       :focus:not(:focus-visible) {
         outline: none !important;
       }
       :focus-visible {
-        outline: 2px solid #2446b0 !important;
+        outline: 3px solid #2d3a8c;
         outline-offset: 2px;
       }
       /* Giriş alanları kendi odak kenarını çizer (TextField); tarayıcı halkası çift görünür. */
@@ -155,14 +181,14 @@
       }
 
       /* Masaüstü çerçevesi — sayılar src/components/ui/AppFrame.web.tsx (appFrame) ile aynı:
-         sütun 520px, çerçeve ≥600px genişlikte, yüzen kart (24px boşluk, 28px köşe) ≥720px yükseklikte.
+         sütun 520px, noktalı "defter masası" ≥600px genişlikte (zemin rengi palette.defter).
          RN Modal'lar (Sheet, AlertDialog) body'ye taşınır ve tüm pencereyi kaplar: perde bütün
          sayfayı karartır; Sheet paneli kendini AppFrame.web.tsx `overlayColumnStyle` ile sütuna
          yerleştirir (burada modal kutusu sütuna sıkıştırılmaz). */
       @media (min-width: 600px) {
         html,
         body {
-          background-color: #f2f3f5;
+          background-color: #f6f5f2;
         }
       }
     </style>

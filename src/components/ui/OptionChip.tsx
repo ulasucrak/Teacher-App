@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Animated, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { selectionHaptic } from '@/lib/haptics';
-import { colors, fontScale, iconSize, layout, motion, radii, spacing, tones, type ToneName, useReducedMotion } from '@/theme';
+import { colors, fontScale, hardShadow, iconSize, layout, motion, radii, spacing, strokes, tones, type ToneName, useReducedMotion } from '@/theme';
 
 import { selectionA11y } from './a11y';
 import { useFitText } from './fitText';
@@ -33,8 +33,9 @@ export interface OptionChipProps {
 }
 
 /**
- * Form seçeneği. Seçiliyken kendi tonunun dolgusunu ve ✓ işaretini alır;
- * seçili değilken sıra grisi zemin + ton noktası. Basınca seçim titreşimi.
+ * Form seçeneği. Seçiliyken kendi tonunun canlı kâğıt dolgusunu, kalın kurşun çerçeveyi, küçük sert gölgeyi
+ * ve ✓ işaretini alır (yazı kurşun); seçili değilken beyaz zemin + ince çerçeve + ton noktası.
+ * Basınca seçim titreşimi.
  */
 export function OptionChip({
   label,
@@ -94,9 +95,11 @@ export function OptionChip({
                 ? t.solidPressed
                 : t.solid
               : state.pressed || (!disabled && isHovered(state))
-                ? colors.rule
-                : colors.surfaceMuted,
+                ? colors.surfaceMuted
+                : colors.surface,
           },
+          selected ? styles.selected : styles.unselected,
+          selected && hardShadow('xs'),
           disabled && styles.disabled,
         ]}
       >
@@ -120,7 +123,7 @@ export function OptionChip({
   );
 }
 
-const DOT = spacing.sm - 1;
+const DOT = spacing.sm + 2;
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
@@ -133,7 +136,9 @@ const styles = StyleSheet.create({
   },
   regular: { minHeight: layout.chipHeight, paddingHorizontal: spacing.sm },
   compact: { minHeight: layout.chipHeightCompact, paddingHorizontal: spacing.md },
-  dot: { width: DOT, height: DOT, borderRadius: radii.full },
+  selected: { borderWidth: strokes.base, borderColor: colors.outline },
+  unselected: { borderWidth: strokes.thin, borderColor: colors.outline },
+  dot: { width: DOT, height: DOT, borderRadius: radii.full, borderWidth: strokes.fine, borderColor: colors.outline },
   label: { flexShrink: 1 },
   disabled: { opacity: 0.5 },
 });

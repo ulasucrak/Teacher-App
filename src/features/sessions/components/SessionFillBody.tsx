@@ -28,6 +28,9 @@ export function SessionFillBody({ fill, classId, formId, undoBottom }: SessionFi
   const router = useRouter();
   const { options, students, visibleStudents, query, saving } = fill;
 
+  // Hiçbir öğrencinin numarası yoksa boş numara sütunu ayrılmaz.
+  const hasNumbers = students.some((s) => Boolean(s.number?.trim()));
+
   const renderItem: ListRenderItem<StudentRow> = ({ item, index }) => (
     <StudentEntryRow
       student={item}
@@ -36,6 +39,7 @@ export function SessionFillBody({ fill, classId, formId, undoBottom }: SessionFi
       options={options}
       dirty={fill.dirtyIds.has(item.id)}
       disabled={saving}
+      showNumbers={hasNumbers}
       onToggle={fill.onToggle}
       onOpenNote={fill.onOpenNote}
     />
@@ -63,7 +67,7 @@ export function SessionFillBody({ fill, classId, formId, undoBottom }: SessionFi
           />
         </View>
       ) : students.length > 0 && !query ? (
-        <BulkApplyRow options={options} uniformOption={fill.uniformOption} onApply={fill.onBulkApply} disabled={saving} />
+        <BulkApplyRow options={options} uniformOption={fill.uniformOption} onApply={fill.onBulkApply} disabled={saving} showNumbers={hasNumbers} />
       ) : null}
     </View>
   );

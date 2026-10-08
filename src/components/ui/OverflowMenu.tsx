@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { isHovered, isWeb } from '@/lib/platform';
-import { colors, iconSize, layout, radii, spacing } from '@/theme';
+import { colors, iconSize, layout, radii, spacing, strokes } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 import { Sheet } from './Sheet';
@@ -79,7 +79,7 @@ export function OverflowMenu({ visible, onClose, title, description, actions, te
                 isWeb ? styles.itemFlat : styles.itemRounded,
                 !isWeb && index < actions.length - 1 && styles.border,
                 !action.disabled && isHovered(state) && styles.highlighted,
-                state.pressed && (isWeb ? styles.webPressed : styles.highlighted),
+                state.pressed && (isWeb ? styles.webPressed : styles.pressed),
                 action.disabled && styles.disabled,
               ]}
             >
@@ -115,8 +115,8 @@ const styles = StyleSheet.create({
     minHeight: layout.rowHeight,
     paddingVertical: spacing.sm,
   },
-  /** iOS/Android: hafif yuvarlak basılı zemin, ayraç satırın alt kenarı. */
-  itemRounded: { marginHorizontal: -spacing.sm, paddingHorizontal: spacing.sm, borderRadius: radii.sm },
+  /** iOS/Android: düz satır, ayraç satırın alt kenarı (yarıçap yalnızca basılıyken; bkz. `pressed`). */
+  itemRounded: { marginHorizontal: -spacing.sm, paddingHorizontal: spacing.sm },
   border: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
   /**
    * Web: iOS eylem listesi gibi düz satır. Tarayıcı yuvarlak kutunun alt kenarını uçlarda
@@ -132,15 +132,19 @@ const styles = StyleSheet.create({
     height: layout.hairline,
     backgroundColor: colors.rule,
   },
-  /** Basılı (mobil) ve fareyle üstünde (web) zemin. */
+  // iOS/Android: basılıyken yuvarlak vurgu; ayraç düz kalsın diye yarıçap yalnızca burada (ayraç basılıyken gizlenir).
+  pressed: { backgroundColor: colors.surfaceMuted, borderRadius: radii.sm, borderBottomColor: 'transparent' },
+  /** Web: fareyle üstünde zemin. */
   highlighted: { backgroundColor: colors.surfaceMuted },
   /** Web'de basılı satır, üstüne gelinmiş satırdan bir ton koyu. */
   webPressed: { backgroundColor: colors.rule },
   disabled: { opacity: 0.45 },
   iconBox: {
-    width: layout.minTouch - spacing.sm,
-    height: layout.minTouch - spacing.sm,
+    width: layout.iconTile,
+    height: layout.iconTile,
     borderRadius: radii.sm,
+    borderWidth: strokes.thin,
+    borderColor: colors.outline,
     backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',

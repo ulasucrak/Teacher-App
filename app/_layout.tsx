@@ -7,7 +7,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 
 import { AppFrame, Banner, Text, ToastProvider } from '@/components/ui';
 import { AlertDialogHost } from '@/components/ui/AlertDialog';
-import { AuthProvider, useAuth } from '@/features/auth';
+import { AuthProvider, useAuth, WebAppBar } from '@/features/auth';
 import { installWebAlert } from '@/lib/platformAlert';
 import { supabaseConfigError } from '@/lib/supabase';
 import { colors, fontAssets, layout, spacing } from '@/theme';
@@ -23,13 +23,13 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AppFrame>
-        <AuthProvider>
+      <AuthProvider>
+        <AppFrame header={fontsReady ? <WebAppBar /> : null}>
           <ToastProvider>
             <RootNavigator fontsReady={fontsReady} />
           </ToastProvider>
-        </AuthProvider>
-      </AppFrame>
+        </AppFrame>
+      </AuthProvider>
       <AlertDialogHost />
     </SafeAreaProvider>
   );

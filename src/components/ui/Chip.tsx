@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 
-import { colors, iconSize, layout, radii, spacing, useReducedMotion } from '@/theme';
+import { colors, iconSize, layout, radii, spacing, strokes, useReducedMotion } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
 import { isHovered, webPressFeedback } from './SegmentedChoice.interaction';
@@ -15,7 +15,7 @@ export interface ChipProps {
   testID?: string;
 }
 
-/** Filtre / etiket çipi (hap şeklinde; ton renkli seçenek çiplerinden ayrışır). */
+/** Filtre / etiket çipi (kurşun çerçeveli kare köşe; seçiliyken kurşun dolgu, beyaz yazı). */
 export function Chip({ label, selected = false, onPress, icon, accessibilityLabel, testID }: ChipProps) {
   const reducedMotion = useReducedMotion();
   const fg = selected ? colors.textInverse : colors.text;
@@ -51,9 +51,11 @@ const styles = StyleSheet.create({
     gap: spacing.xs + spacing.xxs,
     minHeight: layout.buttonHeightSm,
     paddingHorizontal: spacing.lg,
-    borderRadius: radii.full,
+    borderRadius: radii.sm,
+    borderWidth: strokes.base,
+    borderColor: colors.outline,
   },
   selected: { backgroundColor: colors.text },
-  unselected: { backgroundColor: colors.surfaceMuted },
-  pressed: { backgroundColor: colors.rule },
+  unselected: { backgroundColor: colors.surface },
+  pressed: { backgroundColor: colors.surfaceMuted },
 });

@@ -46,3 +46,16 @@ export async function deleteClass(classId: string): Promise<void> {
   const { error } = await supabase.from('classes').delete().eq('id', classId);
   if (error) throw error;
 }
+
+/** Sınıf kimlik bloğundaki avatar yığını için ilk eklenen öğrencilerin adları (en fazla `limit`). */
+export async function listStudentPreview(classId: string, limit = 4): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('students')
+    .select('full_name')
+    .eq('class_id', classId)
+    .order('created_at', { ascending: true })
+    .order('full_name', { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((s) => s.full_name);
+}

@@ -119,6 +119,26 @@ describe('NewFormScreen', () => {
     expect(mocked.createForm.mock.calls[0]![1].mode).toBe('repeatable');
   });
 
+  it('starts the oral preset as a once-a-day form with plus / half plus / minus scores', async () => {
+    mockParams = { classId: 'class-1', preset: 'sozlu' };
+    await renderScreen();
+
+    expect(screen.getByTestId('form-mode-daily')).toBeSelected();
+    expect(screen.getByLabelText('Artı puanı, isteğe bağlı')).toHaveDisplayValue('1');
+    expect(screen.getByLabelText('Yarım artı puanı, isteğe bağlı')).toHaveDisplayValue('0,5');
+    expect(screen.getByLabelText('Eksi puanı, isteğe bağlı')).toHaveDisplayValue('-1');
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Formu oluştur' }));
+    await waitFor(() => expect(mocked.createForm).toHaveBeenCalled());
+    const [, input] = mocked.createForm.mock.calls[0]!;
+    expect(input.mode).toBe('daily');
+    expect(input.options).toEqual([
+      { key: 'arti', label: 'Artı', tone: 'positive', score: 1 },
+      { key: 'yarim_arti', label: 'Yarım artı', tone: 'positive', score: 0.5 },
+      { key: 'eksi', label: 'Eksi', tone: 'negative', score: -1 },
+    ]);
+  });
+
   it('starts the plus / minus preset as cumulative with scores', async () => {
     mockParams = { classId: 'class-1', preset: 'artieksi' };
     await renderScreen();

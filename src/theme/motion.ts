@@ -13,6 +13,8 @@ export const motion = {
   },
   pressScale: 0.96,
   toastVisibleMs: 2400,
+  /** "Aferin" damgası: yukarıdan iner, 380 ms'de oturur (yalnız reduced motion kapalıyken). */
+  stampMs: 380,
 } as const;
 
 // "Hareketi azalt" ayarı tek bir paylaşılan abonelikle izlenir (yüzlerce çip için tek dinleyici).

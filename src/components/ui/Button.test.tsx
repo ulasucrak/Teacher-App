@@ -46,4 +46,15 @@ describe('Button', () => {
     await render(<Button label="Devam" onPress={() => undefined} testID="next" />);
     expect(screen.getByTestId('next')).toHaveStyle({ backgroundColor: colors.accent });
   });
+
+  it('danger turns the ghost label red (entry to a destructive flow), fill stays transparent', async () => {
+    await render(<Button label="Hesabımı sil" variant="ghost" danger onPress={() => undefined} testID="del" />);
+    expect(screen.getByText('Hesabımı sil')).toHaveStyle({ color: colors.danger });
+    expect(screen.getByTestId('del')).toHaveStyle({ backgroundColor: 'transparent' });
+  });
+
+  it('danger does not recolour the primary action', async () => {
+    await render(<Button label="Kaydet" danger onPress={() => undefined} />);
+    expect(screen.getByText('Kaydet')).toHaveStyle({ color: colors.onAccent });
+  });
 });

@@ -3,14 +3,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
+  Avatar,
   Banner,
   Button,
   ConfirmSheet,
+  HeroBlock,
   IconButton,
   IconTile,
   ListRow,
   LoadingState,
   OverflowMenu,
+  Pill,
   Screen,
   SectionHeader,
   Text,
@@ -20,8 +23,9 @@ import {
 import { FormListRow, formsRoutes, listForms, useAddForm, useFormActions } from '@/features/forms';
 import { colors, layout, spacing } from '@/theme';
 
-import { deleteClass, getClass } from '../api';
+import { deleteClass, getClass, listStudentPreview } from '../api';
 import { toUserMessage } from '../errors';
+import { classMetaParts, suggestClassName } from '../model';
 import { useRemoteData } from '../useRemoteData';
 
 const CLASS_ERROR = 'Sınıf açılamadı. Bağlantınızı kontrol edip tekrar deneyin.';
@@ -52,8 +56,17 @@ export function ClassDetailScreen() {
 
   const loadClass = useCallback(() => getClass(classId), [classId]);
   const loadForms = useCallback(() => listForms(classId), [classId]);
+  // Avatar yığını süstür: yüklenemezse sessizce boş kalır, ekranı hataya düşürmez.
+  const loadPreview = useCallback(async () => {
+    try {
+      return await listStudentPreview(classId);
+    } catch {
+      return [];
+    }
+  }, [classId]);
   const cls = useRemoteData(loadClass, CLASS_ERROR);
   const forms = useRemoteData(loadForms, FORMS_ERROR);
+  const preview = useRemoteData(loadPreview, '');
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -154,9 +167,10 @@ export function ClassDetailScreen() {
   } else if (active.length === 0) {
     formsContent = (
       <ListRow
+        variant="card"
         title="Henüz form yok"
-        subtitle="Yoklama, ödev kontrolü ya da sözlü ekleyin"
-        leading={<IconTile icon="plus" />}
+        subtitle="Yoklama ya da sözlü ekleyin"
+        leading={<IconTile icon="plus" paper="gok" />}
         showChevron={false}
         onPress={addForm.open}
         accessibilityLabel="Henüz form yok. Form ekle"
@@ -176,10 +190,13 @@ export function ClassDetailScreen() {
     ));
   }
 
+  // Sınıf adı kimlik bloğunda; altındaki satır yalnızca addan türetilemeyen ayrıntıyı ("5. sınıf") taşır.
+  const derived = suggestClassName(c.grade ?? '', c.section ?? '');
+  const meta = derived && derived.toLocaleLowerCase('tr-TR') === c.name.toLocaleLowerCase('tr-TR') ? [] : classMetaParts(c);
+  const previewNames = preview.data ?? [];
+
   return (
     <Screen
-      title={c.name}
-      largeTitle
       scroll={false}
       padded={false}
       testID="class-screen"
@@ -209,6 +226,19 @@ export function ClassDetailScreen() {
           </View>
         ) : null}
 
+        <HeroBlock title={c.name} subtitle={meta.length > 0 ? meta.join(', ') : undefined} sticker style={styles.hero} testID="class-hero">
+          {previewNames.length > 0 ? (
+            <View style={styles.avatars}>
+              {previewNames.map((n, i) => (
+                <View key={`${n}-${i}`} style={i > 0 ? styles.avatarOverlap : undefined}>
+                  <Avatar name={n} size="sm" />
+                </View>
+              ))}
+            </View>
+          ) : null}
+          <Pill label={`${c.studentCount} öğrenci`} testID="class-student-pill" />
+        </HeroBlock>
+
         <SectionHeader
           title="Formlar"
           count={active.length > 0 ? active.length : undefined}
@@ -218,15 +248,18 @@ export function ClassDetailScreen() {
           onAction={addForm.open}
           actionTestID="class-add-form"
           padded
+          style={styles.section}
         />
-        <View style={styles.rows}>{formsContent}</View>
+        <View>{formsContent}</View>
 
         <View style={styles.students}>
           <ListRow
+            variant="card"
             title="Öğrenciler"
-            leading={<IconTile icon="people" />}
+            subtitle={c.studentCount === 0 ? 'Henüz öğrenci yok' : undefined}
+            leading={<IconTile icon="people" paper="pembe" />}
             trailing={
-              <Text variant="number" tone="muted" testID="class-student-count">
+              <Text variant="heading" testID="class-student-count">
                 {String(c.studentCount)}
               </Text>
             }
@@ -265,8 +298,12 @@ export function ClassDetailScreen() {
 const styles = StyleSheet.create({
   content: { paddingBottom: spacing.huge },
   padded: { paddingHorizontal: layout.pageX, gap: spacing.md, paddingVertical: spacing.sm },
-  rows: { borderTopWidth: layout.hairline, borderTopColor: colors.rule },
+  // Kimlik bloğunun bandı ve gölgesi sayfa kenarından taşar: yatay boşluk bloğun kendisinde.
+  hero: { marginHorizontal: layout.pageX, marginTop: spacing.md },
+  avatars: { flexDirection: 'row', alignItems: 'center' },
+  avatarOverlap: { marginLeft: -spacing.xs - spacing.xxs },
+  section: { marginTop: spacing.xxl, marginBottom: spacing.xs },
   formsLoading: { paddingVertical: spacing.xl },
-  students: { marginTop: spacing.xxl, borderTopWidth: layout.hairline, borderTopColor: colors.rule },
+  students: { marginTop: spacing.xs },
   errorBox: { gap: spacing.lg, paddingTop: spacing.lg },
 });

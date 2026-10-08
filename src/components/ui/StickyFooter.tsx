@@ -20,8 +20,6 @@ const styles = StyleSheet.create({
   footer: {
     ...elevation.raised,
     backgroundColor: colors.surface,
-    borderTopWidth: layout.hairline,
-    borderTopColor: colors.rule,
     paddingHorizontal: layout.pageX,
     paddingTop: spacing.md,
     gap: spacing.sm,

@@ -1,9 +1,10 @@
-export { avatarColors, colors, palette, tones } from './colors';
-export type { ToneColors, ToneName } from './colors';
-export { elevation } from './elevation';
+export { avatarColors, colors, palette, paper, paperCycle, tones } from './colors';
+export type { PaperName, ToneColors, ToneName } from './colors';
+export { elevation, hardShadow, pressedIn, shadowOffset } from './elevation';
+export type { ShadowSize } from './elevation';
 export { motion, useReducedMotion } from './motion';
 export { radii } from './radii';
-export { layout, spacing } from './spacing';
+export { layout, spacing, strokes } from './spacing';
 export { iconSize } from './iconSize';
 export { fontFamilies, fontScale, typography } from './typography';
 export type { TextVariant } from './typography';

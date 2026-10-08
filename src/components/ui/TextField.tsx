@@ -1,5 +1,6 @@
 import { useState, type Ref } from 'react';
 import {
+  Platform,
   StyleSheet,
   TextInput,
   View,
@@ -8,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { colors, fontScale, iconSize, layout, radii, spacing, typography } from '@/theme';
+import { colors, fontScale, hardShadow, iconSize, layout, radii, spacing, typography } from '@/theme';
 
 import { Icon } from './Icon';
 import { IconButton } from './IconButton';
@@ -26,7 +27,8 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
 }
 
 /**
- * Etiketli metin alanı: sıra grisi dolgu, odakta beyaz + mavi kenar, hatada kırmızı kenar.
+ * Etiketli metin alanı: beyaz kâğıt + kalın kurşun çerçeve; odakta pano mavisi sert gölge (kenar kalınlığı
+ * değişmez, yerleşim kımıldamaz); hatada kırmızı kenar + kırmızı gölge + ikonlu mesaj.
  * `multiline` verilirse (ör. "Listeyi yapıştırın") en az 3 satır yükseklik alır.
  */
 export function TextField({
@@ -45,7 +47,7 @@ export function TextField({
   const [revealed, setRevealed] = useState(false);
   const hasError = Boolean(error);
 
-  const borderColor = hasError ? colors.danger : focused ? colors.primary : 'transparent';
+  const borderColor = hasError ? colors.danger : colors.outline;
   const multiline = Boolean(inputProps.multiline);
 
   return (
@@ -57,8 +59,8 @@ export function TextField({
         style={[
           styles.inputWrap,
           { borderColor },
-          (focused || hasError) && styles.inputWrapEmphasis,
-          focused && styles.inputFocused,
+          focused && hardShadow('xs', hasError ? colors.danger : colors.primary),
+          hasError && !focused && hardShadow('xs', colors.danger),
           multiline && styles.inputWrapMultiline,
           !editable && styles.inputDisabled,
         ]}
@@ -114,6 +116,9 @@ export function TextField({
   );
 }
 
+/** Web: odak kapsayıcının mavi sert gölgesiyle gösterilir; tarayıcının iç çerçevesi çift çizgi yapar. */
+const noBrowserOutline = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as object;
+
 const styles = StyleSheet.create({
   container: { gap: spacing.xs + spacing.xxs },
   inputWrap: {
@@ -121,20 +126,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minHeight: layout.buttonHeight,
     borderRadius: radii.sm,
-    borderWidth: layout.inputBorderFocus,
-    backgroundColor: colors.surfaceMuted,
-    paddingLeft: spacing.lg - layout.inputBorderFocus,
+    borderWidth: layout.inputBorder,
+    backgroundColor: colors.surface,
+    paddingLeft: spacing.lg - layout.inputBorder,
     paddingRight: spacing.xxs,
   },
-  inputWrapEmphasis: { borderWidth: layout.inputBorderFocus },
-  inputFocused: { backgroundColor: colors.surface },
   inputWrapMultiline: { alignItems: 'stretch', minHeight: layout.buttonHeight * 3 },
-  inputDisabled: { opacity: 0.6 },
+  inputDisabled: { opacity: 0.6, backgroundColor: colors.surfaceMuted },
   input: {
     ...typography.body,
     flex: 1,
     color: colors.text,
     paddingVertical: spacing.md,
+    ...noBrowserOutline,
   },
   inputMultiline: { paddingTop: spacing.md, paddingRight: spacing.md },
   message: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },

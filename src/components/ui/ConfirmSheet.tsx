@@ -81,5 +81,6 @@ export function ConfirmSheet({
 
 const styles = StyleSheet.create({
   body: { gap: spacing.xl },
-  actions: { gap: spacing.sm },
+  // Düğmelerin sert gölgesi için aralık geniş tutulur.
+  actions: { gap: spacing.lg },
 });

@@ -12,9 +12,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, layout, spacing } from '@/theme';
+import { colors, layout, spacing, strokes } from '@/theme';
 
-import { IconButton } from './IconButton';
+import { IconButton, IconButtonVariantContext } from './IconButton';
 import { currentWebPathname, screenParentHref } from './ScreenBack';
 import { backIconSize, desktopBarInset, useDesktopWeb } from './ScreenChrome';
 import { StickyFooter } from './StickyFooter';
@@ -27,6 +27,8 @@ export interface ScreenProps {
    */
   title?: string;
   largeTitle?: boolean;
+  /** Büyük başlığın sağında süs (ör. `StarSticker`); yalnızca `largeTitle` ile. Dekoratif olmalı (ekran okuyucudan gizli). */
+  largeTitleAccessory?: ReactNode;
   /** Büyük başlığın altında tek satır soluk bilgi ("28 öğrenci"). Yalnızca `largeTitle` ile. */
   subtitle?: string;
   /**
@@ -65,6 +67,7 @@ export interface ScreenProps {
 export function Screen({
   title,
   largeTitle = false,
+  largeTitleAccessory,
   subtitle,
   back,
   fallbackHref,
@@ -98,6 +101,7 @@ export function Screen({
   const showBar = showBack || Boolean(headerRight) || (Boolean(title) && !largeTitle);
 
   const bar = showBar ? (
+    <IconButtonVariantContext.Provider value="square">
     <View style={[styles.bar, desktopWeb && styles.barDesktop, headerDivider && styles.barDivider]}>
       <View style={styles.side}>
         {showBack ? (
@@ -119,18 +123,26 @@ export function Screen({
       </View>
       <View style={[styles.side, styles.sideRight]}>{headerRight}</View>
     </View>
+    </IconButtonVariantContext.Provider>
   ) : null;
 
   const big =
     title && largeTitle ? (
       <View style={[styles.largeTitle, !showBar && styles.largeTitleTop, !padded && styles.padded]}>
-        <Text variant="title" accessibilityRole="header">
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text variant="bodySmall" tone="muted">
-            {subtitle}
+        <View style={styles.largeTitleText}>
+          <Text variant="poster" accessibilityRole="header">
+            {title}
           </Text>
+          {subtitle ? (
+            <Text variant="body" tone="muted">
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+        {largeTitleAccessory ? (
+          <View style={styles.accessory} accessible={false} importantForAccessibility="no-hide-descendants">
+            {largeTitleAccessory}
+          </View>
         ) : null}
       </View>
     ) : null;
@@ -185,14 +197,16 @@ const styles = StyleSheet.create({
     minHeight: layout.headerHeight,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.lg,
   },
   barDesktop: { paddingTop: desktopBarInset },
-  barDivider: { borderBottomWidth: layout.hairline, borderBottomColor: colors.rule },
-  side: { minWidth: layout.minTouch * 2, flexDirection: 'row', alignItems: 'center' },
+  barDivider: { borderBottomWidth: strokes.base, borderBottomColor: colors.outline },
+  side: { minWidth: layout.squareButton + spacing.xl, flexDirection: 'row', alignItems: 'center' },
   sideRight: { justifyContent: 'flex-end' },
   barTitle: { flex: 1, paddingHorizontal: spacing.xs },
-  largeTitle: { marginTop: spacing.xs, marginBottom: spacing.xl, gap: spacing.xxs },
+  largeTitle: { marginTop: spacing.sm, marginBottom: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  largeTitleText: { flex: 1, gap: spacing.xs },
+  accessory: { marginRight: spacing.xs, pointerEvents: 'none' },
   largeTitleTop: { marginTop: spacing.xxl },
   scrollContent: { flexGrow: 1 },
   padded: { paddingHorizontal: layout.pageX },

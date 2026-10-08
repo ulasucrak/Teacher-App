@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon, selectionA11y } from '@/components/ui';
-import { colors, iconSize, layout, radii, spacing, tones } from '@/theme';
+import { colors, iconSize, layout, radii, spacing, strokes, tones } from '@/theme';
 import type { FormOptionTone } from '@/types/database';
 
 import { TONE_ORDER, toneLabels } from '../options';
@@ -14,7 +14,7 @@ interface TonePickerProps {
 }
 
 /**
- * Dört ton için mürekkep lekesi gibi yuvarlak örnekler. Seçili olan ✓ taşır
+ * Dört ton için kurşun çerçeveli yuvarlak örnekler. Seçili olan ✓ taşır ve kalın kurşun halka alır
  * (renk tek başına anlam taşımaz).
  */
 export function TonePicker({ value, onChange, contextLabel }: TonePickerProps) {
@@ -35,7 +35,7 @@ export function TonePicker({ value, onChange, contextLabel }: TonePickerProps) {
             <View
               style={[
                 styles.ring,
-                { borderColor: selected ? t.solid : 'transparent' },
+                { borderColor: selected ? colors.outline : 'transparent' },
               ]}
             >
               <View style={[styles.swatch, { backgroundColor: t.solid }]}>
@@ -74,6 +74,8 @@ const styles = StyleSheet.create({
     width: SWATCH,
     height: SWATCH,
     borderRadius: radii.full,
+    borderWidth: strokes.thin,
+    borderColor: colors.outline,
     alignItems: 'center',
     justifyContent: 'center',
   },

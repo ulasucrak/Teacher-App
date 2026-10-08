@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Banner, Button, ConfirmSheet, LoadingState, OverflowMenu, type OverflowAction } from '@/components/ui';
@@ -9,6 +9,9 @@ import { useSessionFill } from '@/features/sessions/hooks/useSessionFill';
 import { NEW_SESSION_ID } from '@/features/sessions/routes';
 import { layout, spacing } from '@/theme';
 import type { FormRow } from '@/types/database';
+
+import { ClassroomView } from '@/features/classroom/ClassroomView';
+import { requestPresentationFullscreen } from '@/features/classroom/presentation';
 
 import { DayBar } from './DayBar';
 import { FormShell, type FormTab } from './FormShell';
@@ -33,6 +36,12 @@ export function DailyFormView({ classId, form, initialTab }: FormViewProps) {
   const [tab, setTab] = useState<FormTab>(initialTab);
   const [day, setDay] = useState(() => todayIso());
   const [menuOpen, setMenuOpen] = useState(false);
+  const [classroomOpen, setClassroomOpen] = useState(false);
+  const closeClassroom = useCallback(() => setClassroomOpen(false), []);
+  const openClassroom = () => {
+    requestPresentationFullscreen();
+    setClassroomOpen(true);
+  };
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const fill = useSessionFill({ classId, formId, sessionId: NEW_SESSION_ID, date: day, form });
@@ -108,11 +117,13 @@ export function DailyFormView({ classId, form, initialTab }: FormViewProps) {
       tab={tab}
       onTab={setTab}
       onMore={() => setMenuOpen(true)}
+      onClassroom={openClassroom}
       footer={tab === 'mark' && !loadingDay ? sessionFillFooter(fill) : undefined}
       testID="form-screen"
     >
       {tab === 'mark' ? marking : null}
       <HistoryPane form={form} active={tab === 'history'} onEditDay={editDay} />
+      {classroomOpen ? <ClassroomView form={form} fill={fill} day={day} onDay={changeDay} onExit={closeClassroom} /> : null}
       <OverflowMenu
         visible={menuOpen}
         onClose={() => setMenuOpen(false)}
